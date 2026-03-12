@@ -127,6 +127,35 @@ async function resolveProviderProduct(order: {
   name: string
   packageOption?: string
 }): Promise<ProviderProduct | null> {
+  // For package products, prioritize selected package label matching to avoid
+  // sending the default/smallest package at provider side.
+  if (order.packageOption) {
+    const preferredName = extractOptionName(order.packageOption)
+    const normalizedPreferred = normalizeText(preferredName)
+
+    try {
+      const searched = await fetchProviderProducts(preferredName)
+      const exact = searched.find((item) => normalizeText(item.name) === normalizedPreferred)
+      if (exact?.id) return exact
+
+      const includes = searched.find((item) => normalizeText(item.name).includes(normalizedPreferred))
+      if (includes?.id) return includes
+    } catch (error) {
+      console.error('Provider package search failed:', error)
+    }
+
+    try {
+      const allProducts = await fetchProviderProducts()
+      const exact = allProducts.find((item) => normalizeText(item.name) === normalizedPreferred)
+      if (exact?.id) return exact
+
+      const startsWith = allProducts.find((item) => normalizeText(item.name).startsWith(normalizedPreferred))
+      if (startsWith?.id) return startsWith
+    } catch (error) {
+      console.error('Provider package full scan failed:', error)
+    }
+  }
+
   const pkgMatch = String(order.productId || '').trim().toLowerCase().match(/^pkg-(\d+)$/)
   if (pkgMatch?.[1]) {
     return {
