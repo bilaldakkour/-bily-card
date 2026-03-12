@@ -1,0 +1,487 @@
+'use client';
+
+import React, { useEffect, useState } from 'react';
+import Link from 'next/link';
+
+interface Product {
+  id: string;
+  slug: string;
+  name: string;
+  category: string;
+  basePrice: number;
+  productPercent: number;
+  stockStatus: string;
+}
+
+interface PricingUser {
+  _id: string;
+  displayName: string;
+  email: string;
+  pricingPercent?: number;
+}
+
+interface CustomProductForm {
+  name: string;
+  slug: string;
+  category: string;
+  image: string;
+  shortDescription: string;
+  fullDescription: string;
+  price: string;
+  mode: 'single' | 'package' | 'count';
+  packageLines: string;
+  countMin: string;
+  countMax: string;
+  platform: string;
+  deliveryTime: string;
+  stockStatus: 'in_stock' | 'out_of_stock' | 'limited';
+  tags: string;
+}
+
+export default function AdminProducts() {
+  const [products, setProducts] = useState<Product[]>([]);
+  const [users, setUsers] = useState<PricingUser[]>([]);
+  const [selectedUserId, setSelectedUserId] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [savingSlug, setSavingSlug] = useState<string | null>(null);
+  const [percentInputs, setPercentInputs] = useState<Record<string, string>>({});
+  const [customSaving, setCustomSaving] = useState(false);
+  const [customForm, setCustomForm] = useState<CustomProductForm>({
+    name: '',
+    slug: '',
+    category: 'games',
+    image: '',
+    shortDescription: '',
+    fullDescription: '',
+    price: '0',
+    mode: 'single',
+    packageLines: '',
+    countMin: '1',
+    countMax: '',
+    platform: 'BilyCard',
+    deliveryTime: 'Instant',
+    stockStatus: 'in_stock',
+    tags: '',
+  });
+
+  useEffect(() => {
+    fetchProducts();
+    fetchUsers();
+  }, []);
+
+  const fetchUsers = async () => {
+    try {
+      const token = localStorage.getItem('adminToken');
+      const res = await fetch('/api/admin/users?limit=200', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json();
+      if (data.success) {
+        setUsers(data.data || []);
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const selectedUser = users.find((u) => u._id === selectedUserId) || null;
+  const selectedUserPercent = Number(selectedUser?.pricingPercent || 0);
+
+  const getFinalPreviewPrice = (product: Product) => {
+    const productPercent = Number(percentInputs[product.slug] ?? product.productPercent ?? 0);
+    const totalPercent = productPercent + selectedUserPercent;
+    const next = Number(product.basePrice) * (1 + totalPercent / 100);
+    return Number(Math.max(0, next).toFixed(6));
+  };
+
+  const fetchProducts = async () => {
+    try {
+      const token = localStorage.getItem('adminToken');
+      const res = await fetch('/api/admin/pricing/products', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json();
+      if (data.success) {
+        setProducts(data.data);
+        const nextInputs: Record<string, string> = {};
+        for (const product of data.data as Product[]) {
+          nextInputs[product.slug] = String(Number(product.productPercent || 0));
+        }
+        setPercentInputs(nextInputs);
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSavePercent = async (slug: string) => {
+    setSavingSlug(slug);
+    try {
+      const token = localStorage.getItem('adminToken');
+      const percent = Number(percentInputs[slug] || 0);
+      const res = await fetch('/api/admin/pricing/products', {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ slug, percent }),
+      });
+
+      const data = await res.json();
+      if (data.success) {
+        alert('Product percentage updated');
+        fetchProducts();
+      }
+    } catch (err) {
+      alert('Update failed');
+    } finally {
+      setSavingSlug(null);
+    }
+  };
+
+  const parsePackageLines = (value: string) => {
+    return value
+      .split('\n')
+      .map((line) => line.trim())
+      .filter(Boolean)
+      .map((line) => {
+        const [labelRaw, priceRaw, stockRaw] = line.split('|').map((part) => part.trim());
+        const price = Number(priceRaw || 0);
+        return {
+          label: labelRaw,
+          price: Number.isFinite(price) && price >= 0 ? price : 0,
+          inStock: String(stockRaw || 'in').toLowerCase() !== 'out',
+        };
+      })
+      .filter((row) => row.label);
+  };
+
+  const handleCreateCustomProduct = async () => {
+    setCustomSaving(true);
+    try {
+      const token = localStorage.getItem('adminToken');
+      const packageOptions = parsePackageLines(customForm.packageLines);
+
+      const payload = {
+        name: customForm.name,
+        slug: customForm.slug,
+        category: customForm.category,
+        image: customForm.image,
+        shortDescription: customForm.shortDescription,
+        fullDescription: customForm.fullDescription,
+        price: Number(customForm.price || 0),
+        mode: customForm.mode,
+        packageOptions,
+        countMin: Number(customForm.countMin || 1),
+        countMax: Number(customForm.countMax || 0),
+        platform: customForm.platform,
+        deliveryTime: customForm.deliveryTime,
+        stockStatus: customForm.stockStatus,
+        tags: customForm.tags,
+      };
+
+      const res = await fetch('/api/admin/products/custom', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.message || 'Failed to save custom product');
+      }
+
+      alert('Custom product saved successfully');
+      setCustomForm((prev) => ({
+        ...prev,
+        name: '',
+        slug: '',
+        image: '',
+        shortDescription: '',
+        fullDescription: '',
+        price: '0',
+        packageLines: '',
+      }));
+      fetchProducts();
+    } catch (err: any) {
+      alert(err?.message || 'Failed to save custom product');
+    } finally {
+      setCustomSaving(false);
+    }
+  };
+
+  return (
+    <main className="min-h-screen bg-slate-950">
+      {/* Header */}
+      <header className="border-b border-slate-700 bg-slate-900/50 backdrop-blur sticky top-0 z-50">
+        <div className="mx-auto max-w-7xl px-6 py-4 flex items-center justify-between">
+          <Link href="/admin" className="text-2xl font-bold text-white">
+            Bily Card Admin
+          </Link>
+          <div className="flex gap-4">
+            <Link href="/admin" className="text-slate-300 hover:text-white">
+              Dashboard
+            </Link>
+            <Link href="/admin/orders" className="text-slate-300 hover:text-white">
+              Orders
+            </Link>
+            <Link href="/admin/users" className="text-slate-300 hover:text-white">
+              Users
+            </Link>
+          </div>
+        </div>
+      </header>
+
+      {/* Content */}
+      <div className="mx-auto max-w-7xl px-6 py-12">
+        <div className="flex items-center justify-between mb-8">
+          <h1 className="text-4xl font-bold text-white">Products Pricing Dashboard</h1>
+        </div>
+
+        <div className="mb-6 rounded-lg border border-white/10 bg-slate-900/60 p-4">
+          <h2 className="mb-4 text-xl font-semibold text-white">Add Custom Product (Not in DailyCard)</h2>
+          <div className="grid gap-3 md:grid-cols-2">
+            <input
+              value={customForm.name}
+              onChange={(e) => setCustomForm((prev) => ({ ...prev, name: e.target.value }))}
+              placeholder="Name"
+              className="rounded border border-white/10 bg-slate-800 px-3 py-2 text-white"
+            />
+            <input
+              value={customForm.slug}
+              onChange={(e) => setCustomForm((prev) => ({ ...prev, slug: e.target.value }))}
+              placeholder="Slug (optional)"
+              className="rounded border border-white/10 bg-slate-800 px-3 py-2 text-white"
+            />
+            <input
+              value={customForm.category}
+              onChange={(e) => setCustomForm((prev) => ({ ...prev, category: e.target.value }))}
+              placeholder="Category"
+              className="rounded border border-white/10 bg-slate-800 px-3 py-2 text-white"
+            />
+            <input
+              value={customForm.image}
+              onChange={(e) => setCustomForm((prev) => ({ ...prev, image: e.target.value }))}
+              placeholder="Image URL"
+              className="rounded border border-white/10 bg-slate-800 px-3 py-2 text-white"
+            />
+            <input
+              value={customForm.price}
+              onChange={(e) => setCustomForm((prev) => ({ ...prev, price: e.target.value }))}
+              type="number"
+              min="0"
+              step="0.000001"
+              placeholder="Base price"
+              className="rounded border border-white/10 bg-slate-800 px-3 py-2 text-white"
+            />
+            <select
+              value={customForm.mode}
+              onChange={(e) =>
+                setCustomForm((prev) => ({
+                  ...prev,
+                  mode: e.target.value as 'single' | 'package' | 'count',
+                }))
+              }
+              className="rounded border border-white/10 bg-slate-800 px-3 py-2 text-white"
+            >
+              <option value="single">Single</option>
+              <option value="package">Package</option>
+              <option value="count">Count</option>
+            </select>
+            <input
+              value={customForm.platform}
+              onChange={(e) => setCustomForm((prev) => ({ ...prev, platform: e.target.value }))}
+              placeholder="Platform"
+              className="rounded border border-white/10 bg-slate-800 px-3 py-2 text-white"
+            />
+            <input
+              value={customForm.deliveryTime}
+              onChange={(e) => setCustomForm((prev) => ({ ...prev, deliveryTime: e.target.value }))}
+              placeholder="Delivery time"
+              className="rounded border border-white/10 bg-slate-800 px-3 py-2 text-white"
+            />
+            <select
+              value={customForm.stockStatus}
+              onChange={(e) =>
+                setCustomForm((prev) => ({
+                  ...prev,
+                  stockStatus: e.target.value as 'in_stock' | 'out_of_stock' | 'limited',
+                }))
+              }
+              className="rounded border border-white/10 bg-slate-800 px-3 py-2 text-white"
+            >
+              <option value="in_stock">In stock</option>
+              <option value="limited">Limited</option>
+              <option value="out_of_stock">Out of stock</option>
+            </select>
+            <input
+              value={customForm.tags}
+              onChange={(e) => setCustomForm((prev) => ({ ...prev, tags: e.target.value }))}
+              placeholder="Tags (comma separated)"
+              className="rounded border border-white/10 bg-slate-800 px-3 py-2 text-white"
+            />
+            {customForm.mode === 'count' && (
+              <>
+                <input
+                  value={customForm.countMin}
+                  onChange={(e) => setCustomForm((prev) => ({ ...prev, countMin: e.target.value }))}
+                  type="number"
+                  min="1"
+                  placeholder="Count min"
+                  className="rounded border border-white/10 bg-slate-800 px-3 py-2 text-white"
+                />
+                <input
+                  value={customForm.countMax}
+                  onChange={(e) => setCustomForm((prev) => ({ ...prev, countMax: e.target.value }))}
+                  type="number"
+                  min="1"
+                  placeholder="Count max (optional)"
+                  className="rounded border border-white/10 bg-slate-800 px-3 py-2 text-white"
+                />
+              </>
+            )}
+          </div>
+
+          <textarea
+            value={customForm.shortDescription}
+            onChange={(e) => setCustomForm((prev) => ({ ...prev, shortDescription: e.target.value }))}
+            placeholder="Short description"
+            className="mt-3 w-full rounded border border-white/10 bg-slate-800 px-3 py-2 text-white"
+            rows={2}
+          />
+          <textarea
+            value={customForm.fullDescription}
+            onChange={(e) => setCustomForm((prev) => ({ ...prev, fullDescription: e.target.value }))}
+            placeholder="Full description"
+            className="mt-3 w-full rounded border border-white/10 bg-slate-800 px-3 py-2 text-white"
+            rows={3}
+          />
+
+          {customForm.mode === 'package' && (
+            <textarea
+              value={customForm.packageLines}
+              onChange={(e) => setCustomForm((prev) => ({ ...prev, packageLines: e.target.value }))}
+              placeholder={'Package lines: label|price|in|out\nExample: 60 UC|0.92|in'}
+              className="mt-3 w-full rounded border border-white/10 bg-slate-800 px-3 py-2 text-white"
+              rows={4}
+            />
+          )}
+
+          <div className="mt-3">
+            <button
+              onClick={handleCreateCustomProduct}
+              disabled={customSaving}
+              className="rounded bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700 disabled:opacity-50"
+            >
+              {customSaving ? 'Saving...' : 'Save Custom Product'}
+            </button>
+          </div>
+        </div>
+
+        <div className="mb-6 rounded-lg border border-white/10 bg-slate-900/60 p-4">
+          <p className="mb-3 text-sm text-slate-300">
+            Pricing preview: Final price = Base Price + Product % + User %
+          </p>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+            <label className="text-sm text-slate-300">Preview for user:</label>
+            <select
+              value={selectedUserId}
+              onChange={(e) => setSelectedUserId(e.target.value)}
+              className="max-w-md rounded border border-white/10 bg-slate-800 px-3 py-2 text-white"
+            >
+              <option value="">No user override (0%)</option>
+              {users.map((user) => (
+                <option key={user._id} value={user._id}>
+                  {user.displayName} ({user.email}) - {Number(user.pricingPercent || 0)}%
+                </option>
+              ))}
+            </select>
+            <span className="text-xs text-cyan-300">
+              Selected user %: {selectedUserPercent.toFixed(2)}%
+            </span>
+          </div>
+        </div>
+
+        {loading ? (
+          <div className="text-slate-400">Loading...</div>
+        ) : (
+          <div className="bg-slate-800 rounded-lg border border-slate-700 overflow-hidden">
+            <table className="w-full">
+              <thead className="bg-slate-900">
+                <tr>
+                  <th className="px-6 py-3 text-left text-white">Name</th>
+                  <th className="px-6 py-3 text-left text-white">Category</th>
+                  <th className="px-6 py-3 text-left text-white">Base Price</th>
+                  <th className="px-6 py-3 text-left text-white">Product %</th>
+                  <th className="px-6 py-3 text-left text-white">User %</th>
+                  <th className="px-6 py-3 text-left text-white">Final Preview</th>
+                  <th className="px-6 py-3 text-left text-white">Status</th>
+                  <th className="px-6 py-3 text-left text-white">Action</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-700">
+                {products.map((product) => (
+                  <tr key={product.id} className="hover:bg-slate-700/50">
+                    <td className="px-6 py-3 text-slate-300">
+                      {product.name}
+                    </td>
+                    <td className="px-6 py-3 text-slate-300">
+                      {product.category}
+                    </td>
+                    <td className="px-6 py-3 text-slate-300">
+                      ${product.basePrice.toFixed(2)}
+                    </td>
+                    <td className="px-6 py-3 text-slate-300">
+                      <input
+                        type="number"
+                        value={percentInputs[product.slug] ?? String(Number(product.productPercent || 0))}
+                        onChange={(e) =>
+                          setPercentInputs((prev) => ({ ...prev, [product.slug]: e.target.value }))
+                        }
+                        className="w-24 rounded border border-white/10 bg-slate-800 px-2 py-1 text-white"
+                      />
+                    </td>
+                    <td className="px-6 py-3 text-slate-300">
+                      {selectedUserPercent.toFixed(2)}%
+                    </td>
+                    <td className="px-6 py-3 font-semibold text-emerald-300">
+                      ${getFinalPreviewPrice(product).toFixed(2)}
+                    </td>
+                    <td className="px-6 py-3">
+                      <span
+                        className={`px-3 py-1 rounded-full text-white text-sm ${
+                          product.stockStatus === 'out_of_stock'
+                            ? 'bg-red-600'
+                            : product.stockStatus === 'limited'
+                            ? 'bg-amber-600'
+                            : 'bg-green-600'
+                        }`}
+                      >
+                        {product.stockStatus}
+                      </span>
+                    </td>
+                    <td className="px-6 py-3">
+                      <button
+                        onClick={() => handleSavePercent(product.slug)}
+                        disabled={savingSlug === product.slug}
+                        className="rounded bg-blue-600 px-3 py-1 text-sm text-white hover:bg-blue-700 disabled:opacity-50"
+                      >
+                        {savingSlug === product.slug ? 'Saving...' : 'Save'}
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+    </main>
+  );
+}
