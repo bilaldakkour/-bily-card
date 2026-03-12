@@ -72,6 +72,20 @@ interface CustomProductForm {
   tags: string;
 }
 
+const CATEGORY_OPTIONS = [
+  { value: 'cards', label: 'Gift Cards (cards)' },
+  { value: 'games', label: 'Games (games)' },
+  { value: 'applications', label: 'Applications (applications)' },
+  { value: 'wallets', label: 'Wallets (wallets)' },
+  { value: 'balance', label: 'Balance / Topup (balance)' },
+  { value: 'social-media', label: 'Social Media (social-media)' },
+  { value: 'entertainment', label: 'Entertainment (entertainment)' },
+  { value: 'accounts-subscriptions', label: 'Accounts & Subscriptions (accounts-subscriptions)' },
+  { value: 'redemption-coupons', label: 'Redemption Coupons (redemption-coupons)' },
+  { value: 'gift-cards', label: 'Legacy Gift Cards (gift-cards)' },
+  { value: 'digital-services', label: 'Legacy Digital Services (digital-services)' },
+];
+
 export default function AdminProducts() {
   const [products, setProducts] = useState<Product[]>([]);
   const [manageProducts, setManageProducts] = useState<ManageProduct[]>([]);
@@ -518,12 +532,17 @@ export default function AdminProducts() {
                   placeholder="Name"
                   className="rounded border border-white/10 bg-slate-800 px-3 py-2 text-white"
                 />
-                <input
+                <select
                   value={editForm.category}
                   onChange={(e) => setEditForm((prev) => (prev ? { ...prev, category: e.target.value } : prev))}
-                  placeholder="Category"
                   className="rounded border border-white/10 bg-slate-800 px-3 py-2 text-white"
-                />
+                >
+                  {CATEGORY_OPTIONS.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
                 <input
                   value={editForm.image}
                   onChange={(e) => setEditForm((prev) => (prev ? { ...prev, image: e.target.value } : prev))}
@@ -660,12 +679,17 @@ export default function AdminProducts() {
               placeholder="Slug (optional)"
               className="rounded border border-white/10 bg-slate-800 px-3 py-2 text-white"
             />
-            <input
+            <select
               value={customForm.category}
               onChange={(e) => setCustomForm((prev) => ({ ...prev, category: e.target.value }))}
-              placeholder="Category"
               className="rounded border border-white/10 bg-slate-800 px-3 py-2 text-white"
-            />
+            >
+              {CATEGORY_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
             <input
               value={customForm.image}
               onChange={(e) => setCustomForm((prev) => ({ ...prev, image: e.target.value }))}
