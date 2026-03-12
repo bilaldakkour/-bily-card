@@ -23,6 +23,23 @@ const normalizeText = (value: string) =>
 const hasAnyKeyword = (text: string, keywords: string[]) =>
   keywords.some((keyword) => text.includes(normalizeText(keyword)));
 
+const RAW_CATEGORY_MAP: Record<string, CatalogCategoryId> = {
+  cards: 'cards',
+  'gift-cards': 'cards',
+  'gift cards': 'cards',
+  applications: 'applications',
+  games: 'games',
+  wallets: 'wallets',
+  balance: 'balance',
+  'social-media': 'social-media',
+  'social media': 'social-media',
+  entertainment: 'entertainment',
+  'accounts-subscriptions': 'accounts-subscriptions',
+  'accounts & subscriptions': 'accounts-subscriptions',
+  'redemption-coupons': 'redemption-coupons',
+  'redemption coupon': 'redemption-coupons',
+};
+
 const CARD_KEYWORDS = [
   'psn usa',
   'psn lebanon',
@@ -149,6 +166,70 @@ export function classifyCatalogProduct(product: Product): {
       ...(Array.isArray(product.tags) ? product.tags : []),
     ].join(' ')
   );
+
+  const rawCategory = normalizeText(String(product.category || ''));
+  const mappedRawCategory = RAW_CATEGORY_MAP[rawCategory];
+
+  // Trust explicit provider category when it maps cleanly to our taxonomy.
+  // This prevents aggressive keyword rules from misclassifying products.
+  if (mappedRawCategory) {
+    if (mappedRawCategory === 'cards') {
+      return { category: 'cards', offerType: 'cards' };
+    }
+
+    return {
+      category: mappedRawCategory,
+      offerType: hasPackageField ? 'packages' : 'products',
+    };
+  }
+
+  // Provider uses digital-services as a broad bucket; route with careful hints.
+  if (rawCategory === 'digital-services' || rawCategory === 'digital services') {
+    if (hasAnyKeyword(haystack, CARD_KEYWORDS)) {
+      return { category: 'cards', offerType: 'cards' };
+    }
+
+    if (hasAnyKeyword(haystack, WALLET_PRODUCT_KEYWORDS)) {
+      return { category: 'wallets', offerType: 'products' };
+    }
+
+    if (hasAnyKeyword(haystack, BALANCE_PACKAGE_KEYWORDS)) {
+      return { category: 'balance', offerType: 'packages' };
+    }
+
+    if (hasAnyKeyword(haystack, SOCIAL_PACKAGE_KEYWORDS)) {
+      return { category: 'social-media', offerType: 'packages' };
+    }
+
+    if (hasAnyKeyword(haystack, ENTERTAINMENT_PACKAGE_KEYWORDS)) {
+      return { category: 'entertainment', offerType: 'packages' };
+    }
+
+    if (hasAnyKeyword(haystack, ACCOUNT_PACKAGE_KEYWORDS)) {
+      return { category: 'accounts-subscriptions', offerType: 'packages' };
+    }
+
+    if (hasAnyKeyword(haystack, REDEMPTION_PRODUCT_KEYWORDS)) {
+      return { category: 'redemption-coupons', offerType: 'products' };
+    }
+
+    if (hasAnyKeyword(haystack, GAMES_PACKAGE_KEYWORDS)) {
+      return { category: 'games', offerType: 'packages' };
+    }
+
+    if (hasAnyKeyword(haystack, APPLICATION_PACKAGE_KEYWORDS)) {
+      return { category: 'applications', offerType: 'packages' };
+    }
+
+    if (hasAnyKeyword(haystack, APPLICATION_PRODUCT_KEYWORDS)) {
+      return { category: 'applications', offerType: 'products' };
+    }
+
+    return {
+      category: 'applications',
+      offerType: hasPackageField ? 'packages' : 'products',
+    };
+  }
 
   if (hasAnyKeyword(haystack, CARD_KEYWORDS)) {
     return { category: 'cards', offerType: 'cards' };
