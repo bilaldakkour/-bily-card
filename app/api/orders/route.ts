@@ -638,86 +638,86 @@ export async function POST(request: NextRequest) {
       session.endSession()
     }
 
-    void (async () => {
+    if (providerEnabled()) {
       try {
-        if (providerEnabled()) {
-          try {
-            const providerProduct = resolvedProviderProduct || (await resolveProviderProduct({
-              productId,
-              name,
-              packageOption,
-            }))
+        const providerProduct =
+          resolvedProviderProduct ||
+          (await resolveProviderProduct({
+            productId,
+            name,
+            packageOption,
+          }))
 
-            if (providerProduct?.id) {
-              const providerResult = await createProviderOrder({
-                providerProductId: Number(providerProduct.id),
-                playerId: cleanPlayerId,
-                quantity,
-                clientOrderId: orderId,
-              })
+        if (providerProduct?.id) {
+          const providerResult = await createProviderOrder({
+            providerProductId: Number(providerProduct.id),
+            playerId: cleanPlayerId,
+            quantity,
+            clientOrderId: orderId,
+          })
 
-              const providerStatus = String(
-                providerResult?.status ||
-                  providerResult?.order_status ||
-                  providerResult?.data?.status ||
-                  'pending'
-              ).toLowerCase()
+          const providerStatus = String(
+            providerResult?.status ||
+              providerResult?.order_status ||
+              providerResult?.data?.status ||
+              'pending'
+          ).toLowerCase()
 
-              const providerOrderId = String(
-                providerResult?.order_id || providerResult?.id || providerResult?.data?.order_id || ''
-              )
+          const providerOrderId = String(
+            providerResult?.order_id || providerResult?.id || providerResult?.data?.order_id || ''
+          )
 
-              const providerUnitCost = extractProviderUnitCost(providerResult, toPositiveNumber(providerProduct.price) || baseUnitPrice)
-              const providerTotalCost = Number((providerUnitCost * quantity).toFixed(6))
-              const grossProfit = Number((effectiveTotal - providerTotalCost).toFixed(6))
+          const providerUnitCost = extractProviderUnitCost(
+            providerResult,
+            toPositiveNumber(providerProduct.price) || baseUnitPrice
+          )
+          const providerTotalCost = Number((providerUnitCost * quantity).toFixed(6))
+          const grossProfit = Number((effectiveTotal - providerTotalCost).toFixed(6))
 
-              order.providerProductId = String(providerProduct.id)
-              order.providerOrderId = providerOrderId || undefined
-              order.providerStatus = providerStatus
-              order.providerUnitCost = providerUnitCost
-              order.providerTotalCost = providerTotalCost
-              order.grossProfit = grossProfit
-              order.providerResponse = providerResult
-              order.status = mapProviderStatusToLocal(providerStatus)
-              order.notes = 'Submitted to DailyCard provider'
-            } else {
-              order.providerStatus = 'local_only'
-              order.notes = 'Product not found at provider, kept for local/manual processing'
-            }
-          } catch (error: any) {
-            order.providerStatus = 'submit_failed'
-            order.notes = 'Provider submission failed, kept for local/manual processing'
-            order.failureReason =
-              error?.response?.data?.error ||
-              error?.response?.data?.message ||
-              error?.message ||
-              'Provider submission failed'
-          }
+          order.providerProductId = String(providerProduct.id)
+          order.providerOrderId = providerOrderId || undefined
+          order.providerStatus = providerStatus
+          order.providerUnitCost = providerUnitCost
+          order.providerTotalCost = providerTotalCost
+          order.grossProfit = grossProfit
+          order.providerResponse = providerResult
+          order.status = mapProviderStatusToLocal(providerStatus)
+          order.notes = 'Submitted to DailyCard provider'
         } else {
           order.providerStatus = 'local_only'
-          order.notes = 'Provider credentials missing, kept for local/manual processing'
+          order.notes = 'Product not found at provider, kept for local/manual processing'
         }
-
-        await order.save()
-
-        await sendTelegramMessage(orderId, {
-          productId,
-          slug,
-          name,
-          price,
-          playerId: cleanPlayerId,
-          quantity,
-          total: effectiveTotal,
-          packageOption,
-        })
-      } catch (backgroundError) {
-        console.error('Background order post-processing error:', backgroundError)
+      } catch (error: any) {
+        order.providerStatus = 'submit_failed'
+        order.notes = 'Provider submission failed, kept for local/manual processing'
+        order.failureReason =
+          error?.response?.data?.error ||
+          error?.response?.data?.message ||
+          error?.message ||
+          'Provider submission failed'
       }
-    })()
+    } else {
+      order.providerStatus = 'local_only'
+      order.notes = 'Provider credentials missing, kept for local/manual processing'
+    }
+
+    await order.save()
+
+    void sendTelegramMessage(orderId, {
+      productId,
+      slug,
+      name,
+      price,
+      playerId: cleanPlayerId,
+      quantity,
+      total: effectiveTotal,
+      packageOption,
+    })
 
     return NextResponse.json({
       success: true,
       orderId,
+      providerStatus: order.providerStatus,
       message: 'Order created successfully',
     })
   } catch (error) {
