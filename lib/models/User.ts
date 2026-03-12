@@ -40,6 +40,9 @@ const UserSchema = new Schema(
     avatar: String,
     phoneNumber: {
       type: String,
+      required: function (this: { isNew: boolean }) {
+        return this.isNew;
+      },
       unique: true,
       sparse: true,
       trim: true,

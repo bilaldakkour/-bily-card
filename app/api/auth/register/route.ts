@@ -8,6 +8,7 @@ import { sendOtpEmail } from '@/lib/email';
 import { enforceRateLimit } from '@/lib/utils/rateLimit';
 import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
+import { ZodError } from 'zod';
 
 function buildBaseUsername(email: string): string {
   const localPart = String(email.split('@')[0] || '')
@@ -40,6 +41,10 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const rawName = String(body?.name || body?.displayName || '').trim();
     const rawPhoneNumber = String(body?.phoneNumber || '').trim();
+
+    if (!rawPhoneNumber) {
+      return NextResponse.json({ message: 'Phone number is required' }, { status: 400 });
+    }
 
     const { name, email, password, phoneNumber } = RegisterSchema.parse({
       name: rawName,
@@ -108,6 +113,14 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ message: 'User registered successfully. Please check your email for verification.' });
   } catch (error) {
+    if (error instanceof ZodError) {
+      const issue = error.issues?.[0];
+      return NextResponse.json(
+        { message: issue?.message || 'Invalid registration data' },
+        { status: 400 }
+      );
+    }
+
     console.error('Registration error:', error);
     return NextResponse.json({ message: 'Internal server error' }, { status: 500 });
   }
