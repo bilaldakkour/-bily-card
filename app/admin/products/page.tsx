@@ -128,6 +128,14 @@ export default function AdminProducts() {
   const selectedUser = users.find((u) => u._id === selectedUserId) || null;
   const selectedUserPercent = Number(selectedUser?.pricingPercent || 0);
 
+  const formatPrice = (value: number) => {
+    const safe = Number(value || 0);
+    if (!Number.isFinite(safe)) return '$0.00';
+    if (safe >= 1) return `$${safe.toFixed(2)}`;
+    if (safe >= 0.01) return `$${safe.toFixed(4)}`;
+    return `$${safe.toFixed(6)}`;
+  };
+
   const filteredManageProducts = useMemo(() => {
     const q = manageSearch.trim().toLowerCase();
     if (!q) return manageProducts;
@@ -456,7 +464,7 @@ export default function AdminProducts() {
                         {product.source}
                       </span>
                     </td>
-                    <td className="px-4 py-3 text-sm text-slate-200">${Number(product.price || 0).toFixed(2)}</td>
+                    <td className="px-4 py-3 text-sm text-slate-200">{formatPrice(Number(product.price || 0))}</td>
                     <td className="px-4 py-3 text-sm">
                       <div className="flex items-center gap-2">
                         <button
@@ -828,7 +836,7 @@ export default function AdminProducts() {
                       {product.category}
                     </td>
                     <td className="px-6 py-3 text-slate-300">
-                      ${product.basePrice.toFixed(2)}
+                      {formatPrice(product.basePrice)}
                     </td>
                     <td className="px-6 py-3 text-slate-300">
                       <input
@@ -844,7 +852,7 @@ export default function AdminProducts() {
                       {selectedUserPercent.toFixed(2)}%
                     </td>
                     <td className="px-6 py-3 font-semibold text-emerald-300">
-                      ${getFinalPreviewPrice(product).toFixed(2)}
+                      {formatPrice(getFinalPreviewPrice(product))}
                     </td>
                     <td className="px-6 py-3">
                       <span
