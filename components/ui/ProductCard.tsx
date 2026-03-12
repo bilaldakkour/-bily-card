@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import Image from 'next/image'
-import { Star, ShoppingCart, Zap } from 'lucide-react'
+import type { ReactNode } from 'react'
+import { Lock, Star, ShoppingCart, Zap } from 'lucide-react'
 import { Badge } from './Badge'
 import { Button } from './Button'
 import FavoriteButton from './FavoriteButton'
@@ -12,6 +13,8 @@ interface ProductCardProps {
 }
 
 export function ProductCard({ product, className = '' }: ProductCardProps) {
+  const isOutOfStock = product.stockStatus === 'out_of_stock'
+
   const accentByCategory: Record<string, string> = {
     pubg: 'text-amber-300 bg-amber-500/15 border-amber-400/30',
     freefire: 'text-orange-300 bg-orange-500/15 border-orange-400/30',
@@ -36,8 +39,26 @@ export function ProductCard({ product, className = '' }: ProductCardProps) {
   const accentClass =
     accentByCategory[product.category] || 'text-blue-300 bg-blue-500/15 border-blue-400/30'
 
+  const cardClassName = `group relative rounded-3xl bg-gradient-to-br from-slate-900/90 via-slate-900/80 to-slate-950/90 backdrop-blur-xl border border-white/10 overflow-hidden transition-all duration-500 ${
+    isOutOfStock
+      ? 'cursor-not-allowed opacity-80'
+      : 'hover:scale-[1.02] hover:border-blue-500/30 hover:shadow-2xl hover:shadow-blue-500/20'
+  } ${className}`
+
+  const CardWrapper = ({ children }: { children: ReactNode }) => {
+    if (isOutOfStock) {
+      return <article className={cardClassName}>{children}</article>
+    }
+
+    return (
+      <Link href={`/products/${product.slug}`} className={cardClassName}>
+        {children}
+      </Link>
+    )
+  }
+
   return (
-    <Link href={`/products/${product.slug}`} className={`group relative rounded-3xl bg-gradient-to-br from-slate-900/90 via-slate-900/80 to-slate-950/90 backdrop-blur-xl border border-white/10 overflow-hidden transition-all duration-500 hover:scale-[1.02] hover:border-blue-500/30 hover:shadow-2xl hover:shadow-blue-500/20 ${className}`}>
+    <CardWrapper>
       {/* Badge */}
       {(product.featured || product.bestSeller) && (
         <div className="absolute top-6 left-6 z-20 flex gap-3">
@@ -70,12 +91,23 @@ export function ProductCard({ product, className = '' }: ProductCardProps) {
           src={product.image}
           alt={product.name}
           fill
-          className="object-cover transition-all duration-700 group-hover:scale-110 group-hover:rotate-1"
+          className={`object-cover transition-all duration-700 ${
+            isOutOfStock ? 'grayscale' : 'group-hover:scale-110 group-hover:rotate-1'
+          }`}
         />
         {/* Fallback overlay */}
         <div className="absolute inset-0 bg-gradient-to-b from-transparent via-slate-900/20 to-slate-900/60 flex items-center justify-center">
           <div className="text-6xl opacity-20 group-hover:opacity-30 transition-opacity duration-300">🎮</div>
         </div>
+
+        {isOutOfStock && (
+          <div className="absolute inset-0 z-10 flex items-center justify-center bg-slate-950/50">
+            <span className="inline-flex items-center gap-2 rounded-full border border-red-400/30 bg-red-500/20 px-3 py-1 text-sm font-semibold text-red-200">
+              <Lock className="h-4 w-4" />
+              Locked - Out of Stock
+            </span>
+          </div>
+        )}
 
         {/* Image overlay gradient */}
         <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent opacity-60 group-hover:opacity-40 transition-opacity duration-300"></div>
@@ -120,9 +152,13 @@ export function ProductCard({ product, className = '' }: ProductCardProps) {
 
         <div className="flex items-end justify-end gap-4 pt-2">
           <span className="inline-flex">
-            <Button size="sm" className="shadow-lg hover:shadow-xl hover:shadow-blue-500/30">
-              <ShoppingCart className="h-4 w-4" />
-              View Product
+            <Button
+              size="sm"
+              disabled={isOutOfStock}
+              className={isOutOfStock ? 'opacity-60 cursor-not-allowed' : 'shadow-lg hover:shadow-xl hover:shadow-blue-500/30'}
+            >
+              {isOutOfStock ? <Lock className="h-4 w-4" /> : <ShoppingCart className="h-4 w-4" />}
+              {isOutOfStock ? 'Out of Stock' : 'View Product'}
             </Button>
           </span>
         </div>
@@ -136,6 +172,6 @@ export function ProductCard({ product, className = '' }: ProductCardProps) {
 
       {/* Bottom accent */}
       <div className="absolute bottom-0 left-0 h-32 w-32 bg-gradient-to-tr from-purple-500/5 to-transparent rounded-full blur-2xl -z-10 group-hover:from-purple-500/10 transition-all duration-500"></div>
-    </Link>
+    </CardWrapper>
   )
 }

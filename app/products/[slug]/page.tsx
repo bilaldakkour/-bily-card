@@ -22,6 +22,10 @@ export default async function ProductPage({ params }: ProductPageProps) {
     notFound()
   }
 
+  if (product.stockStatus === 'out_of_stock') {
+    notFound()
+  }
+
   const relatedProducts = (await getCatalogBestSellingProducts())
     .filter((p) => p.id !== product.id && p.category === product.category)
     .slice(0, 3)
