@@ -62,8 +62,21 @@ async function triggerSync(): Promise<void> {
 
         lastStatus = response.status
 
+        let responseBody = ''
+        try {
+          responseBody = await response.text()
+        } catch {
+          responseBody = ''
+        }
+
         // If this host is wrong for current runtime, try the next candidate.
         if (response.status === 404) {
+          continue
+        }
+
+        // During boot or hot-reload we may hit transient 5xx from one candidate.
+        if (response.status >= 500) {
+          lastError = `status=${response.status}${responseBody ? ` body=${responseBody.slice(0, 180)}` : ''}`
           continue
         }
 
@@ -91,6 +104,14 @@ async function triggerSync(): Promise<void> {
 
 export function startDailycardPriceSyncScheduler(): void {
   if (process.env.NEXT_RUNTIME && process.env.NEXT_RUNTIME !== 'nodejs') {
+    return
+  }
+
+  // Disable noisy auto-sync in local/dev unless explicitly enabled.
+  if (
+    process.env.NODE_ENV !== 'production' &&
+    process.env.ENABLE_DAILYCARD_AUTO_SYNC_DEV !== 'true'
+  ) {
     return
   }
 
