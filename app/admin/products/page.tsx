@@ -454,8 +454,20 @@ export default function AdminProducts() {
           </div>
 
           {editingProductSlug && editForm && (
-            <div className="mt-4 rounded border border-white/10 bg-slate-900 p-4">
-              <h3 className="mb-3 text-lg font-semibold text-white">Edit Product: {editForm.slug}</h3>
+            <div className="fixed inset-0 z-[70] flex items-start justify-center overflow-y-auto bg-slate-950/70 p-4 pt-10">
+              <div className="w-full max-w-4xl rounded border border-white/10 bg-slate-900 p-4 shadow-2xl">
+                <div className="mb-3 flex items-center justify-between">
+                  <h3 className="text-lg font-semibold text-white">Edit Product: {editForm.slug}</h3>
+                  <button
+                    onClick={() => {
+                      setEditingProductSlug(null);
+                      setEditForm(null);
+                    }}
+                    className="rounded bg-slate-700 px-3 py-1 text-sm font-semibold text-white hover:bg-slate-600"
+                  >
+                    Close
+                  </button>
+                </div>
               <div className="grid gap-3 md:grid-cols-2">
                 <input
                   value={editForm.name}
@@ -585,6 +597,7 @@ export default function AdminProducts() {
                   Cancel
                 </button>
               </div>
+            </div>
             </div>
           )}
         </div>
