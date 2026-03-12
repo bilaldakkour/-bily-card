@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 
 interface Product {
@@ -75,6 +75,7 @@ interface CustomProductForm {
 export default function AdminProducts() {
   const [products, setProducts] = useState<Product[]>([]);
   const [manageProducts, setManageProducts] = useState<ManageProduct[]>([]);
+  const [manageSearch, setManageSearch] = useState('');
   const [users, setUsers] = useState<PricingUser[]>([]);
   const [selectedUserId, setSelectedUserId] = useState('');
   const [loading, setLoading] = useState(true);
@@ -126,6 +127,20 @@ export default function AdminProducts() {
 
   const selectedUser = users.find((u) => u._id === selectedUserId) || null;
   const selectedUserPercent = Number(selectedUser?.pricingPercent || 0);
+
+  const filteredManageProducts = useMemo(() => {
+    const q = manageSearch.trim().toLowerCase();
+    if (!q) return manageProducts;
+
+    return manageProducts.filter((product) => {
+      return (
+        String(product.name || '').toLowerCase().includes(q) ||
+        String(product.slug || '').toLowerCase().includes(q) ||
+        String(product.category || '').toLowerCase().includes(q) ||
+        String(product.source || '').toLowerCase().includes(q)
+      );
+    });
+  }, [manageProducts, manageSearch]);
 
   const getFinalPreviewPrice = (product: Product) => {
     const productPercent = Number(percentInputs[product.slug] ?? product.productPercent ?? 0);
@@ -402,6 +417,18 @@ export default function AdminProducts() {
         <div className="mb-6 rounded-lg border border-white/10 bg-slate-900/60 p-4">
           <h2 className="mb-4 text-xl font-semibold text-white">Manage Products (Edit/Delete)</h2>
 
+          <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <input
+              value={manageSearch}
+              onChange={(e) => setManageSearch(e.target.value)}
+              placeholder="Search by name, slug, category..."
+              className="w-full rounded border border-white/10 bg-slate-800 px-3 py-2 text-white placeholder-slate-400 sm:max-w-md"
+            />
+            <span className="text-xs text-slate-400">
+              Showing {filteredManageProducts.length} of {manageProducts.length}
+            </span>
+          </div>
+
           <div className="overflow-x-auto rounded border border-white/10">
             <table className="min-w-full">
               <thead className="bg-slate-900">
@@ -414,7 +441,7 @@ export default function AdminProducts() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-700">
-                {manageProducts.map((product) => (
+                {filteredManageProducts.map((product) => (
                   <tr key={product.slug} className="hover:bg-slate-800/70">
                     <td className="px-4 py-3 text-sm text-slate-200">{product.name}</td>
                     <td className="px-4 py-3 text-sm text-slate-300">{product.category}</td>
@@ -449,6 +476,14 @@ export default function AdminProducts() {
                     </td>
                   </tr>
                 ))}
+
+                {filteredManageProducts.length === 0 && (
+                  <tr>
+                    <td colSpan={5} className="px-4 py-6 text-center text-sm text-slate-400">
+                      No products match your search.
+                    </td>
+                  </tr>
+                )}
               </tbody>
             </table>
           </div>
