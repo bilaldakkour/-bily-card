@@ -259,8 +259,8 @@ export default function ProductDetails({ product }: ProductDetailsProps) {
   }
 
   return (
-    <main className="min-h-screen bg-slate-950 px-6 py-12 text-white">
-      <div className="mx-auto grid max-w-6xl gap-10 md:grid-cols-2">
+    <main className="min-h-screen bg-slate-950 px-4 py-8 text-white sm:px-6 sm:py-12">
+      <div className="mx-auto grid max-w-6xl gap-8 md:grid-cols-2 md:gap-10">
         <div className="rounded-2xl border border-white/10 bg-slate-900 p-6">
           <img
             src={safeProduct.image}
@@ -276,9 +276,9 @@ export default function ProductDetails({ product }: ProductDetailsProps) {
             </p>
           )}
 
-          <h1 className="mb-4 text-4xl font-bold">{safeProduct.name}</h1>
+          <h1 className="mb-4 text-2xl font-bold sm:text-3xl md:text-4xl">{safeProduct.name}</h1>
 
-          <p className="mb-6 text-lg leading-relaxed text-slate-300">
+          <p className="mb-6 text-base leading-relaxed text-slate-300 sm:text-lg">
             {safeProduct.fullDescription || productDescription}
           </p>
 
@@ -290,7 +290,7 @@ export default function ProductDetails({ product }: ProductDetailsProps) {
             <p className="mb-2 text-sm text-slate-400">Starting from</p>
 
             <div className="flex items-baseline gap-3">
-              <div className="text-4xl font-bold">
+                <div className="text-3xl font-bold sm:text-4xl">
                 ${effectiveUnitPrice.toFixed(2)}
               </div>
 

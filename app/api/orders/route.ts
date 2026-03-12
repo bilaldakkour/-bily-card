@@ -7,7 +7,7 @@ import Wallet from '@/lib/models/Wallet'
 import WalletTransaction from '@/lib/models/WalletTransaction'
 import { extractToken, verifyToken } from '@/lib/auth/jwt'
 import { getEffectivePriceForProduct } from '@/lib/pricing/engine'
-import { getCatalogProductBySlug } from '@/lib/data/catalogProducts'
+import { getCatalogProductBySlug, getCatalogProducts } from '@/lib/data/catalogProducts'
 import { generateOrderId } from '@/lib/utils/helpers'
 
 interface OrderRequest {
@@ -127,6 +127,14 @@ async function resolveProviderProduct(order: {
   name: string
   packageOption?: string
 }): Promise<ProviderProduct | null> {
+  const pkgMatch = String(order.productId || '').trim().toLowerCase().match(/^pkg-(\d+)$/)
+  if (pkgMatch?.[1]) {
+    return {
+      id: Number(pkgMatch[1]),
+      name: order.name,
+    }
+  }
+
   const direct = Number(order.productId)
   if (Number.isFinite(direct) && direct > 0) {
     return {
@@ -417,22 +425,49 @@ export async function POST(request: NextRequest) {
 
     const productId = typeof body.productId === 'string' ? body.productId.trim() : ''
     const slug = typeof body.slug === 'string' ? body.slug.trim() : ''
-    const name = typeof body.name === 'string' ? body.name.trim() : ''
+    const providedName = typeof body.name === 'string' ? body.name.trim() : ''
     const cleanPlayerId = typeof body.playerId === 'string' ? body.playerId.trim() : ''
     const packageOption = typeof body.packageOption === 'string' ? body.packageOption.trim() : ''
 
-    if (!productId || !name || !cleanPlayerId) {
+    if (!productId || !cleanPlayerId) {
       return NextResponse.json(
         { success: false, message: 'Missing required fields' },
         { status: 400 }
       )
     }
 
-    const price = Number(body.price)
+    const providedPrice = Number(body.price)
     const quantity = Number(body.quantity)
     const total = Number(body.total)
 
-    if (!Number.isFinite(price) || !Number.isFinite(quantity) || !Number.isFinite(total)) {
+    const normalizedSlug = String(slug || '').trim().toLowerCase()
+    const catalogBySlug = normalizedSlug ? await getCatalogProductBySlug(normalizedSlug) : undefined
+    let catalogById: Awaited<ReturnType<typeof getCatalogProductBySlug>> | undefined
+
+    if (!catalogBySlug) {
+      const catalogProducts = await getCatalogProducts()
+      catalogById = catalogProducts.find((item) => {
+        const itemId = String(item.id || '').trim().toLowerCase()
+        const itemSlug = String(item.slug || '').trim().toLowerCase()
+        const wanted = String(productId || '').trim().toLowerCase()
+        return itemId === wanted || itemSlug === wanted
+      })
+    }
+
+    const catalogProduct = catalogBySlug || catalogById
+    const name = providedName || String(catalogProduct?.name || '').trim()
+    const price = Number.isFinite(providedPrice) && providedPrice > 0
+      ? providedPrice
+      : Number(catalogProduct?.price || 0)
+
+    if (!name) {
+      return NextResponse.json(
+        { success: false, message: 'Product name is required' },
+        { status: 400 }
+      )
+    }
+
+    if (!Number.isFinite(price) || !Number.isFinite(quantity)) {
       return NextResponse.json(
         { success: false, message: 'Invalid numeric fields' },
         { status: 400 }
@@ -446,8 +481,6 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const normalizedSlug = String(slug || '').trim().toLowerCase()
-    const catalogProduct = normalizedSlug ? await getCatalogProductBySlug(normalizedSlug) : undefined
     const countRules = getProductCountRules(catalogProduct)
     const minQuantity = countRules?.min ?? 1
     const maxQuantity = countRules?.max ?? 1000

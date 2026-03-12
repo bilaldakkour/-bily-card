@@ -34,7 +34,7 @@ export default function AdminSidebar() {
   }
 
   return (
-    <div className="w-64 bg-slate-900 border-r border-slate-700 flex flex-col">
+    <div className="hidden w-64 bg-slate-900 border-r border-slate-700 lg:flex lg:flex-col">
       {/* Logo */}
       <div className="p-6 border-b border-slate-700">
         <h1 className="text-xl font-bold text-white">Bily Card Admin</h1>
