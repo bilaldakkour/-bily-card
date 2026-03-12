@@ -13,6 +13,40 @@ interface Product {
   stockStatus: string;
 }
 
+interface ManageProduct {
+  id: string;
+  slug: string;
+  name: string;
+  category: string;
+  image: string;
+  shortDescription: string;
+  fullDescription: string;
+  price: number;
+  platform: string;
+  deliveryTime: string;
+  stockStatus: 'in_stock' | 'out_of_stock' | 'limited';
+  tags: string[];
+  featured: boolean;
+  bestSeller: boolean;
+  source: 'custom' | 'provider';
+}
+
+interface EditProductForm {
+  slug: string;
+  name: string;
+  category: string;
+  image: string;
+  shortDescription: string;
+  fullDescription: string;
+  price: string;
+  platform: string;
+  deliveryTime: string;
+  stockStatus: 'in_stock' | 'out_of_stock' | 'limited';
+  tags: string;
+  featured: boolean;
+  bestSeller: boolean;
+}
+
 interface PricingUser {
   _id: string;
   displayName: string;
@@ -40,10 +74,15 @@ interface CustomProductForm {
 
 export default function AdminProducts() {
   const [products, setProducts] = useState<Product[]>([]);
+  const [manageProducts, setManageProducts] = useState<ManageProduct[]>([]);
   const [users, setUsers] = useState<PricingUser[]>([]);
   const [selectedUserId, setSelectedUserId] = useState('');
   const [loading, setLoading] = useState(true);
   const [savingSlug, setSavingSlug] = useState<string | null>(null);
+  const [editingProductSlug, setEditingProductSlug] = useState<string | null>(null);
+  const [editSaving, setEditSaving] = useState(false);
+  const [deleteSavingSlug, setDeleteSavingSlug] = useState<string | null>(null);
+  const [editForm, setEditForm] = useState<EditProductForm | null>(null);
   const [percentInputs, setPercentInputs] = useState<Record<string, string>>({});
   const [customSaving, setCustomSaving] = useState(false);
   const [customForm, setCustomForm] = useState<CustomProductForm>({
@@ -66,6 +105,7 @@ export default function AdminProducts() {
 
   useEffect(() => {
     fetchProducts();
+    fetchManageProducts();
     fetchUsers();
   }, []);
 
@@ -113,6 +153,121 @@ export default function AdminProducts() {
       console.error(err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchManageProducts = async () => {
+    try {
+      const token = localStorage.getItem('adminToken');
+      const res = await fetch('/api/admin/products/manage', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json();
+      if (data.success) {
+        setManageProducts(data.data || []);
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const openEditProduct = (product: ManageProduct) => {
+    setEditingProductSlug(product.slug);
+    setEditForm({
+      slug: product.slug,
+      name: product.name,
+      category: product.category,
+      image: product.image,
+      shortDescription: product.shortDescription,
+      fullDescription: product.fullDescription,
+      price: String(Number(product.price || 0)),
+      platform: product.platform || 'BilyCard',
+      deliveryTime: product.deliveryTime || 'Instant',
+      stockStatus: product.stockStatus || 'in_stock',
+      tags: Array.isArray(product.tags) ? product.tags.join(', ') : '',
+      featured: Boolean(product.featured),
+      bestSeller: Boolean(product.bestSeller),
+    });
+  };
+
+  const handleSaveProductDetails = async () => {
+    if (!editForm) return;
+
+    setEditSaving(true);
+    try {
+      const token = localStorage.getItem('adminToken');
+      const res = await fetch('/api/admin/products/manage', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          slug: editForm.slug,
+          name: editForm.name,
+          category: editForm.category,
+          image: editForm.image,
+          shortDescription: editForm.shortDescription,
+          fullDescription: editForm.fullDescription,
+          price: Number(editForm.price || 0),
+          platform: editForm.platform,
+          deliveryTime: editForm.deliveryTime,
+          stockStatus: editForm.stockStatus,
+          tags: editForm.tags,
+          featured: editForm.featured,
+          bestSeller: editForm.bestSeller,
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.message || 'Failed to update product');
+      }
+
+      alert('Product updated successfully');
+      setEditingProductSlug(null);
+      setEditForm(null);
+      await Promise.all([fetchManageProducts(), fetchProducts()]);
+    } catch (err: any) {
+      alert(err?.message || 'Failed to update product');
+    } finally {
+      setEditSaving(false);
+    }
+  };
+
+  const handleDeleteProduct = async (slug: string, name: string) => {
+    const confirmed = window.confirm(
+      `Delete product "${name}"? This will hide/delete it from the catalog.`
+    );
+    if (!confirmed) return;
+
+    setDeleteSavingSlug(slug);
+    try {
+      const token = localStorage.getItem('adminToken');
+      const res = await fetch('/api/admin/products/manage', {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ slug }),
+      });
+
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.message || 'Failed to delete product');
+      }
+
+      alert('Product deleted successfully');
+      if (editingProductSlug === slug) {
+        setEditingProductSlug(null);
+        setEditForm(null);
+      }
+      await Promise.all([fetchManageProducts(), fetchProducts()]);
+    } catch (err: any) {
+      alert(err?.message || 'Failed to delete product');
+    } finally {
+      setDeleteSavingSlug(null);
     }
   };
 
@@ -242,6 +397,196 @@ export default function AdminProducts() {
       <div className="mx-auto max-w-7xl px-6 py-12">
         <div className="flex items-center justify-between mb-8">
           <h1 className="text-4xl font-bold text-white">Products Pricing Dashboard</h1>
+        </div>
+
+        <div className="mb-6 rounded-lg border border-white/10 bg-slate-900/60 p-4">
+          <h2 className="mb-4 text-xl font-semibold text-white">Manage Products (Edit/Delete)</h2>
+
+          <div className="overflow-x-auto rounded border border-white/10">
+            <table className="min-w-full">
+              <thead className="bg-slate-900">
+                <tr>
+                  <th className="px-4 py-3 text-left text-sm text-white">Name</th>
+                  <th className="px-4 py-3 text-left text-sm text-white">Category</th>
+                  <th className="px-4 py-3 text-left text-sm text-white">Source</th>
+                  <th className="px-4 py-3 text-left text-sm text-white">Price</th>
+                  <th className="px-4 py-3 text-left text-sm text-white">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-700">
+                {manageProducts.map((product) => (
+                  <tr key={product.slug} className="hover:bg-slate-800/70">
+                    <td className="px-4 py-3 text-sm text-slate-200">{product.name}</td>
+                    <td className="px-4 py-3 text-sm text-slate-300">{product.category}</td>
+                    <td className="px-4 py-3 text-sm text-slate-300">
+                      <span
+                        className={`rounded px-2 py-1 text-xs font-semibold ${
+                          product.source === 'custom'
+                            ? 'bg-emerald-700 text-emerald-100'
+                            : 'bg-blue-700 text-blue-100'
+                        }`}
+                      >
+                        {product.source}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-sm text-slate-200">${Number(product.price || 0).toFixed(2)}</td>
+                    <td className="px-4 py-3 text-sm">
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => openEditProduct(product)}
+                          className="rounded bg-amber-600 px-3 py-1 text-white hover:bg-amber-700"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          onClick={() => handleDeleteProduct(product.slug, product.name)}
+                          disabled={deleteSavingSlug === product.slug}
+                          className="rounded bg-rose-600 px-3 py-1 text-white hover:bg-rose-700 disabled:opacity-50"
+                        >
+                          {deleteSavingSlug === product.slug ? 'Deleting...' : 'Delete'}
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {editingProductSlug && editForm && (
+            <div className="mt-4 rounded border border-white/10 bg-slate-900 p-4">
+              <h3 className="mb-3 text-lg font-semibold text-white">Edit Product: {editForm.slug}</h3>
+              <div className="grid gap-3 md:grid-cols-2">
+                <input
+                  value={editForm.name}
+                  onChange={(e) => setEditForm((prev) => (prev ? { ...prev, name: e.target.value } : prev))}
+                  placeholder="Name"
+                  className="rounded border border-white/10 bg-slate-800 px-3 py-2 text-white"
+                />
+                <input
+                  value={editForm.category}
+                  onChange={(e) => setEditForm((prev) => (prev ? { ...prev, category: e.target.value } : prev))}
+                  placeholder="Category"
+                  className="rounded border border-white/10 bg-slate-800 px-3 py-2 text-white"
+                />
+                <input
+                  value={editForm.image}
+                  onChange={(e) => setEditForm((prev) => (prev ? { ...prev, image: e.target.value } : prev))}
+                  placeholder="Image URL"
+                  className="rounded border border-white/10 bg-slate-800 px-3 py-2 text-white"
+                />
+                <input
+                  value={editForm.price}
+                  onChange={(e) => setEditForm((prev) => (prev ? { ...prev, price: e.target.value } : prev))}
+                  type="number"
+                  min="0"
+                  step="0.000001"
+                  placeholder="Price"
+                  className="rounded border border-white/10 bg-slate-800 px-3 py-2 text-white"
+                />
+                <input
+                  value={editForm.platform}
+                  onChange={(e) => setEditForm((prev) => (prev ? { ...prev, platform: e.target.value } : prev))}
+                  placeholder="Platform"
+                  className="rounded border border-white/10 bg-slate-800 px-3 py-2 text-white"
+                />
+                <input
+                  value={editForm.deliveryTime}
+                  onChange={(e) =>
+                    setEditForm((prev) => (prev ? { ...prev, deliveryTime: e.target.value } : prev))
+                  }
+                  placeholder="Delivery time"
+                  className="rounded border border-white/10 bg-slate-800 px-3 py-2 text-white"
+                />
+                <select
+                  value={editForm.stockStatus}
+                  onChange={(e) =>
+                    setEditForm((prev) =>
+                      prev
+                        ? {
+                            ...prev,
+                            stockStatus: e.target.value as 'in_stock' | 'out_of_stock' | 'limited',
+                          }
+                        : prev
+                    )
+                  }
+                  className="rounded border border-white/10 bg-slate-800 px-3 py-2 text-white"
+                >
+                  <option value="in_stock">In stock</option>
+                  <option value="limited">Limited</option>
+                  <option value="out_of_stock">Out of stock</option>
+                </select>
+                <input
+                  value={editForm.tags}
+                  onChange={(e) => setEditForm((prev) => (prev ? { ...prev, tags: e.target.value } : prev))}
+                  placeholder="Tags (comma separated)"
+                  className="rounded border border-white/10 bg-slate-800 px-3 py-2 text-white"
+                />
+              </div>
+
+              <textarea
+                value={editForm.shortDescription}
+                onChange={(e) =>
+                  setEditForm((prev) => (prev ? { ...prev, shortDescription: e.target.value } : prev))
+                }
+                placeholder="Short description"
+                className="mt-3 w-full rounded border border-white/10 bg-slate-800 px-3 py-2 text-white"
+                rows={2}
+              />
+
+              <textarea
+                value={editForm.fullDescription}
+                onChange={(e) =>
+                  setEditForm((prev) => (prev ? { ...prev, fullDescription: e.target.value } : prev))
+                }
+                placeholder="Full description"
+                className="mt-3 w-full rounded border border-white/10 bg-slate-800 px-3 py-2 text-white"
+                rows={3}
+              />
+
+              <div className="mt-3 flex flex-wrap items-center gap-4">
+                <label className="flex items-center gap-2 text-sm text-slate-300">
+                  <input
+                    type="checkbox"
+                    checked={editForm.featured}
+                    onChange={(e) =>
+                      setEditForm((prev) => (prev ? { ...prev, featured: e.target.checked } : prev))
+                    }
+                  />
+                  Featured
+                </label>
+                <label className="flex items-center gap-2 text-sm text-slate-300">
+                  <input
+                    type="checkbox"
+                    checked={editForm.bestSeller}
+                    onChange={(e) =>
+                      setEditForm((prev) => (prev ? { ...prev, bestSeller: e.target.checked } : prev))
+                    }
+                  />
+                  Best Seller
+                </label>
+              </div>
+
+              <div className="mt-4 flex gap-2">
+                <button
+                  onClick={handleSaveProductDetails}
+                  disabled={editSaving}
+                  className="rounded bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700 disabled:opacity-50"
+                >
+                  {editSaving ? 'Saving...' : 'Save Changes'}
+                </button>
+                <button
+                  onClick={() => {
+                    setEditingProductSlug(null);
+                    setEditForm(null);
+                  }}
+                  className="rounded bg-slate-700 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-600"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          )}
         </div>
 
         <div className="mb-6 rounded-lg border border-white/10 bg-slate-900/60 p-4">
