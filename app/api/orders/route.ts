@@ -68,6 +68,47 @@ function extractOptionName(option?: string) {
   return left?.trim() || option.trim()
 }
 
+function extractNumberTokens(value: string): string[] {
+  const matches = String(value || '').match(/\d+(?:\.\d+)?/g)
+  if (!matches) return []
+  return matches.map((token) => token.trim()).filter(Boolean)
+}
+
+function matchesPackageCandidate(preferred: string, candidateName: string): boolean {
+  const normalizedPreferred = normalizeText(preferred)
+  const normalizedCandidate = normalizeText(candidateName)
+
+  if (!normalizedPreferred || !normalizedCandidate) return false
+
+  if (normalizedPreferred === normalizedCandidate) return true
+
+  const preferredNumbers = extractNumberTokens(normalizedPreferred)
+  const candidateNumbers = extractNumberTokens(normalizedCandidate)
+
+  // If package text contains numeric identifiers (e.g. 60/325/660),
+  // require exact numeric token match to avoid mapping 660 -> 60.
+  if (preferredNumbers.length > 0) {
+    const allNumbersMatch = preferredNumbers.every((token) => candidateNumbers.includes(token))
+    if (!allNumbersMatch) return false
+  }
+
+  return normalizedCandidate.includes(normalizedPreferred) || normalizedPreferred.includes(normalizedCandidate)
+}
+
+function findMatchingProviderProduct(
+  products: ProviderProduct[],
+  preferredName: string
+): ProviderProduct | null {
+  for (const item of products) {
+    if (!item?.id) continue
+    if (matchesPackageCandidate(preferredName, String(item.name || ''))) {
+      return item
+    }
+  }
+
+  return null
+}
+
 function mapProviderStatusToLocal(status?: string) {
   const value = String(status || '').toLowerCase()
   if (value === 'completed') return 'completed'
@@ -127,33 +168,29 @@ async function resolveProviderProduct(order: {
   name: string
   packageOption?: string
 }): Promise<ProviderProduct | null> {
-  // For package products, prioritize selected package label matching to avoid
-  // sending the default/smallest package at provider side.
+  // For package products, require selected package matching first for all products.
+  // If no safe match is found, we return null instead of risking wrong fulfillment.
   if (order.packageOption) {
     const preferredName = extractOptionName(order.packageOption)
-    const normalizedPreferred = normalizeText(preferredName)
+    if (!preferredName) return null
 
     try {
       const searched = await fetchProviderProducts(preferredName)
-      const exact = searched.find((item) => normalizeText(item.name) === normalizedPreferred)
-      if (exact?.id) return exact
-
-      const includes = searched.find((item) => normalizeText(item.name).includes(normalizedPreferred))
-      if (includes?.id) return includes
+      const matched = findMatchingProviderProduct(searched, preferredName)
+      if (matched?.id) return matched
     } catch (error) {
       console.error('Provider package search failed:', error)
     }
 
     try {
       const allProducts = await fetchProviderProducts()
-      const exact = allProducts.find((item) => normalizeText(item.name) === normalizedPreferred)
-      if (exact?.id) return exact
-
-      const startsWith = allProducts.find((item) => normalizeText(item.name).startsWith(normalizedPreferred))
-      if (startsWith?.id) return startsWith
+      const matched = findMatchingProviderProduct(allProducts, preferredName)
+      if (matched?.id) return matched
     } catch (error) {
       console.error('Provider package full scan failed:', error)
     }
+
+    return null
   }
 
   const pkgMatch = String(order.productId || '').trim().toLowerCase().match(/^pkg-(\d+)$/)
