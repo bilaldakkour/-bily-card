@@ -15,6 +15,10 @@ interface Order {
   providerTotalCost: number
   grossProfit: number
   status: string
+  providerStatus?: string
+  selectedPackageOption?: string
+  providerMatchedProductName?: string
+  failureReason?: string
   createdAt: string
   userId?: {
     email?: string
@@ -203,6 +207,7 @@ export default function AdminOrdersPage() {
                   <th className="px-6 py-4 font-semibold">Provider Cost</th>
                   <th className="px-6 py-4 font-semibold">Profit</th>
                   <th className="px-6 py-4 font-semibold">Status</th>
+                  <th className="px-6 py-4 font-semibold">Provider Trace</th>
                   <th className="px-6 py-4 font-semibold">Date</th>
                   <th className="px-6 py-4 font-semibold">Actions</th>
                 </tr>
@@ -229,6 +234,31 @@ export default function AdminOrdersPage() {
                       <span className={`inline-block rounded px-3 py-1 text-xs font-medium capitalize ${getStatusColor(order.status)}`}>
                         {order.status}
                       </span>
+                    </td>
+                    <td className="px-6 py-4 text-xs text-slate-300">
+                      <div className="space-y-1">
+                        <div>
+                          <span className="text-slate-400">Provider:</span>{' '}
+                          <span className="font-medium text-cyan-300">{order.providerStatus || 'n/a'}</span>
+                        </div>
+                        {order.selectedPackageOption && (
+                          <div>
+                            <span className="text-slate-400">Selected:</span>{' '}
+                            <span className="text-slate-200">{order.selectedPackageOption}</span>
+                          </div>
+                        )}
+                        {order.providerMatchedProductName && (
+                          <div>
+                            <span className="text-slate-400">Matched:</span>{' '}
+                            <span className="text-emerald-300">{order.providerMatchedProductName}</span>
+                          </div>
+                        )}
+                        {order.failureReason && (
+                          <div className="text-red-300">
+                            <span className="text-slate-400">Reason:</span> {order.failureReason}
+                          </div>
+                        )}
+                      </div>
                     </td>
                     <td className="px-6 py-4 text-slate-400">
                       {new Date(order.createdAt).toLocaleDateString('en-US', {

@@ -659,6 +659,7 @@ export async function POST(request: NextRequest) {
             productId,
             productName: name,
             productSlug: slug || undefined,
+            selectedPackageOption: packageOption || undefined,
             playerId: cleanPlayerId,
             quantity,
             price: effectiveUnitPrice,
@@ -741,6 +742,8 @@ export async function POST(request: NextRequest) {
           const grossProfit = Number((effectiveTotal - providerTotalCost).toFixed(6))
 
           order.providerProductId = String(providerProduct.id)
+          order.providerMatchedProductName = String(providerProduct.name || '')
+          order.providerMatchMode = packageOption ? 'package-option' : 'product-id-or-name'
           order.providerOrderId = providerOrderId || undefined
           order.providerStatus = providerStatus
           order.providerUnitCost = providerUnitCost
@@ -751,10 +754,12 @@ export async function POST(request: NextRequest) {
           order.notes = 'Submitted to DailyCard provider'
         } else {
           order.providerStatus = 'local_only'
+          order.providerMatchMode = packageOption ? 'package-option-no-match' : 'unresolved'
           order.notes = 'Product not found at provider, kept for local/manual processing'
         }
       } catch (error: any) {
         order.providerStatus = 'submit_failed'
+        order.providerMatchMode = packageOption ? 'package-option-submit-failed' : 'submit-failed'
         order.notes = 'Provider submission failed, kept for local/manual processing'
         order.failureReason =
           error?.response?.data?.error ||
