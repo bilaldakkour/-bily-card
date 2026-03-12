@@ -2,6 +2,7 @@
 
 import React, { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
+import { ChevronDown } from 'lucide-react';
 
 interface Product {
   id: string;
@@ -526,23 +527,37 @@ export default function AdminProducts() {
                   </button>
                 </div>
               <div className="grid gap-3 md:grid-cols-2">
-                <input
-                  value={editForm.name}
-                  onChange={(e) => setEditForm((prev) => (prev ? { ...prev, name: e.target.value } : prev))}
-                  placeholder="Name"
-                  className="rounded border border-white/10 bg-slate-800 px-3 py-2 text-white"
-                />
-                <select
-                  value={editForm.category}
-                  onChange={(e) => setEditForm((prev) => (prev ? { ...prev, category: e.target.value } : prev))}
-                  className="rounded border border-white/10 bg-slate-800 px-3 py-2 text-white"
-                >
-                  {CATEGORY_OPTIONS.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
+                <div>
+                  <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-300">
+                    Name
+                  </label>
+                  <input
+                    value={editForm.name}
+                    onChange={(e) => setEditForm((prev) => (prev ? { ...prev, name: e.target.value } : prev))}
+                    placeholder="Name"
+                    className="w-full rounded border border-white/10 bg-slate-800 px-3 py-2 text-white"
+                  />
+                </div>
+
+                <div>
+                  <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-300">
+                    Category
+                  </label>
+                  <div className="relative">
+                    <select
+                      value={editForm.category}
+                      onChange={(e) => setEditForm((prev) => (prev ? { ...prev, category: e.target.value } : prev))}
+                      className="w-full appearance-none rounded border border-white/10 bg-slate-800 px-3 py-2 pr-9 text-white"
+                    >
+                      {CATEGORY_OPTIONS.map((option) => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
+                    <ChevronDown className="pointer-events-none absolute right-2 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-300" />
+                  </div>
+                </div>
                 <input
                   value={editForm.image}
                   onChange={(e) => setEditForm((prev) => (prev ? { ...prev, image: e.target.value } : prev))}
