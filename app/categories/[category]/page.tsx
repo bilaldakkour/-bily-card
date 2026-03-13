@@ -1,8 +1,9 @@
-import { Suspense } from 'react'
 import { notFound } from 'next/navigation'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { ProductGrid } from '@/components/ui/ProductGrid'
-import { products, categories, getCategoryBySlug } from '@/lib/data'
+import { categories, getCategoryBySlug } from '@/lib/data'
+import { getCatalogDisplayProducts } from '@/lib/data/catalogProducts'
+import { normalizeCategory } from '@/lib/data/catalogNormalization'
 
 interface CategoryPageProps {
   params: {
@@ -14,7 +15,7 @@ interface CategoryPageProps {
   };
 }
 
-export default function CategoryPage({ params, searchParams }: CategoryPageProps) {
+export default async function CategoryPage({ params, searchParams }: CategoryPageProps) {
   const { category: categorySlug } = params
   const { search = '', sort = 'name' } = searchParams
 
@@ -25,7 +26,11 @@ export default function CategoryPage({ params, searchParams }: CategoryPageProps
   }
 
   // Filter products by category
-  let filteredProducts = products.filter(product => product.category === categorySlug)
+  const products = await getCatalogDisplayProducts()
+
+  let filteredProducts = products.filter(
+    (product) => product.category === categorySlug || normalizeCategory(product) === categorySlug
+  )
 
   if (search) {
     filteredProducts = filteredProducts.filter(product =>
@@ -63,15 +68,13 @@ export default function CategoryPage({ params, searchParams }: CategoryPageProps
       />
 
       <div className="mx-auto max-w-7xl px-6 py-8">
-        <Suspense fallback={<div>Loading...</div>}>
-          <ProductGrid
-            products={filteredProducts}
-            emptyMessage={{
-              title: "No products found",
-              description: `No products available in the ${category.name} category yet.`
-            }}
-          />
-        </Suspense>
+        <ProductGrid
+          products={filteredProducts}
+          emptyMessage={{
+            title: "No products found",
+            description: `No products available in the ${category.name} category yet.`
+          }}
+        />
       </div>
     </div>
   )

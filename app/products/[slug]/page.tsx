@@ -5,7 +5,10 @@ import { PageHeader } from '@/components/ui/PageHeader'
 import ProductDetails from '@/components/products/ProductDetails'
 import { ProductGrid } from '@/components/ui/ProductGrid'
 import { Button } from '@/components/ui/Button'
-import { getCatalogBestSellingProducts, getCatalogProductBySlug } from '@/lib/data/catalogProducts'
+import {
+  getCatalogDisplayBestSellingProducts,
+  getCatalogDisplayProductBySlug,
+} from '@/lib/data/catalogProducts'
 
 export const dynamic = 'force-dynamic'
 
@@ -16,7 +19,7 @@ interface ProductPageProps {
 }
 
 export default async function ProductPage({ params }: ProductPageProps) {
-  const product = await getCatalogProductBySlug(params.slug)
+  const product = await getCatalogDisplayProductBySlug(params.slug)
 
   if (!product) {
     notFound()
@@ -26,7 +29,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
     notFound()
   }
 
-  const relatedProducts = (await getCatalogBestSellingProducts())
+  const relatedProducts = (await getCatalogDisplayBestSellingProducts())
     .filter((p) => p.id !== product.id && p.category === product.category)
     .slice(0, 3)
 

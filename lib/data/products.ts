@@ -15,6 +15,12 @@ export interface Product {
   platform: string;
   deliveryTime: string;
   tags: string[];
+  groupKey?: string;
+  groupSlug?: string;
+  childCount?: number;
+  childSlugs?: string[];
+  groupChildren?: Product[];
+  isGroupedParent?: boolean;
 }
 
 export interface InputField {

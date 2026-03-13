@@ -1,0 +1,654 @@
+provider_order,provider_id,name,price,available,product_type,classified_category,exists_in_generated_catalog
+1,9,Soul Chill Crestal,0.00175924,true,quantity,applications,true
+2,11,Likee,0.01832124,true,quantity,applications,true
+3,17,Poppo Live,0.00010414,true,quantity,applications,true
+4,18,Party Star,0.0010724,true,quantity,applications,true
+5,21,Lami,0.00027741,true,quantity,applications,true
+6,24,Xena,0.00011021,true,quantity,applications,true
+7,25,Hiyoo,0.00049675,true,quantity,applications,true
+8,26,Tango,0.00529853,true,quantity,applications,true
+9,27,Sugo,0.0001421,true,quantity,applications,true
+10,28,Yaahlan,0.00175976,true,quantity,applications,true
+11,29,Layla,0.00022888,true,quantity,applications,true
+12,30,Cocco,0.00010121,true,quantity,applications,true
+13,32,Ifun,0.00008522,true,quantity,digital-services,true
+14,33,Tami,0.00007482,true,quantity,digital-services,true
+15,34,7Star,0.00008888,true,quantity,digital-services,true
+16,35,Wego,0.00009111,true,quantity,digital-services,true
+17,36,Ditto,0.00026281,true,quantity,digital-services,true
+18,37,Bigo,0.018,true,quantity,digital-services,true
+19,38,Yooy,0.00009771,true,quantity,digital-services,true
+20,39,Dimo,0.00093177,true,quantity,applications,true
+21,40,Soul Chat,0.00015604,true,quantity,digital-services,true
+22,41,Gimme,0.00013493,true,quantity,digital-services,true
+23,42,Yoyo,0.00074096,true,quantity,digital-services,true
+24,43,Binmo,0.00041324,true,quantity,digital-services,true
+25,44,Echo,0,false,quantity,digital-services,true
+26,45,Yoho,0.00009976,true,quantity,digital-services,true
+27,46,Ahlan,0.00036256,true,quantity,digital-services,true
+28,47,4Fun,0.00006365,true,quantity,digital-services,true
+29,48,Oohla,0.00071776,true,quantity,digital-services,true
+30,49,Soyo,0.00087772,true,quantity,digital-services,true
+31,50,Up Live,0.0157985,true,quantity,digital-services,true
+32,51,Hiya,0.00108353,true,quantity,digital-services,true
+33,52,Beela,0.00087717,true,quantity,digital-services,true
+34,53,Waho,0.00010053,true,quantity,digital-services,true
+35,54,Tada,0.00125188,true,quantity,digital-services,true
+36,55,TopVoice,0.00000904,true,quantity,digital-services,true
+37,56,Kwai,0.01070845,true,quantity,digital-services,true
+38,57,Mico Live,0.00165362,true,quantity,digital-services,true
+39,58,Azal,0.00081042,true,quantity,digital-services,true
+40,59,Haki,0.00085,true,quantity,digital-services,true
+41,60,Olamet,0.00014927,true,quantity,digital-services,true
+42,61,Soulfa,0,false,quantity,digital-services,true
+43,62,Mr7ba,7.2e-7,true,quantity,digital-services,true
+44,63,Top Top,0.00006993,true,quantity,digital-services,true
+45,64,Ligo,0.00127494,true,quantity,digital-services,true
+46,65,Taka,0.0001035,true,quantity,digital-services,true
+47,66,Honey Jar,0.00782878,true,quantity,digital-services,true
+48,67,Migo,0.00011576,true,quantity,digital-services,true
+49,68,Super Live,0.00663659,true,quantity,digital-services,true
+50,69,Hawa,0.00057218,true,quantity,digital-services,true
+51,70,Lama,0.00035178,true,quantity,digital-services,true
+52,71,Kiyo,0.00033229,true,quantity,digital-services,true
+53,72,Wyak,0.00000225,true,quantity,digital-services,true
+54,73,Sky Chat,0.0010248,true,quantity,digital-services,true
+55,74,Ayome,0.00096111,true,quantity,digital-services,true
+56,75,Pep,0,false,quantity,digital-services,true
+57,76,Allo,0.00008535,true,quantity,digital-services,true
+58,77,Aswat,0,false,quantity,digital-services,true
+59,78,Light Chat,0.00036565,true,quantity,digital-services,true
+60,79,Soul U,0.00089135,true,quantity,digital-services,true
+61,80,Sango,0,false,quantity,digital-services,true
+62,81,LitChat,0.00018596,true,quantity,digital-services,true
+63,82,Habby,0.00047448,true,quantity,digital-services,true
+64,83,Gold Chat,0.00114151,true,quantity,digital-services,true
+65,84,Bobo,0.00004829,true,quantity,digital-services,true
+66,85,Fancy,0.00006134,true,quantity,digital-services,true
+67,86,Saba,0,false,quantity,digital-services,true
+68,87,Salam,0.00000989,true,quantity,digital-services,true
+69,88,pubg 60 code,0.8446,false,stock,games,true
+70,91,Jawaker Unit,0.00011481,true,quantity,digital-services,true
+71,93,490 MEYO LIVE,5.092938,true,package,applications,true
+72,94,980 MEYO LIVE,10.05772443,true,package,applications,true
+73,95,1960 MEYO LIVE,20.0715585,true,package,applications,true
+74,96,4900 MEYO LIVE,50.12134191,true,package,applications,true
+75,97,9800 MEYO LIVE,100.26359385,true,package,applications,true
+76,98,VIP7 DAYS MEYO LIVE,0,false,package,applications,true
+77,99,VIP30 DAYS MEYO LIVE,0,false,package,applications,true
+78,100,VIP90 DAYS MEYO LIVE,0,false,package,applications,true
+79,101,60 UC PUBG,0.9167,true,package,games,true
+80,102,325 UC PUBG,4.55775,true,package,games,true
+81,103,660 UC PUBG,9.1155,true,package,games,true
+82,104,1800 UC PUBG,22.78875,true,package,games,true
+83,105,3850 UC PUBG,45.5245683,true,package,games,true
+84,106,8100 UC PUBG,90.5258657,true,package,games,true
+85,107,Tokens 150000,17.4676773,true,package,applications,true
+86,108,Tokens230000,26.78377186,true,package,applications,true
+87,109,"Tokens,400000",43.68333,true,package,applications,false
+88,110,Tokens 525000,58.89643,true,package,applications,true
+89,111,Tokens 805000,87.470175,true,package,applications,true
+90,112,"Red,accelerator",0,false,package,digital-services,false
+91,113,"Blue,accelerator",0,false,package,digital-services,false
+92,114,"Black,accelerator",0,false,package,digital-services,false
+93,116,583 Free Fire jewel,4.699581,true,package,games,true
+94,117,1188 Free Fire jewel,9.3888105,true,package,games,true
+95,118,2420 Free Fire jewel,18.736215,true,package,games,true
+96,119,110 Free Fire jewel,0.94039,true,package,games,true
+97,123,210 Free Fire jewel,1.87548768,true,package,games,true
+98,124,imo 100 Coins,2.04206896,true,package,applications,true
+99,125,imo 200 Coins,4.08413793,true,package,applications,true
+100,126,imo 500 Coins,10.21034482,true,package,applications,true
+101,127,imo 1000 Coins,20.42068965,true,package,applications,true
+102,128,imo 2000 Coins,40.8413793,true,package,applications,true
+103,129,imo 5000 Coins,102.10344825,true,package,applications,true
+104,130,Yalla Ludo 830 Diamond,1.91788575,true,package,games,true
+105,131,Yalla Ludo 2320 Diamond,4.75724152,true,package,games,true
+106,132,Yalla Ludo 5150 Diamond,9.36453892,true,package,games,true
+107,133,Yalla Ludo 13580 Diamond,23.6781138,true,package,games,true
+108,134,Yalla Ludo 27640 Diamond,47.285652,true,package,games,true
+109,135,Yalla Ludo 55800 Diamond,94.5609525,true,package,games,true
+110,136,"Yalla Ludo 223,700 Gold",4.78847,true,package,digital-services,false
+111,137,"Yalla Ludo 1,463,320 Gold",9.57797,true,package,digital-services,false
+112,138,"Yalla Ludo 3,666,470 Gold",25.67172,true,package,digital-services,false
+113,139,"Yalla Ludo 9,973,990 Gold",47.6169,true,package,digital-services,false
+114,140,Yalla LUOD 25.236.400 Gold,87.98775,true,package,digital-services,true
+115,141,2890 Gold,24.41718,true,package,digital-services,true
+116,142,5930 Gold,48.73857,true,package,digital-services,true
+117,143,12550 Gold,97.91798,true,package,digital-services,true
+118,144,Clash of Clans Gold Pass,0,false,package,digital-services,true
+119,145,500 Clash of Clans,0,false,package,digital-services,true
+120,146,1200 Clash of Clans,0,false,package,digital-services,true
+121,147,2500 Clash of Clans,0,false,package,digital-services,true
+122,148,6500 Clash of Clans,0,false,package,digital-services,true
+123,149,14000 Clash of Clans,0,false,package,digital-services,true
+124,150,Clash Royale Gold Pass,0,false,package,digital-services,true
+125,151,Clash Royal 500,0,false,package,digital-services,true
+126,152,Clash Royal 1200,0,false,package,digital-services,true
+127,153,Clash Royal 2500,0,false,package,digital-services,true
+128,154,Clash Royal 6500,0,false,package,digital-services,true
+129,155,Clash Royal 14000,0,false,package,digital-services,true
+130,156,كود التحقق سوبر سيل رويال,0,false,package,digital-services,false
+131,158,Brawl Pass Brawl Stars,0,false,package,digital-services,true
+132,159,33 jewel Brawl Stars,0,false,package,games,true
+133,160,88 jewel Brawl Stars,0,false,package,games,true
+134,161,187 jewel Brawl Stars,0,false,package,games,true
+135,162,396 jewel Brawl Stars,0,false,package,games,true
+136,163,1045 jewel,0,false,package,games,true
+137,164,2200 jewel,0,false,package,games,true
+138,165,20 Cash Ball,0,false,package,digital-services,true
+139,166,50 Cash Ball,0,false,package,digital-services,true
+140,167,110 Cash Ball,0,false,package,digital-services,true
+141,168,250 Cash Ball,0,false,package,digital-services,true
+142,169,800 Cash Ball,0,false,package,digital-services,true
+143,170,2000 Cash Ball,0,false,package,digital-services,true
+144,171,52K Coin,0,false,package,applications,true
+145,172,112K Coin,0,false,package,applications,true
+146,173,256K Coin,0,false,package,applications,true
+147,174,800K Coin,0,false,package,applications,true
+148,175,Farm Pass,0,false,package,digital-services,true
+149,176,60 Diamond,0,false,package,games,true
+150,177,156 Diamond,0,false,package,games,true
+151,178,330 Diamond,0,false,package,games,true
+152,179,684 Diamond,0,false,package,games,true
+153,180,1800 Diamond,0,false,package,games,true
+154,181,4800 Diamond,0,false,package,games,true
+155,188,LivU 360 coins,2.55677415,true,package,applications,true
+156,189,LivU 650 coins,3.5712675,true,package,applications,true
+157,190,LivU 1250 coins,6.273009,true,package,applications,true
+158,191,LivU 1800 coins,9.10932,true,package,applications,true
+159,192,LivU 3500 coins,16.251855,true,package,applications,true
+160,193,tumile 360 coins,2.94374,true,package,applications,true
+161,194,tumile 650 coins,4.48639186,true,package,applications,true
+162,195,tumile 1250 coins,8.446824,true,package,applications,true
+163,196,tumile 1800 coins,11.096808,true,package,applications,true
+164,197,tumile 3500 coins,20.061207,true,package,applications,true
+165,198,MixU 360 coins,2.55677415,true,package,applications,true
+166,199,mixu 650 coins,3.5712675,true,package,applications,true
+167,200,mixu 1250 coins,6.273009,true,package,applications,true
+168,201,mixu 1800 coins,9.10932,true,package,applications,true
+169,202,mixu 3500 coins,16.251855,true,package,applications,true
+170,203,mixu 7000 coins,32.2044744,true,package,applications,true
+171,204,mixu 15000 coins,62.626575,true,package,applications,true
+172,205,Tiktok 700 coins,7.7274,true,package,applications,true
+173,206,Tiktok 750 coins,8.268,true,package,applications,true
+174,207,Tiktok 1000 coins,11.024,true,package,applications,true
+175,208,Tiktok 1400 coins,15.4336,true,package,applications,true
+176,209,Tiktok 1800 coins,19.8432,true,package,applications,true
+177,210,Tiktok 2500 coins,27.56,true,package,applications,true
+178,211,Tiktok 3500 coins,38.584,true,package,applications,true
+179,212,Tiktok 4000 coins,44.096,true,package,applications,true
+180,213,Tiktok 7000 coins,77.168,true,package,applications,true
+181,214,Tiktok 10.000 coins,110.24,true,package,applications,true
+182,215,Tiktok 17.500 coins,191.1,true,package,applications,true
+183,216,Syriatel Unit,0,false,quantity,digital-services,true
+184,217,MTN Unit,0,false,quantity,digital-services,true
+185,218,52.88 Syriatel,0.48434833,true,package,digital-services,true
+186,219,62.5 Syriatel,0.5740477,true,package,digital-services,true
+187,220,68.27 Syriatel,0,false,package,digital-services,true
+188,221,115.38 Syriatel,1.05680996,true,package,digital-services,true
+189,222,72.12 Syriatel,0,false,package,digital-services,true
+190,223,77.88 Syriatel,0.71530935,true,package,digital-services,true
+191,224,81.73 Syriatel,0.75067069,true,package,digital-services,true
+192,225,86.54 Syriatel,0,false,package,digital-services,true
+193,226,50 MTN,0.45795644,true,package,digital-services,true
+194,227,MTN 55,0,false,package,digital-services,true
+195,228,60 MTN,0.56219353,true,package,digital-services,true
+196,229,70 MTN,0.65565261,true,package,digital-services,true
+197,230,85 MTN,0.79644084,true,package,digital-services,true
+198,231,mobile legends 278,4.5226167,true,package,games,true
+199,232,mobile legends 571,9.0452334,true,package,games,true
+200,233,mobile legends 1192,18.0904668,true,package,games,true
+201,234,mobile legends 1788,27.1357002,true,package,games,true
+202,235,mobile legends 3005,0,false,package,games,true
+203,236,mobile legends 3606,0,false,package,games,true
+204,237,PAYEER,0,false,quantity,digital-services,true
+205,238,Perfect Money,1.066359,true,quantity,digital-services,true
+206,239,Tiktok Unit,0.01103914,true,quantity,applications,true
+207,240,50 USDT,0,false,package,digital-services,true
+208,241,100 USDT,0,false,package,digital-services,true
+209,242,200 USDT,0,false,package,digital-services,true
+210,243,300 USDT,0,false,package,digital-services,true
+211,244,500 USDT,0,false,package,digital-services,true
+212,245,1000 USDT,0,false,package,digital-services,true
+213,246,1500 USDT,0,false,package,digital-services,true
+214,247,2000 USDT,0,false,package,digital-services,true
+215,249,Full Account 3Month,11.34,true,package,digital-services,true
+216,250,Full Account 6Month,0,false,package,digital-services,true
+217,251,Full Account 1Year,34.56,true,package,digital-services,true
+218,252,N Full Account 1Month,13.23,true,package,digital-services,true
+219,253,N Full Account 3Month,35.64,true,package,digital-services,true
+220,254,N Full Account 6Month,69.55,true,package,digital-services,true
+221,255,N Full Account 1Year,139.1,true,package,digital-services,true
+222,256,Full Account 1Month,0,false,package,digital-services,true
+223,257,Full Account 3Month,0,false,package,digital-services,true
+224,258,Full Account 6Month,0,false,package,digital-services,true
+225,259,Full Account 1Year,0,false,package,digital-services,true
+226,266,Page followers,0,false,quantity,digital-services,true
+227,267,Likes,0,false,quantity,digital-services,true
+228,268,Channel followers,0,false,quantity,digital-services,true
+229,269,Post views,0,false,quantity,digital-services,true
+230,270,USDT COUNT,0,false,quantity,digital-services,true
+231,271,TalkTalk,0.00084925,true,quantity,digital-services,true
+232,272,Hoob live,0.00016276,true,quantity,digital-services,true
+233,273,PSN USA 10$,9.8735,false,stock,gift-cards,true
+234,274,PSN USA 25$,24.304,false,stock,gift-cards,true
+235,275,PSN USA 50$,45.136,false,stock,gift-cards,true
+236,276,PSN USA 100$,90.272,false,stock,gift-cards,true
+237,277,PSN LEB 10$,8.68,false,stock,gift-cards,true
+238,278,PSN LEB 20$,17.36,false,stock,gift-cards,true
+239,279,PSN LEB 50$,43.4,false,stock,gift-cards,true
+240,280,PSN LEB 100$,86.8,false,stock,gift-cards,true
+241,281,PSN UAE 10$,8.9404,false,stock,gift-cards,true
+242,282,PSN UAE 20$,17.8808,false,stock,gift-cards,true
+243,283,PSN UAE 50$,44.702,false,stock,gift-cards,true
+244,284,PSN UAE 100$,89.404,false,stock,gift-cards,true
+245,285,PUBG 325 code,4.635,false,stock,games,true
+246,286,PUBG 660 code,9.27,false,stock,games,true
+247,287,PUBG 1800 code,23.175,false,stock,games,true
+248,288,PUBG 3850 code,49.44,false,stock,games,true
+249,289,PUBG 8100 code,92.7,false,stock,games,true
+250,290,ITUNES 5$ US,4.88565,true,stock,gift-cards,true
+251,291,ITUNES 10$ US,9.81783,true,stock,gift-cards,true
+252,292,ITUNES 20$ US,19.58565,true,stock,gift-cards,true
+253,293,ITUNES 25$ US,24.4818,true,stock,gift-cards,true
+254,294,ITUNES 50$ US,49.374,true,stock,gift-cards,true
+255,295,ITUNES 100$ US,97.4688,true,stock,gift-cards,true
+256,296,Roblox 10$ US,9.74475,true,stock,games,true
+257,297,Roblox 25$ US,24.035,true,stock,games,true
+258,298,Roblox 50$ US,48.07,true,stock,games,true
+259,299,RAZER GOLD 5$ GLOBAL,5.15,false,stock,gift-cards,true
+260,300,RAZER GOLD 10$ GLOBAL,9.6511,false,stock,gift-cards,true
+261,301,RAZER GOLD 20$ GLOBAL,20.6,false,stock,gift-cards,true
+262,302,RAZER GOLD 50$ GLOBAL,41.715,false,stock,gift-cards,true
+263,303,RAZER GOLD 100$ GLOBAL,103,false,stock,gift-cards,true
+264,304,XBOX 10$ US,9.31875,false,stock,games,true
+265,305,XBOX 20$ US,18.6375,false,stock,games,true
+266,306,XBOX 25$ US,22.001315,false,stock,games,true
+267,307,XBOX 50$ US,44.199875,false,stock,games,true
+268,308,XBOX 100$ US,89.1671,false,stock,games,true
+269,309,Nintendo 10$ US,8.7756,false,stock,gift-cards,true
+270,310,Nintendo 20$ US,17.5512,false,stock,gift-cards,true
+271,311,Nintendo 50$ US,43.8574,false,stock,gift-cards,true
+272,312,Amazon Gift card USA 10$,10.3,false,stock,gift-cards,true
+273,313,Amazon Gift card USA 25$,24.926,false,stock,gift-cards,true
+274,314,Amazon Gift card USA 50$,51.5,false,stock,gift-cards,true
+275,315,Amazon Gift card USA 100$,103,false,stock,gift-cards,true
+276,344,Hoby Chat,0.0000821,true,quantity,digital-services,true
+277,346,Habi Chat,0.00010721,true,quantity,digital-services,true
+278,347,Amar chat,0.00086124,true,quantity,digital-services,true
+279,348,Hala Me,0.00008481,true,quantity,digital-services,true
+280,349,Lions chat,0.00012345,true,quantity,digital-services,true
+281,350,Chamet Live,0.00017483,true,quantity,digital-services,true
+282,351,Star Maker unit,0.0107483,true,quantity,digital-services,true
+283,355,Weplay 10000,17.3664,true,package,digital-services,true
+284,356,Weplay 3000,7.1725845,true,package,digital-services,true
+285,358,PUBG TR 60 uc,0,false,package,games,true
+286,359,PUBG TR 325 uc,0,false,package,games,true
+287,360,PUBG TR 660 uc,0,false,package,games,true
+288,361,PUBG TR 1800uc,0,false,package,games,true
+289,362,PUBG TR 3850 uc,0,false,package,games,true
+290,363,PUBG TR 8100 uc,0,false,package,games,true
+291,364,1 user 1 month,0,false,package,digital-services,true
+292,365,user 1 month 3,0,false,package,digital-services,true
+293,366,1 user 1 year,0,false,package,digital-services,true
+294,367,N 1 user 1 Month,0,false,package,digital-services,true
+295,368,N 1 user 6 Month,0,false,package,digital-services,true
+296,369,N 1 user 3 Month,0,false,package,digital-services,true
+297,370,HIPLAY CHAT,0.00094012,true,quantity,digital-services,true
+298,371,CHIRP Chat,0,false,quantity,digital-services,true
+299,375,SoMatch,0.0001286,true,quantity,digital-services,true
+300,377,Majlis/مجلس,0.00106565,true,quantity,digital-services,true
+301,378,Higo Chat,0.00110049,true,quantity,digital-services,true
+302,379,Soul Star,0.00010976,true,quantity,digital-services,true
+303,380,Hami Party,0.00009915,true,quantity,digital-services,true
+304,381,Hi Party,0.00009787,true,quantity,digital-services,true
+305,382,Party Hero,0.01823791,true,quantity,digital-services,true
+306,383,Karawan Chat,0,false,quantity,digital-services,true
+307,384,Yobi Live,0.00110857,true,quantity,digital-services,true
+308,385,Amo Chat,0.00006358,true,quantity,digital-services,true
+309,386,Asha Live,0.00011796,true,quantity,digital-services,true
+310,387,Opa Live,0.00008454,true,quantity,digital-services,true
+311,392,test,0,false,stock,gift-cards,true
+312,394,Shila Chat,0.00009977,true,quantity,digital-services,true
+313,395,IMU CHAT,0.00010873,true,quantity,digital-services,true
+314,396,Mango Live,0.00024546,true,quantity,digital-services,true
+315,397,MTN 90,0.84297746,true,package,digital-services,true
+316,398,MTN 100,0.91591287,true,package,digital-services,true
+317,399,MTN 110,1.03031273,true,package,digital-services,true
+318,400,Full account 1 month,0,false,package,digital-services,true
+319,401,MTN 170,1.5922977,true,package,digital-services,true
+320,403,junko,0.00002024,true,quantity,digital-services,true
+321,404,Hoki Chat,0.00011768,true,quantity,digital-services,true
+322,405,Wasla Chat,0.00030913,true,quantity,digital-services,true
+323,406,230.000 token,0,false,stock,gift-cards,true
+324,408,400.000 token,0,false,stock,gift-cards,true
+325,409,525000 token,0,false,stock,gift-cards,true
+326,410,805000 token,85.49,false,stock,gift-cards,true
+327,411,Fofo Chat,0.00000883,true,quantity,digital-services,true
+328,412,Yami Star,7.6e-7,true,quantity,digital-services,true
+329,413,Layam Chat,0.00005652,true,quantity,digital-services,true
+330,422,(TRC20) TRX,0,false,quantity,digital-services,true
+331,423,10 عملة سلطانية,0.890229,true,package,digital-services,true
+332,424,20 عملة,1.780458,true,package,digital-services,true
+333,425,30 عملة,2.6810385,true,package,digital-services,true
+334,426,40 عملة,3.581619,true,package,digital-services,true
+335,427,50 عملة,4.471848,true,package,digital-services,true
+336,428,100 عملة,8.9540475,true,package,digital-services,true
+337,429,200 عملة,17.928798,true,package,digital-services,true
+338,430,500 عملة,44.821995,true,package,digital-services,true
+339,431,1000 عملة,89.6543415,true,package,digital-services,true
+340,432,Sama Chat,0.00010424,true,quantity,digital-services,true
+341,433,Weso Chat,0,false,quantity,digital-services,true
+342,434,Dana Chat,0.00004043,true,quantity,digital-services,true
+343,435,Pawa Live,0.00008292,true,quantity,digital-services,true
+344,437,Saada Chat,0.00108466,true,quantity,digital-services,true
+345,438,Sodfa Chat,0.00005214,true,quantity,digital-services,true
+346,439,Waki Star,7.7e-7,true,quantity,digital-services,true
+347,440,Gamet Live,0.00015493,true,quantity,digital-services,true
+348,441,Lotfun,0,false,quantity,digital-services,true
+349,442,Jaco Chat,0.01308854,true,quantity,digital-services,true
+350,443,Ro Star,0.00017863,true,quantity,digital-services,true
+351,444,Pocket Chat,0.00028156,true,quantity,digital-services,true
+352,446,Nawa Live,0.00011582,true,quantity,digital-services,true
+353,448,Mazyoun Zena,0.00013589,true,quantity,digital-services,true
+354,449,Carni Live,0.00070802,true,quantity,digital-services,true
+355,451,Yahlla Chat,0,false,quantity,digital-services,true
+356,454,Manuel 60 uc,0,false,package,games,true
+357,455,Manuel 325 uc,0,false,package,games,true
+358,456,Manuel 660 uc,0,false,package,games,true
+359,457,Manuel 1800 uc,0,false,package,games,true
+360,458,Manuel 3850 uc,0,false,package,games,true
+361,459,Manuel 8100 uc,86.688199,true,package,games,true
+362,460,Yudo Chat,0.00004568,true,quantity,digital-services,true
+363,461,Mashi Chat,0,false,quantity,digital-services,true
+364,463,1Star Chat,0.00010851,true,quantity,digital-services,true
+365,464,Delta 300+20,0,false,package,digital-services,true
+366,465,Delta 420+40,0,false,package,digital-services,true
+367,466,Delta 680+70,0,false,package,digital-services,true
+368,467,Delta 1280+200,0,false,package,digital-services,true
+369,468,Delta1680+300,0,false,package,digital-services,true
+370,469,Delta 3280+670,0,false,package,digital-services,true
+371,470,Delta 6480+1620,0,false,package,digital-services,true
+372,471,Gala Star,0.00027227,true,quantity,digital-services,true
+373,472,Hago,0.00008739,true,quantity,digital-services,true
+374,473,Yiya,0,false,quantity,digital-services,true
+375,477,Yaza,0.00012518,true,quantity,digital-services,true
+376,478,Maan Chat,0.00027157,true,quantity,digital-services,true
+377,479,Moli Star,0.00011604,true,quantity,digital-services,true
+378,480,Yigo Chat,0.00009316,true,quantity,digital-services,true
+379,481,Yolo Chat,0.00018315,true,quantity,digital-services,true
+380,482,Halla Live,0.00013526,true,quantity,digital-services,true
+381,483,Kafu Chat,0.00114093,true,quantity,digital-services,true
+382,484,Sawalfna,0.0001025,true,quantity,digital-services,true
+383,485,Haya Chat,0.01631579,true,quantity,digital-services,true
+384,486,Up Fun,0.00004116,true,quantity,applications,true
+385,487,SUGO TR,0.00085735,true,quantity,applications,true
+386,488,Sahra Chat,0.00075159,true,quantity,digital-services,true
+387,489,Laki Chat,0.00004949,true,quantity,digital-services,true
+388,490,Arza Live,0,false,quantity,digital-services,true
+389,491,Kiti,0.00077437,true,quantity,digital-services,true
+390,492,Hayuki,0.00005243,true,quantity,digital-services,true
+391,493,Fun Star,0,false,quantity,digital-services,true
+392,494,Biu Live,0.001773,true,quantity,digital-services,true
+393,495,Saya Likee,0.0001733,true,quantity,applications,true
+394,496,Leesky,0.00003492,true,quantity,digital-services,true
+395,497,Kessmet Chat,0,false,quantity,digital-services,true
+396,511,Pota live,0.00002554,true,quantity,digital-services,true
+397,512,Maza Chat,0.00006427,true,quantity,digital-services,true
+398,513,Hooka Chat,0,false,quantity,digital-services,true
+399,514,Fun Up,0.00010455,true,quantity,digital-services,true
+400,515,96.15 syriatel,0.88067497,true,package,digital-services,true
+401,516,100.96 syriatel,0.92473162,true,package,digital-services,true
+402,517,Joyo Live,0.00010561,true,quantity,digital-services,true
+403,518,Lado Live,0.00091818,true,quantity,digital-services,true
+404,519,Sala Live,0.00011625,true,quantity,digital-services,true
+405,520,Rooka,0,false,quantity,digital-services,true
+406,521,Alulu,0,false,quantity,digital-services,true
+407,522,Vova,0,false,quantity,digital-services,true
+408,523,Waaw Chat,0.00003072,true,quantity,digital-services,true
+409,524,Oner,0,false,quantity,digital-services,true
+410,525,Westar,0.00103515,true,quantity,digital-services,true
+411,526,89853 عملة,0,false,package,digital-services,true
+412,527,449685 عملة,0,false,package,digital-services,true
+413,528,899695 عملة,0,false,package,digital-services,true
+414,529,1349816 عملة,0,false,package,digital-services,true
+415,530,164000 نجمة,4.4200905,true,package,digital-services,true
+416,531,333000 نجمة,8.6227995,true,package,digital-services,true
+417,532,1720000 نجمة,43.1347005,true,package,digital-services,true
+418,533,3600000 نجمة,86.269401,true,package,digital-services,true
+419,534,Tiktok 35.000 Coins,382.2,true,package,applications,true
+420,535,100 FC Points,0,false,package,games,true
+421,536,520 FC Points,0,false,package,games,true
+422,537,1070 FC Points,0,false,package,games,true
+423,538,2200 FC Points,0,false,package,games,true
+424,539,5750 FC Points,0,false,package,games,true
+425,540,12000 FC Points,0,false,package,games,true
+426,545,Daily Sim - 1688,1.1948,true,quantity,digital-services,false
+427,546,Daily Sim - amazon,1.3802,true,quantity,digital-services,false
+428,547,Daily Sim - whatsapp,2.884,true,quantity,digital-services,false
+429,548,Daily Sim - tango,1.7201,true,quantity,applications,false
+430,549,Daily Sim - 11exch,1.7098,true,quantity,digital-services,false
+431,550,Daily Sim - 115com,1.03,true,quantity,digital-services,false
+432,551,Daily Sim - 163som,1.133,true,quantity,digital-services,false
+433,552,Daily Sim - airbnb,1.0609,true,quantity,digital-services,false
+434,553,Daily Sim - paypal,1.6789,true,quantity,digital-services,false
+435,554,Daily Sim - 27asia,1.751,true,quantity,digital-services,false
+436,555,Daily Sim - 1kkirana,1.339,true,quantity,digital-services,false
+437,556,Daily Sim - 4fun,1.1536,true,quantity,digital-services,false
+438,557,Daily Sim - adani,1.1021,true,quantity,digital-services,false
+439,558,Daily Sim - sorare,1.1742,true,quantity,digital-services,false
+440,559,Daily Sim - 1mg,1.1124,true,quantity,digital-services,false
+441,560,Daily Sim - 51ca,1.2772,true,quantity,digital-services,false
+442,561,Daily Sim - alfamidi,1.1536,true,quantity,digital-services,false
+443,562,100 + 5 Gold MENA,0,false,package,digital-services,true
+444,563,300 + 20 Gold MENA,0,false,package,digital-services,true
+445,564,500 + 40 Gold MENA,0,false,package,digital-services,true
+446,565,1000 + 100 Gold MENA,0,false,package,digital-services,true
+447,566,2000 + 260 Gold MENA,0,false,package,digital-services,true
+448,567,5000 + 800 Gold MENA,0,false,package,digital-services,true
+449,568,Strike Pass Elite GLOBAL,0,false,package,digital-services,true
+450,569,Strike Pass Premium GLOBAL,0,false,package,digital-services,true
+451,570,100 + 5 Gold GLOBAL,0,false,package,digital-services,true
+452,571,300 + 20 Gold GLOBAL,0,false,package,digital-services,true
+453,572,500 + 40 Gold GLOBAL,0,false,package,digital-services,true
+454,573,1000 + 100 Gold GLOBAL,0,false,package,digital-services,true
+455,574,2000 + 200 Gold GLOBAL,0,false,package,digital-services,true
+456,575,5000 + 800 Gold GLOBAL,0,false,package,digital-services,true
+457,576,Daily Sim - zupee,1.236,true,quantity,digital-services,false
+458,577,Daily Sim - zoho,1.3802,true,quantity,digital-services,false
+459,578,Daily Sim - aliexpress,1.7922,true,quantity,digital-services,false
+460,579,Daily Sim - adverts,1.133,true,quantity,digital-services,false
+461,580,Weplay 50000,71.09784708,true,package,digital-services,true
+462,581,Nahki,0.0001051,true,quantity,digital-services,true
+463,582,Yoparti,0.00020114,true,quantity,digital-services,true
+464,583,Boli,0.00009534,true,quantity,digital-services,true
+465,584,Vvparty,0,false,quantity,digital-services,true
+466,585,Lklk,0.00085296,true,quantity,digital-services,true
+467,586,Yohoo star,0.00004643,true,quantity,digital-services,true
+468,587,Halo star,7.7e-7,true,quantity,digital-services,true
+469,588,Hati,0.00018203,true,quantity,digital-services,true
+470,589,Daily Sim - whatnot,1.339,true,quantity,digital-services,false
+471,590,Daily Sim - globus,1.2051,true,quantity,digital-services,false
+472,591,Daily Sim - 99app,1.7201,true,quantity,digital-services,false
+473,592,Daily Sim - didi,1.545,true,quantity,digital-services,false
+474,593,Daily Sim - 2dehands,1.2669,true,quantity,digital-services,false
+475,594,Tiktok followers,0,false,quantity,applications,true
+476,595,Tiktok Views,0,false,quantity,applications,true
+477,596,Tiktok Likes,0,false,quantity,applications,true
+478,597,Instagram Followers,0,false,quantity,digital-services,true
+479,598,Instagram Views,0,false,quantity,digital-services,true
+480,599,Instagram Likes,0,false,quantity,digital-services,true
+481,600,Daily Sim - biedronka,1.545,true,quantity,digital-services,false
+482,601,Daily Sim - telegram,2.266,true,quantity,digital-services,false
+483,602,تيست,0.1790069,true,quantity,digital-services,false
+484,603,Daily Sim - google,1.751,true,quantity,digital-services,false
+485,604,Daily Sim - global24,1.2463,true,quantity,digital-services,false
+486,605,عضوية اسبوعية,0,false,package,digital-services,false
+487,606,عضوية شهرية,0,false,package,digital-services,false
+488,607,Panda Chat,0,false,quantity,digital-services,true
+489,608,Daily Sim - 888casino,1.2875,true,quantity,digital-services,false
+490,609,LivU 7000 coins,31.0545,true,package,applications,true
+491,610,LivU 15000 coins,62.626575,true,package,applications,true
+492,611,LivU 35000 coins,144.921,true,package,applications,true
+493,612,tumile 7000 coins,38.548986,true,package,applications,true
+494,613,tumile 15000 coins,81.3110325,true,package,applications,true
+495,614,tumile 35000 coins,184.794978,true,package,applications,true
+496,615,mixu 35000 coins,0,false,package,applications,true
+497,617,Cloz,0.00078744,true,quantity,digital-services,true
+498,618,Mazag,0.00011243,true,quantity,digital-services,true
+499,619,PK Star,0.0001236,true,quantity,digital-services,true
+500,620,Vilaa,0.00002826,true,quantity,digital-services,true
+501,621,BIGO HK,0.01807018,true,quantity,digital-services,true
+502,622,Daily Sim - truecaller,1.236,true,quantity,digital-services,false
+503,624,Dido,0.0005175,true,quantity,applications,true
+504,625,Zaar,0.00004132,true,quantity,digital-services,true
+505,626,WeChill,0.00008396,true,quantity,digital-services,true
+506,627,call of duty 30,0,false,package,games,true
+507,628,call of duty 80,0,false,package,games,true
+508,629,call of duty 420,0,false,package,games,true
+509,630,call of duty 880,0,false,package,games,true
+510,631,call of duty 2400,0,false,package,games,true
+511,632,call of duty 5000,0,false,package,games,true
+512,633,STEAM USA 10,11.232,false,stock,games,true
+513,634,STEAM USA 20,22.3668,false,stock,games,true
+514,636,ITUNES TL 25,0.605055,true,stock,gift-cards,true
+515,637,ITUNES TL 50,1.1995555,true,stock,gift-cards,true
+516,638,ITUNES TL 100,2.4186525,true,stock,gift-cards,true
+517,639,ITUNES TL 250,6.046788,true,stock,gift-cards,true
+518,640,ITUNES TL 500,12.09483,true,stock,gift-cards,true
+519,641,ITUNES TL 1000,24.1870475,true,stock,gift-cards,true
+520,642,Our Talk,0.00002668,true,quantity,digital-services,true
+521,644,Dawnload manager,14.8512,true,stock,gift-cards,true
+522,647,Capcut pro 1month,8.944,false,stock,gift-cards,true
+523,648,Capcut pro 3month,19.968,false,stock,gift-cards,true
+524,650,ChatGPT plus 1month,0,false,package,digital-services,true
+525,651,ChatGPT plus 1year,0,false,package,digital-services,true
+526,652,ChatGPT Pro 1month,0,false,package,digital-services,true
+527,654,Hart live,0.00009045,true,quantity,digital-services,true
+528,655,حزمة الشراء الأولى,0,false,package,digital-services,false
+529,656,حزمة مواد الاسلحة النارية القابلة للترقية,0,false,package,digital-services,false
+530,657,حزمة الشعار الخرافي,0,false,package,digital-services,false
+531,658,بطاقة النخبة LV1-50,0,false,package,digital-services,true
+532,659,بطاقة النخبة LV1-100,0,false,package,digital-services,true
+533,660,بطاقة النخبة بلس LV1-100,0,false,package,digital-services,true
+534,661,برايم شهر واحد,0,false,package,digital-services,false
+535,662,ExitLag - 1 Month,8.56,false,stock,gift-cards,false
+536,663,ExitLag - 6 Months,29.96,true,stock,gift-cards,false
+537,664,ExitLag - 12 Months,102.72,false,stock,gift-cards,false
+538,665,GC 60 النجاة في الصقيع,0,false,package,digital-services,true
+539,666,Whiteout Survival 99 D,1.20462096,true,package,digital-services,true
+540,667,Whiteout Survival 299 D,3.30405678,true,package,digital-services,true
+541,668,Whiteout Survival 499 D,5.416478,true,package,digital-services,true
+542,669,Whiteout Survival 999 D,11.13627459,true,package,digital-services,true
+543,670,Whiteout Survival 1999 D,22.56504837,true,package,digital-services,true
+544,671,Whiteout Survival 4999 D,55.65972371,true,package,digital-services,true
+545,672,DOLI LIVE,0.0000801,true,quantity,digital-services,true
+546,676,GHANNY,0.01138665,true,quantity,digital-services,true
+547,677,Tomohi,0.00003228,true,quantity,digital-services,true
+548,678,Hopi Star,7.8e-7,true,quantity,digital-services,true
+549,679,Yoki,0.00006311,true,quantity,digital-services,true
+550,680,Infun,0.00009013,true,quantity,digital-services,true
+551,681,Eparty,0.00003202,true,quantity,digital-services,true
+552,682,Yoso Farm,0.00011365,true,quantity,digital-services,true
+553,683,Nady,0.00004171,true,quantity,digital-services,true
+554,684,Dawa,0.00001622,true,quantity,digital-services,true
+555,685,Rooh,0.00008892,true,quantity,digital-services,true
+556,686,MateMet,0.00017786,true,quantity,digital-services,true
+557,687,ChillChat,0.00017761,true,quantity,digital-services,true
+558,688,Hapi Arabic,0.00000124,true,quantity,digital-services,true
+559,689,Tayyb Chat,0.00000166,true,quantity,digital-services,true
+560,690,Yoppo Chat,0.00011005,true,quantity,digital-services,true
+561,691,Roka Live,0.00001665,true,quantity,digital-services,true
+562,692,Daily Sim - 32red,1.1948,true,quantity,digital-services,false
+563,693,WADI CHAT,0.00004449,true,quantity,digital-services,true
+564,694,mobile legends 1163,0,false,package,games,true
+565,695,mobile legends 2195,0,false,package,games,true
+566,696,mobile legends 2539,0,false,package,games,true
+567,697,mobile legends 2901,0,false,package,games,true
+568,698,mobile legends 3688,0,false,package,games,true
+569,699,mobile legends 4165,0,false,package,games,true
+570,700,mobile legends 5532,0,false,package,games,true
+571,701,mobile legends 6046,0,false,package,games,true
+572,702,mobile legends 7182,0,false,package,games,true
+573,703,Super Meet,0.00015284,true,quantity,digital-services,true
+574,704,كود التحقق سوبر سيل كلانس,0,false,package,digital-services,false
+575,705,برايم 6 اشهر,0,false,package,digital-services,true
+576,706,برايم 12 اشهر,0,false,package,digital-services,true
+577,707,برايم بلس شهر واحد,0,false,package,digital-services,false
+578,708,برايم بلس 6 اشهر,0,false,package,digital-services,true
+579,709,برايم بلس 12 اشهر,0,false,package,digital-services,true
+580,710,حزمة العروض الاسبوعية 1,0,false,package,digital-services,true
+581,711,حزمة العروض الاسبوعية 2,0,false,package,digital-services,true
+582,712,حزمة قيمة شعار اسطوري اسبوعية,0,false,package,digital-services,false
+583,713,Hamster,0.0010662,true,quantity,digital-services,true
+584,714,YO2,0.00001884,true,quantity,digital-services,true
+585,715,MTN 190,1.77963297,true,package,digital-services,true
+586,716,MTN 200,1.83182574,true,package,digital-services,true
+587,717,MTN 230,2.15428268,true,package,digital-services,true
+588,718,MTN 260,2.38137346,true,package,digital-services,true
+589,719,MTN 280,2.62261043,true,package,digital-services,true
+590,720,MTN 300,2.74773861,true,package,digital-services,true
+591,721,MTN 400,3.66365148,true,package,digital-services,true
+592,722,MTN 500,4.57956435,true,package,digital-services,true
+593,723,MTN 600,5.61988098,true,package,digital-services,true
+594,724,MTN 700,6.41139009,true,package,digital-services,true
+595,725,MTN 1000,9.15912871,true,package,digital-services,true
+596,726,MTN 2000,18.31825741,true,package,digital-services,true
+597,727,MTN 2500,23.41616903,true,package,digital-services,true
+598,728,MTN3000,28.09940492,true,package,digital-services,true
+599,729,MTN 3500,32.05695047,true,package,digital-services,true
+600,730,MTN 4500,42.14911259,true,package,digital-services,true
+601,731,MTN 5000,45.79564353,true,package,digital-services,true
+602,732,MTN 6000,54.95477223,true,package,digital-services,true
+603,733,MTN 7200,65.94572668,true,package,digital-services,true
+604,734,syriatel 105.77,0,false,package,digital-services,true
+605,735,syriatel 125,1.14809539,true,package,digital-services,true
+606,736,syriatel 130.77,0,false,package,digital-services,true
+607,737,syriatel 144.23,1.32471839,true,package,digital-services,true
+608,738,syriatel 160.58,0,false,package,digital-services,true
+609,739,syriatel 163.46,1.50134138,true,package,digital-services,true
+610,740,syriatel 173.08,0,false,package,digital-services,true
+611,741,syriatel 183.65,1.68678175,true,package,digital-services,true
+612,742,syriatel 192.31,0,false,package,digital-services,true
+613,743,syriatel 211.54,0,false,package,digital-services,true
+614,744,syriatel 240.38,2.20783336,true,package,digital-services,true
+615,745,syriatel 288.46,2.64943677,true,package,digital-services,true
+616,746,syriatel 317.31,0,false,package,digital-services,true
+617,747,syriatel 370.19,3.40010747,true,package,digital-services,true
+618,748,syriatel 432.69,3.96317475,true,package,digital-services,true
+619,749,syriatel 480.77,0,false,package,digital-services,true
+620,750,syriatel 576.92,5.284233,true,package,digital-services,true
+621,751,syriatel 625,5.74047696,true,package,digital-services,true
+622,752,syriatel 721.15,6.60529125,true,package,digital-services,true
+623,753,syriatel 769.23,7.06519535,true,package,digital-services,true
+624,754,syriatel 951.92,8.71900277,true,package,digital-services,true
+625,755,syriatel 1057.69,0,false,package,digital-services,true
+626,756,syriatel 1250,0,false,package,digital-services,true
+627,757,syriatel 1923.08,0,false,package,digital-services,true
+628,758,syriatel 2115.38,0,false,package,digital-services,true
+629,759,syriatel 2403.85,0,false,package,digital-services,true
+630,762,فواتير سيريتل,0.00889183,false,quantity,digital-services,false
+631,763,فواتير ام تي ان,0.00889183,false,quantity,digital-services,false
+632,764,سيرياتيل كاش,0,false,quantity,digital-services,false
+633,765,ام تي ان كاش,0,false,quantity,digital-services,false
+634,766,KARAK CHAT,0.00001531,true,quantity,digital-services,true
+635,767,FOMI PARTY,0.00004623,true,quantity,digital-services,true
+636,768,Dika Live,0.0000158,true,quantity,applications,true
+637,769,IMO 10 Coins,0,false,package,applications,true
+638,770,IMO 50 Coins,1.02103448,true,package,applications,true
+639,771,"IMO 10,000 Coins",0,false,package,applications,false
+640,772,"IMO 20,000 Coins",0,false,package,applications,false
+641,773,Ume Chat,0.00002328,true,quantity,digital-services,true
+642,774,google TR 25TL,0.58938,true,stock,gift-cards,true
+643,775,google TR 50TL,1.173535,true,stock,gift-cards,true
+644,776,google TR 100TL,2.337665,true,stock,gift-cards,true
+645,777,google TR 250TL,5.85083,true,stock,gift-cards,true
+646,778,google TR 500TL,11.73117,true,stock,gift-cards,true
+647,779,google TR 1000TL,23.588785,true,stock,gift-cards,true
+648,780,Daily Sim - tiktok,1.03,true,quantity,applications,false
+649,781,Baat Live,0.00010403,true,quantity,digital-services,true
+650,782,Crush Live,0.00011432,true,quantity,digital-services,true
+651,783,Daily Sim - apple,1.03,true,quantity,digital-services,false
+652,784,IMO Unit,0.01842207,true,quantity,applications,true
+653,785,OLOO LIVE,0.00002462,true,quantity,applications,true

@@ -150,48 +150,55 @@ export default function Navbar() {
   ]
 
   return (
-    <header className="sticky top-0 z-50 border-b border-white/10 bg-[#020617]/80 backdrop-blur-md">
-      <div className="mx-auto max-w-7xl px-6">
-        <div className="flex h-16 items-center justify-between">
+    <header className="sticky top-0 z-50 border-b border-white/10 bg-[#050b16]/75 backdrop-blur-xl">
+      <div className="mx-auto max-w-[1440px] px-4 sm:px-6 lg:px-8">
+        <div className="flex min-h-[74px] items-center justify-between gap-4">
           <div className="flex items-center">
-            <Link href="/" className="flex items-center space-x-2">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-blue-500 to-purple-600">
-                <Gamepad2 className="h-5 w-5 text-white" />
+            <Link href="/" className="flex items-center gap-3">
+              <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-cyan-400/25 bg-[linear-gradient(135deg,rgba(56,189,248,0.26),rgba(14,165,233,0.08))] shadow-[0_0_0_1px_rgba(56,189,248,0.08),0_14px_30px_rgba(8,47,73,0.35)]">
+                <Gamepad2 className="h-5 w-5 text-cyan-200" />
               </div>
-              <span className="text-xl font-bold text-white">Bily Card</span>
+              <div className="leading-tight">
+                <span className="block text-lg font-black tracking-[0.16em] text-white sm:text-xl">BILY CARD</span>
+                <span className="block text-[10px] font-semibold uppercase tracking-[0.32em] text-cyan-300/80">
+                  Instant Gaming Top Up
+                </span>
+              </div>
             </Link>
           </div>
 
-          <nav className="hidden items-center space-x-8 md:flex">
+          <nav className="hidden items-center gap-2 rounded-full border border-white/10 bg-white/[0.03] px-2 py-2 md:flex">
             {navigation.map((item) => {
               const isActive = pathname === item.href
               return (
                 <Link
                   key={item.name}
                   href={item.href}
-                  className={`relative px-3 py-2 text-sm font-medium transition-colors hover:text-blue-400 ${
-                    isActive ? 'text-blue-400' : 'text-slate-300'
+                  className={`relative rounded-full px-4 py-2 text-sm font-semibold transition-all ${
+                    isActive
+                      ? 'bg-gradient-to-r from-cyan-500/20 to-sky-500/10 text-cyan-200 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]'
+                      : 'text-slate-300 hover:bg-white/[0.05] hover:text-white'
                   }`}
                 >
                   {item.name}
                   {isActive && (
-                    <span className="absolute bottom-0 left-0 h-0.5 w-full bg-gradient-to-r from-blue-500 to-purple-600" />
+                    <span className="absolute inset-x-3 -bottom-[7px] h-px bg-gradient-to-r from-transparent via-cyan-400 to-transparent" />
                   )}
                 </Link>
               )
             })}
           </nav>
 
-          <div className="flex items-center space-x-4">
-            <button className="relative p-2 text-slate-400 transition-colors hover:text-white">
+          <div className="flex items-center gap-2 sm:gap-3">
+            <button className="relative hidden h-11 w-11 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.04] text-slate-300 transition-colors hover:border-cyan-400/30 hover:text-white sm:flex">
               <Bell className="h-5 w-5" />
               <span className="absolute -right-1 -top-1 h-2 w-2 rounded-full bg-red-500" />
             </button>
 
             {isAuthenticated && (
-              <div className="hidden items-center space-x-2 rounded-lg border border-white/10 bg-slate-800/50 px-3 py-2 sm:flex">
-                <Wallet className="h-4 w-4 text-green-400" />
-                <span className="text-sm font-medium text-green-400">
+              <div className="hidden items-center gap-2 rounded-2xl border border-emerald-400/15 bg-emerald-500/10 px-3 py-2.5 shadow-[0_12px_30px_rgba(6,78,59,0.18)] sm:flex">
+                <Wallet className="h-4 w-4 text-emerald-300" />
+                <span className="text-sm font-bold text-emerald-300">
                   ${Number(user?.walletBalance?.usd || 0).toFixed(2)}
                 </span>
               </div>
@@ -201,7 +208,7 @@ export default function Navbar() {
               <div className="relative">
                 <button
                   onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                  className="flex items-center space-x-2 rounded-lg border border-white/10 bg-slate-800/50 px-3 py-2 transition-colors hover:bg-slate-700/50"
+                  className="flex items-center gap-2 rounded-2xl border border-white/10 bg-white/[0.05] px-3 py-2.5 shadow-[0_14px_34px_rgba(2,6,23,0.28)] transition-colors hover:border-cyan-400/20 hover:bg-white/[0.07]"
                 >
                   {(user?.avatar || fallbackAvatar) ? (
                     <img
@@ -223,20 +230,20 @@ export default function Navbar() {
                 </button>
 
                 {isDropdownOpen && (
-                  <div className="absolute right-0 mt-2 w-48 rounded-lg border border-white/10 bg-slate-800 shadow-xl">
-                    <div className="border-b border-white/10 p-3">
-                      <p className="text-sm font-medium text-white">{userDisplayName}</p>
+                  <div className="absolute right-0 mt-3 w-56 overflow-hidden rounded-3xl border border-white/10 bg-slate-900/95 shadow-2xl backdrop-blur-xl">
+                    <div className="border-b border-white/10 bg-white/[0.03] p-4">
+                      <p className="text-sm font-semibold text-white">{userDisplayName}</p>
                       <p className="text-xs text-slate-400">
                         {user?.email || fallbackEmail || ''}
                       </p>
                     </div>
 
-                    <div className="py-1">
+                    <div className="py-2">
                       {user?.role === 'admin' && (
                         <Link
                           href="/admin"
                           onClick={() => setIsDropdownOpen(false)}
-                          className="flex items-center px-3 py-2 text-sm text-cyan-300 hover:bg-slate-700 hover:text-cyan-200"
+                          className="mx-2 flex items-center rounded-2xl px-3 py-2.5 text-sm text-cyan-300 hover:bg-slate-800 hover:text-cyan-200"
                         >
                           <LayoutDashboard className="mr-2 h-4 w-4" />
                           Admin Dashboard
@@ -246,7 +253,7 @@ export default function Navbar() {
                       <Link
                         href="/profile"
                         onClick={() => setIsDropdownOpen(false)}
-                        className="flex items-center px-3 py-2 text-sm text-slate-300 hover:bg-slate-700 hover:text-white"
+                        className="mx-2 flex items-center rounded-2xl px-3 py-2.5 text-sm text-slate-300 hover:bg-slate-800 hover:text-white"
                       >
                         <User className="mr-2 h-4 w-4" />
                         {t('nav.profile')}
@@ -255,7 +262,7 @@ export default function Navbar() {
                       <Link
                         href="/wallet"
                         onClick={() => setIsDropdownOpen(false)}
-                        className="flex items-center px-3 py-2 text-sm text-slate-300 hover:bg-slate-700 hover:text-white"
+                        className="mx-2 flex items-center rounded-2xl px-3 py-2.5 text-sm text-slate-300 hover:bg-slate-800 hover:text-white"
                       >
                         <Wallet className="mr-2 h-4 w-4" />
                         {t('nav.wallet')}
@@ -264,7 +271,7 @@ export default function Navbar() {
                       <Link
                         href="/my-orders"
                         onClick={() => setIsDropdownOpen(false)}
-                        className="flex items-center px-3 py-2 text-sm text-slate-300 hover:bg-slate-700 hover:text-white"
+                        className="mx-2 flex items-center rounded-2xl px-3 py-2.5 text-sm text-slate-300 hover:bg-slate-800 hover:text-white"
                       >
                         <ShoppingBag className="mr-2 h-4 w-4" />
                         {t('nav.myOrders')}
@@ -273,7 +280,7 @@ export default function Navbar() {
                       <Link
                         href="/my-favorites"
                         onClick={() => setIsDropdownOpen(false)}
-                        className="flex items-center px-3 py-2 text-sm text-slate-300 hover:bg-slate-700 hover:text-white"
+                        className="mx-2 flex items-center rounded-2xl px-3 py-2.5 text-sm text-slate-300 hover:bg-slate-800 hover:text-white"
                       >
                         <Heart className="mr-2 h-4 w-4" />
                         My Favorites
@@ -281,7 +288,7 @@ export default function Navbar() {
 
                       <button
                         onClick={handleLogout}
-                        className="flex w-full items-center px-3 py-2 text-sm text-slate-300 hover:bg-slate-700 hover:text-white"
+                        className="mx-2 flex w-[calc(100%-1rem)] items-center rounded-2xl px-3 py-2.5 text-sm text-slate-300 hover:bg-slate-800 hover:text-white"
                       >
                         <LogOut className="mr-2 h-4 w-4" />
                         {t('nav.logout')}
@@ -293,12 +300,35 @@ export default function Navbar() {
             ) : (
               <Link
                 href="/login"
-                className="rounded-lg bg-gradient-to-r from-blue-600 to-purple-600 px-4 py-2 text-sm font-medium text-white transition-all hover:from-blue-700 hover:to-purple-700"
+                className="rounded-2xl bg-gradient-to-r from-cyan-500 to-sky-600 px-4 py-2.5 text-sm font-bold text-white shadow-[0_14px_34px_rgba(14,165,233,0.28)] transition-all hover:from-cyan-400 hover:to-sky-500"
               >
                 {t('nav.signIn')}
               </Link>
             )}
           </div>
+        </div>
+
+        <div className="md:hidden">
+          <nav className="no-scrollbar flex gap-2 overflow-x-auto pb-3">
+            {navigation.map((item) => {
+              const isActive = pathname === item.href
+              const Icon = item.icon
+              return (
+                <Link
+                  key={item.name}
+                  href={item.href}
+                  className={`flex shrink-0 items-center gap-2 rounded-full border px-3 py-2 text-xs font-semibold transition-all ${
+                    isActive
+                      ? 'border-cyan-400/30 bg-cyan-500/15 text-cyan-200'
+                      : 'border-white/10 bg-white/[0.03] text-slate-300'
+                  }`}
+                >
+                  <Icon className="h-3.5 w-3.5" />
+                  {item.name}
+                </Link>
+              )
+            })}
+          </nav>
         </div>
       </div>
     </header>

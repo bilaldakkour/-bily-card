@@ -1,4 +1,9 @@
 import { bilycardProducts } from '@/lib/data/bilycardProducts';
+import {
+  findGroupedProductBySlug,
+  groupCatalogProducts,
+  type CatalogDisplayProduct,
+} from '@/lib/data/catalogGrouping';
 import type { Product } from '@/lib/data/products';
 import { connectDB } from '@/lib/db/mongodb';
 import CustomProduct from '@/lib/models/CustomProduct';
@@ -243,5 +248,22 @@ export async function getCatalogProductBySlug(slug: string): Promise<CatalogProd
 
 export async function getCatalogBestSellingProducts(): Promise<CatalogProduct[]> {
   const products = await getCatalogProducts();
+  return products.filter((product) => Boolean(product.bestSeller));
+}
+
+export async function getCatalogDisplayProducts(): Promise<CatalogDisplayProduct[]> {
+  const products = await getCatalogProducts();
+  return groupCatalogProducts(products);
+}
+
+export async function getCatalogDisplayProductBySlug(
+  slug: string
+): Promise<CatalogDisplayProduct | undefined> {
+  const products = await getCatalogProducts();
+  return findGroupedProductBySlug(products, slug);
+}
+
+export async function getCatalogDisplayBestSellingProducts(): Promise<CatalogDisplayProduct[]> {
+  const products = await getCatalogDisplayProducts();
   return products.filter((product) => Boolean(product.bestSeller));
 }

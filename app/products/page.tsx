@@ -1,7 +1,7 @@
 import { Suspense } from 'react'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { ProductsPageClient } from '@/components/products/ProductsPageClient'
-import { getCatalogProducts } from '@/lib/data/catalogProducts'
+import { getCatalogDisplayProducts } from '@/lib/data/catalogProducts'
 import { getCategoryLabel, normalizeCategory } from '@/lib/data/catalogNormalization'
 
 const CATEGORY_ORDER = [
@@ -26,7 +26,7 @@ interface ProductsPageProps {
 
 export default async function ProductsPage({ searchParams }: ProductsPageProps) {
   const { search = '', category = '', sort = 'name' } = searchParams ?? {}
-  const catalogProducts = await getCatalogProducts()
+  const catalogProducts = await getCatalogDisplayProducts()
 
   const safeProducts = Array.isArray(catalogProducts)
     ? catalogProducts.map((product) => ({

@@ -101,13 +101,23 @@ export function ProductsPageClient({
   const filteredProducts = useMemo(() => {
     let results = [...pricedProducts]
     const orderMap = new Map(pricedProducts.map((product, index) => [product.id, index]))
+    const getPopularityScore = (product: Product) => {
+      const slugs = [product.slug, ...(Array.isArray(product.childSlugs) ? product.childSlugs : [])]
+      return slugs.reduce(
+        (total, slug) => total + Number(topSellingMap[String(slug).toLowerCase()] || 0),
+        0
+      )
+    }
 
     // Filter by search term
     if (searchQuery) {
       results = results.filter(product =>
-        product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        product.shortDescription.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        product.category.toLowerCase().includes(searchQuery.toLowerCase())
+        [
+          product.name,
+          product.shortDescription,
+          product.category,
+          ...(Array.isArray(product.groupChildren) ? product.groupChildren.map((child) => child.name) : []),
+        ].some((value) => String(value || '').toLowerCase().includes(searchQuery.toLowerCase()))
       )
     }
 
@@ -126,10 +136,7 @@ export function ProductsPageClient({
         case 'newest':
           return (orderMap.get(b.id) ?? 0) - (orderMap.get(a.id) ?? 0)
         case 'popular':
-          return (
-            Number(topSellingMap[String(b.slug).toLowerCase()] || 0) -
-            Number(topSellingMap[String(a.slug).toLowerCase()] || 0)
-          )
+          return getPopularityScore(b) - getPopularityScore(a)
         default:
           return a.name.localeCompare(b.name)
       }

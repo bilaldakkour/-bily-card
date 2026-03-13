@@ -1,24 +1,23 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import UserSidebar from '@/components/shared/UserSidebar'
 import FavoriteButton from '@/components/ui/FavoriteButton'
+import Footer from '@/components/ui/Footer'
+import HeroSection from '@/components/ui/HeroSection'
+import TopPromoCarousel from '@/components/ui/TopPromoCarousel'
 import { useLanguage } from '@/hooks/useLanguage'
 import { notifySessionExpired } from '@/lib/utils/sessionNotice'
 import { bilycardProducts } from '@/lib/data/bilycardProducts'
+import { groupCatalogProducts } from '@/lib/data/catalogGrouping'
 import {
   Flame,
   ChevronRight,
-  Bell,
-  MessageCircle,
   Sparkles,
   Trophy,
   Shield,
-  Zap,
-  BadgeCheck,
-  Headphones,
   CreditCard,
   AppWindow,
   Gamepad2,
@@ -50,29 +49,25 @@ export default function HomeCompactDashboard() {
   const [walletUsd, setWalletUsd] = useState(0)
   const [walletLbp, setWalletLbp] = useState(0)
   const [topSellingSlugs, setTopSellingSlugs] = useState<string[]>([])
-  const [topSellingSections, setTopSellingSections] = useState<{
-    products: TopSellingItem[]
-    packages: TopSellingItem[]
-    cards: TopSellingItem[]
-  }>({ products: [], packages: [], cards: [] })
 
-  const popularProducts = (() => {
-    const available = bilycardProducts.filter((product) => product.stockStatus !== 'out_of_stock')
+  const popularProducts = useMemo(() => {
+    const available = groupCatalogProducts(
+      bilycardProducts.filter((product) => product.stockStatus !== 'out_of_stock')
+    )
+
     if (!topSellingSlugs.length) return available.slice(0, 4)
 
     const rank = new Map(topSellingSlugs.map((slug, idx) => [slug, idx]))
+    const getRank = (slug: string) => (rank.has(slug) ? Number(rank.get(slug)) : Number.MAX_SAFE_INTEGER)
+
     return [...available]
       .sort((a, b) => {
-        const ar = rank.has(a.slug) ? Number(rank.get(a.slug)) : Number.MAX_SAFE_INTEGER
-        const br = rank.has(b.slug) ? Number(rank.get(b.slug)) : Number.MAX_SAFE_INTEGER
-        return ar - br
+        const aRank = Math.min(...[a.slug, ...(a.childSlugs || [])].map((slug) => getRank(String(slug).toLowerCase())))
+        const bRank = Math.min(...[b.slug, ...(b.childSlugs || [])].map((slug) => getRank(String(slug).toLowerCase())))
+        return aRank - bRank
       })
       .slice(0, 4)
-  })()
-
-  const orderPreviewProducts = bilycardProducts
-    .filter((product) => product.stockStatus !== 'out_of_stock')
-    .slice(0, 3)
+  }, [topSellingSlugs])
 
   const quickTabs = [
     {
@@ -231,100 +226,59 @@ export default function HomeCompactDashboard() {
     void loadTopSelling()
   }, [])
 
-  useEffect(() => {
-    const loadSections = async () => {
-      try {
-        const res = await fetch('/api/products/top-selling/sections', { cache: 'no-store' })
-        const data = await res.json()
-        if (!res.ok || !data?.success || !data?.data) return
-
-        setTopSellingSections({
-          products: Array.isArray(data.data.products) ? data.data.products.slice(0, 10) : [],
-          packages: Array.isArray(data.data.packages) ? data.data.packages.slice(0, 10) : [],
-          cards: Array.isArray(data.data.cards) ? data.data.cards.slice(0, 10) : [],
-        })
-      } catch {
-        setTopSellingSections({ products: [], packages: [], cards: [] })
-      }
-    }
-
-    void loadSections()
-  }, [])
-
   return (
-    <main className="mx-auto max-w-[1520px] px-4 pb-12 pt-6 lg:px-7 lg:pr-28">
-      <div className="grid gap-6 lg:grid-cols-[280px_minmax(0,1fr)_330px]">
-        <aside className="hidden lg:block">
-          <div className="rounded-2xl border border-white/10 bg-slate-950/80 p-5">
-            <h3 className="mb-4 flex items-center gap-2 text-lg font-semibold text-white">
-              <Sparkles className="h-5 w-5 text-cyan-400" />
-              {t('home.left.highlights')}
-            </h3>
+    <>
+      <main className="mx-auto max-w-[1480px] px-4 pb-12 pt-3 sm:px-5 lg:px-6">
+        <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_320px] lg:items-start lg:gap-5">
+          <section className="space-y-4">
+            <TopPromoCarousel showQuickTabs={false} />
 
-            <div className="space-y-3">
-              <div className="rounded-xl border border-cyan-500/20 bg-cyan-500/10 p-4">
-                <p className="text-sm text-cyan-300">{t('home.left.dailyDeals')}</p>
-                <p className="mt-1 text-2xl font-bold text-white">{t('home.left.dailyDealsValue')}</p>
+            <div className="grid gap-4 xl:grid-cols-[260px_minmax(0,1fr)]">
+              <aside className="hidden xl:block">
+                <div className="glass-panel rounded-[24px] p-4">
+                  <h3 className="mb-3 flex items-center gap-2 text-base font-semibold text-white">
+                    <Sparkles className="h-4 w-4 text-cyan-400" />
+                    {t('home.left.highlights')}
+                  </h3>
+
+                  <div className="space-y-2.5">
+                    <div className="rounded-2xl border border-cyan-500/20 bg-cyan-500/10 p-3.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
+                      <p className="text-xs text-cyan-300">{t('home.left.dailyDeals')}</p>
+                      <p className="mt-1 text-xl font-bold text-white">{t('home.left.dailyDealsValue')}</p>
+                    </div>
+
+                    <div className="rounded-2xl border border-violet-500/20 bg-violet-500/10 p-3.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
+                      <p className="text-xs text-violet-300">{t('home.left.fastestDelivery')}</p>
+                      <p className="mt-1 flex items-center gap-2 text-sm font-semibold text-white">
+                        <Trophy className="h-4 w-4 text-violet-300" />
+                        {t('home.left.fastestDeliveryValue')}
+                      </p>
+                    </div>
+
+                    <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/10 p-3.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
+                      <p className="text-xs text-emerald-300">{t('home.left.protectedOrders')}</p>
+                      <p className="mt-1 flex items-center gap-2 text-sm font-semibold text-white">
+                        <Shield className="h-4 w-4 text-emerald-300" />
+                        {t('home.left.protectedOrdersValue')}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </aside>
+
+              <div className="space-y-4">
+                <div className="relative overflow-hidden rounded-[24px] border border-white/10 bg-[linear-gradient(145deg,rgba(7,14,27,0.95),rgba(4,9,18,0.92))] p-4 shadow-[0_20px_50px_rgba(2,6,23,0.3)]">
+            <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_20%_30%,rgba(56,189,248,0.16),transparent_40%),radial-gradient(circle_at_80%_70%,rgba(59,130,246,0.14),transparent_45%)]" />
+            <div className="relative mb-3 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+              <div>
+                <p className="text-xs font-black uppercase tracking-[0.22em] text-cyan-300">{t('home.hero.badge')}</p>
+                <h3 className="text-lg font-semibold text-white">{t('home.quick.title')}</h3>
               </div>
-
-              <div className="rounded-xl border border-violet-500/20 bg-violet-500/10 p-4">
-                <p className="text-sm text-violet-300">{t('home.left.fastestDelivery')}</p>
-                <p className="mt-1 flex items-center gap-2 text-base font-semibold text-white">
-                  <Trophy className="h-4 w-4 text-violet-300" />
-                  {t('home.left.fastestDeliveryValue')}
-                </p>
-              </div>
-
-              <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/10 p-4">
-                <p className="text-sm text-emerald-300">{t('home.left.protectedOrders')}</p>
-                <p className="mt-1 flex items-center gap-2 text-base font-semibold text-white">
-                  <Shield className="h-4 w-4 text-emerald-300" />
-                  {t('home.left.protectedOrdersValue')}
-                </p>
-              </div>
-            </div>
-          </div>
-        </aside>
-
-        <section className="space-y-5">
-          <div className="relative overflow-hidden rounded-2xl border border-blue-500/30 bg-gradient-to-r from-slate-950 via-slate-900 to-slate-950 p-6 md:p-7">
-            <div className="absolute left-4 top-4 z-10 hidden rounded-full border border-cyan-400/30 bg-cyan-500/15 px-3 py-1 text-xs font-semibold text-cyan-200 md:block">
-              {t('home.hero.badge')}
-            </div>
-            <div className="absolute inset-y-0 right-0 hidden w-1/2 md:block">
-              <Image
-                src="/games/pubg.jpg"
-                alt="Gaming"
-                fill
-                className="object-cover opacity-55"
-              />
-              <div className="absolute inset-0 bg-gradient-to-l from-transparent to-slate-950" />
-            </div>
-
-            <div className="relative max-w-2xl">
-              <h1 className="text-4xl font-bold leading-tight text-white md:text-5xl">
-                {t('home.hero.title1')}
-                <span className="block bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent">
-                  {t('home.hero.title2')}
-                </span>
-              </h1>
-              <p className="mt-3 text-slate-300 md:text-xl">
-                {t('home.hero.subtitle')}
-              </p>
-
-              <Link
-                href="/products"
-                className="mt-6 inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-cyan-600 px-6 py-3 text-base font-semibold text-white shadow-lg shadow-blue-900/40 transition hover:from-blue-500 hover:to-cyan-500"
-              >
-                {t('home.hero.cta')}
+              <Link href="/products" className="inline-flex items-center gap-2 text-sm font-semibold text-slate-300 transition hover:text-white">
+                View all categories
                 <ChevronRight className="h-4 w-4" />
               </Link>
             </div>
-          </div>
-
-          <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-r from-slate-950 via-slate-900 to-slate-950 p-5">
-            <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_20%_30%,rgba(56,189,248,0.16),transparent_40%),radial-gradient(circle_at_80%_70%,rgba(59,130,246,0.14),transparent_45%)]" />
-            <h3 className="relative mb-4 text-center text-xl font-semibold text-white">{t('home.quick.title')}</h3>
             <div dir={isRTL ? 'rtl' : 'ltr'} className="relative grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
               {quickTabs.map((tab) => {
                 const Icon = tab.icon
@@ -332,14 +286,14 @@ export default function HomeCompactDashboard() {
                 <Link
                   key={tab.key}
                   href={tab.href}
-                  className={`group relative overflow-hidden rounded-2xl border bg-gradient-to-br px-4 py-3 shadow-[0_0_0_1px_rgba(15,23,42,0.25)] transition duration-300 hover:-translate-y-1 hover:shadow-xl ${tab.cardClass}`}
+                  className={`group relative overflow-hidden rounded-[22px] border bg-gradient-to-br px-3.5 py-3.5 shadow-[0_0_0_1px_rgba(15,23,42,0.25),0_16px_34px_rgba(2,6,23,0.24)] transition duration-300 hover:-translate-y-1 hover:shadow-[0_22px_46px_rgba(2,6,23,0.3)] ${tab.cardClass}`}
                 >
                   <div className={`absolute inset-0 opacity-60 ${tab.textureClass}`} />
                   <div className="absolute inset-0 opacity-0 transition-opacity duration-300 group-hover:opacity-100 bg-[radial-gradient(circle_at_85%_10%,rgba(255,255,255,0.25),transparent_35%)]" />
                   <div className={`pointer-events-none absolute -right-10 -top-10 h-28 w-28 rounded-full bg-gradient-to-br blur-2xl transition duration-300 group-hover:scale-110 ${tab.glowClass}`} />
 
                   <div className="relative flex min-h-[52px] items-center gap-3">
-                    <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br ${tab.iconClass} shadow-lg`}>
+                    <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br ${tab.iconClass} shadow-lg`}>
                       <Icon className="h-5 w-5 text-white" />
                     </div>
 
@@ -359,15 +313,15 @@ export default function HomeCompactDashboard() {
                 </Link>
               )})}
             </div>
-          </div>
+                </div>
 
-          <div className="rounded-2xl border border-white/10 bg-slate-950/70 p-4">
-            <div className="mb-3 flex items-center justify-between">
+                <div className="glass-panel rounded-[24px] p-4">
+                  <div className="mb-3 flex items-center justify-between">
               <h2 className="flex items-center gap-2 text-xl font-semibold text-white">
                 <Flame className="h-5 w-5 text-red-400" />
                 {t('home.popular.title')}
               </h2>
-              <Link href="/products" className="rounded-lg bg-white/5 px-3 py-1.5 text-sm text-slate-200 hover:bg-white/10">
+              <Link href="/products" className="rounded-2xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-slate-200 transition hover:bg-white/10">
                 {t('home.popular.viewAll')}
               </Link>
             </div>
@@ -377,154 +331,58 @@ export default function HomeCompactDashboard() {
                 <Link
                   key={card.id}
                   href={`/products/${card.slug}`}
-                  className="group relative overflow-hidden rounded-xl border border-white/10 bg-slate-900/80 transition hover:-translate-y-0.5 hover:border-blue-500/40"
+                  className="group relative overflow-hidden rounded-[24px] border border-white/10 bg-[linear-gradient(180deg,rgba(15,23,42,0.92),rgba(5,10,22,0.96))] shadow-[0_16px_34px_rgba(2,6,23,0.24)] transition duration-300 hover:-translate-y-1 hover:border-cyan-400/30 hover:shadow-[0_22px_44px_rgba(8,47,73,0.28)]"
                 >
                   <div className="absolute right-2 top-2 z-20">
                     <FavoriteButton slug={card.slug} />
                   </div>
-                  <div className="relative h-36 w-full">
+                  <div className="relative h-40 w-full overflow-hidden">
                     <Image src={card.image} alt={card.name} fill className="object-cover" />
-                    <div className="absolute inset-0 bg-gradient-to-t from-slate-950/70 via-slate-900/30 to-transparent" />
-                    <div className="absolute left-2 top-2 rounded-md border border-white/20 bg-black/35 px-2 py-0.5 text-[10px] font-bold tracking-wide text-white">
+                    <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/30 to-transparent" />
+                    <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black/40 to-transparent opacity-70" />
+                    <div className="absolute left-3 top-3 rounded-full border border-white/20 bg-black/35 px-3 py-1 text-[10px] font-bold tracking-[0.2em] text-white">
                       {index === 0 ? 'HOT' : index === 1 ? 'TOP' : index === 2 ? 'FAST' : 'TREND'}
                     </div>
                   </div>
                   <div className="p-3.5">
-                    <h3 className="line-clamp-1 text-base font-semibold text-white">{card.name}</h3>
-                    <div className="mt-2.5 rounded-lg bg-gradient-to-r from-blue-600 to-cyan-600 py-2 text-center text-sm font-medium text-white">
+                    <div className="mb-2.5 flex items-center justify-between gap-2">
+                      <span className="rounded-full border border-cyan-400/15 bg-cyan-500/10 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-cyan-300">
+                        Game Store
+                      </span>
+                      <span className="text-xs font-semibold text-slate-400">Instant</span>
+                    </div>
+                    <h3 className="line-clamp-2 min-h-[44px] text-sm font-semibold text-white">{card.name}</h3>
+                    <div className="mt-3 rounded-2xl bg-gradient-to-r from-cyan-500 to-sky-600 py-2.5 text-center text-sm font-bold text-white shadow-[0_14px_30px_rgba(14,165,233,0.22)]">
                       {t('home.popular.buyNow')}
                     </div>
                   </div>
                 </Link>
               ))}
             </div>
-          </div>
-
-          <div className="grid gap-3 lg:grid-cols-3">
-            {[
-              { title: 'Most Sold Products', items: topSellingSections.products },
-              { title: 'Most Sold Packages', items: topSellingSections.packages },
-              { title: 'Most Sold Cards', items: topSellingSections.cards },
-            ].map((section) => (
-              <div key={section.title} className="rounded-2xl border border-white/10 bg-slate-950/70 p-4">
-                <h3 className="mb-3 text-sm font-semibold uppercase tracking-wide text-cyan-300">
-                  {section.title}
-                </h3>
-
-                {section.items.length === 0 ? (
-                  <p className="text-sm text-slate-400">No sales data yet</p>
-                ) : (
-                  <div className="space-y-2">
-                    {section.items.slice(0, 10).map((item, idx) => (
-                      <Link
-                        key={`${section.title}-${item.slug || item.name}-${idx}`}
-                        href={item.slug ? `/products/${item.slug}` : '/products'}
-                        className="flex items-center justify-between rounded-lg bg-white/5 px-2.5 py-2 text-sm hover:bg-white/10"
-                      >
-                        <span className="line-clamp-1 text-slate-200">
-                          {idx + 1}. {item.name}
-                        </span>
-                        <span className="ml-2 rounded-full bg-cyan-500/15 px-2 py-0.5 text-xs font-semibold text-cyan-300">
-                          {item.sold}
-                        </span>
-                      </Link>
-                    ))}
-                  </div>
-                )}
+                </div>
               </div>
-            ))}
-          </div>
+            </div>
 
-          <div className="grid gap-3 sm:grid-cols-3">
-            <div className="rounded-xl border border-blue-500/25 bg-gradient-to-br from-blue-500/10 to-slate-950/70 p-4">
-              <p className="flex items-center gap-2 text-base font-semibold text-white">
-                <Zap className="h-4 w-4 text-blue-300" />
-                {t('home.features.instant.title')}
-              </p>
-              <p className="text-sm text-slate-300">{t('home.features.instant.subtitle')}</p>
-            </div>
-            <div className="rounded-xl border border-emerald-500/25 bg-gradient-to-br from-emerald-500/10 to-slate-950/70 p-4">
-              <p className="flex items-center gap-2 text-base font-semibold text-white">
-                <BadgeCheck className="h-4 w-4 text-emerald-300" />
-                {t('home.features.secure.title')}
-              </p>
-              <p className="text-sm text-slate-300">{t('home.features.secure.subtitle')}</p>
-            </div>
-            <div className="rounded-xl border border-violet-500/25 bg-gradient-to-br from-violet-500/10 to-slate-950/70 p-4">
-              <p className="flex items-center gap-2 text-base font-semibold text-white">
-                <Headphones className="h-4 w-4 text-violet-300" />
-                {t('home.features.support.title')}
-              </p>
-              <p className="text-sm text-slate-300">{t('home.features.support.subtitle')}</p>
-              <Link
-                href="https://wa.me/96171985887"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="mt-2 inline-flex items-center gap-2 rounded-lg bg-emerald-600/20 px-3 py-1.5 text-sm font-medium text-emerald-300 hover:bg-emerald-600/30"
-              >
-                <MessageCircle className="h-4 w-4" />
-                {t('home.features.support.whatsapp')}
-              </Link>
-            </div>
-          </div>
+            <HeroSection />
         </section>
 
-        <aside className="space-y-5">
-          <div className="rounded-2xl border border-white/10 bg-slate-950/80 p-5">
-            <h3 className="mb-4 text-xl font-semibold text-white">{t('home.right.walletBalance')}</h3>
-            <div className="space-y-3">
-              <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/10 p-4">
-                <p className="text-xs text-emerald-300">USD</p>
-                <p className="text-3xl font-bold text-emerald-400">${walletUsd.toFixed(2)}</p>
-              </div>
-              <div className="rounded-xl border border-fuchsia-500/20 bg-fuchsia-500/10 p-4">
-                <p className="text-xs text-fuchsia-300">LBP</p>
-                <p className="text-2xl font-bold text-fuchsia-400">{walletLbp.toFixed(0)}</p>
+          <aside className="lg:pt-0">
+            <div className="hidden lg:block lg:sticky lg:top-[90px]">
+              <div className="max-h-[calc(100vh-108px)] overflow-y-auto overscroll-contain pr-1 [scrollbar-gutter:stable]">
+                <div className="space-y-4">
+                  <UserSidebar desktopSticky={false} />
+                </div>
               </div>
             </div>
+ 
+          </aside>
+        </div>
 
-            <div className="mt-3 grid grid-cols-2 gap-2">
-              <Link href="/wallet" className="rounded-lg bg-blue-600 py-2.5 text-center text-sm font-semibold text-white hover:bg-blue-500">
-                {t('home.right.addFunds')}
-              </Link>
-              <Link href="/wallet" className="rounded-lg bg-white/10 py-2.5 text-center text-sm font-semibold text-white hover:bg-white/15">
-                {t('home.right.withdraw')}
-              </Link>
-            </div>
-          </div>
-
-          <div className="rounded-2xl border border-white/10 bg-slate-950/80 p-5">
-            <div className="mb-4 flex items-center justify-between">
-              <h3 className="text-xl font-semibold text-white">{t('home.right.orders')}</h3>
-              <Link href="/my-orders" className="text-sm text-blue-300 hover:text-blue-200">
-                {t('home.popular.viewAll')}
-              </Link>
-            </div>
-
-            <div className="space-y-3 text-sm">
-              {orderPreviewProducts.map((item, index) => (
-                <Link
-                  key={item.id}
-                  href={`/products/${item.slug}`}
-                  className="flex items-center justify-between rounded-lg bg-white/5 p-2.5 transition hover:bg-white/10"
-                >
-                  <span className="line-clamp-1 text-slate-200">{item.name}</span>
-                  <span className={`rounded-full px-2 py-0.5 text-xs ${index === 0 ? 'bg-amber-500/20 text-amber-300' : 'bg-emerald-500/20 text-emerald-300'}`}>
-                    {index === 0 ? t('home.right.pending') : t('home.right.completed')}
-                  </span>
-                </Link>
-              ))}
-            </div>
-          </div>
-
-          <div className="hidden items-center justify-between rounded-2xl border border-white/10 bg-slate-950/80 px-4 py-3 text-slate-300 lg:flex">
-            <span>{t('home.right.notifications')}</span>
-            <Bell className="h-4 w-4" />
-          </div>
-        </aside>
+      <div className="lg:hidden">
+        <UserSidebar />
       </div>
-
-      <UserSidebar />
-    </main>
+      </main>
+      <Footer />
+    </>
   )
 }

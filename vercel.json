@@ -1,0 +1,8 @@
+{
+  "crons": [
+    {
+      "path": "/api/sync/dailycard-prices",
+      "schedule": "*/10 * * * *"
+    }
+  ]
+}

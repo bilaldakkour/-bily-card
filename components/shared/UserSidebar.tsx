@@ -20,7 +20,6 @@ import {
   User,
   Menu,
   X,
-  MoreHorizontal,
   Check,
   Shield,
 } from 'lucide-react'
@@ -51,9 +50,13 @@ interface SidebarTransaction {
 
 interface UserSidebarProps {
   onBalanceUpdate?: () => void
+  desktopSticky?: boolean
 }
 
-export default function UserSidebar({ onBalanceUpdate }: UserSidebarProps) {
+export default function UserSidebar({
+  onBalanceUpdate,
+  desktopSticky = true,
+}: UserSidebarProps) {
   const router = useRouter()
   const pathname = usePathname()
   const { language, t, setAppLanguage, isRTL } = useLanguage()
@@ -61,7 +64,6 @@ export default function UserSidebar({ onBalanceUpdate }: UserSidebarProps) {
   const [user, setUser] = useState<UserData | null>(null)
   const [loading, setLoading] = useState(true)
   const [isMobileOpen, setIsMobileOpen] = useState(false)
-  const [isDesktopOpen, setIsDesktopOpen] = useState(false)
   const [isLangMenuOpen, setIsLangMenuOpen] = useState(false)
   const [avatarUploading, setAvatarUploading] = useState(false)
   const [orderStats, setOrderStats] = useState({
@@ -292,19 +294,19 @@ export default function UserSidebar({ onBalanceUpdate }: UserSidebarProps) {
   }
 
   const sidebarContent = (
-    <div className="h-full overflow-y-auto border-l border-white/10 bg-slate-900 p-6">
-      <div className="mb-6">
+    <div className="overflow-hidden rounded-[28px] border border-white/10 bg-[linear-gradient(180deg,rgba(8,15,29,0.98),rgba(5,10,22,1))] p-4 shadow-[0_24px_70px_rgba(2,6,23,0.28)] md:p-5">
+      <div className="mb-5">
         <div className="mb-3 flex items-center gap-3">
           <label className="relative block cursor-pointer" title="Upload avatar">
             {user?.avatar ? (
               <img
                 src={user.avatar}
                 alt="User avatar"
-                className="h-12 w-12 rounded-full object-cover"
+                className="h-12 w-12 rounded-full border border-white/10 object-cover shadow-[0_10px_24px_rgba(2,6,23,0.28)]"
               />
             ) : (
-              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-yellow-400 to-yellow-600">
-                <User className="h-6 w-6 text-slate-900" />
+              <div className="flex h-12 w-12 items-center justify-center rounded-full border border-amber-300/20 bg-gradient-to-br from-yellow-400 to-yellow-600 shadow-[0_12px_28px_rgba(202,138,4,0.24)]">
+                <User className="h-5 w-5 text-slate-900" />
               </div>
             )}
 
@@ -321,17 +323,17 @@ export default function UserSidebar({ onBalanceUpdate }: UserSidebarProps) {
           </label>
 
           <div className={isRTL ? 'text-right' : 'text-left'}>
-            <p className="font-semibold text-white">{userDisplayName}</p>
+            <p className="text-sm font-bold text-white">{userDisplayName}</p>
 
-            <span className="rounded-full bg-yellow-400/20 px-2 py-1 text-xs text-yellow-400">
+            <span className="rounded-full border border-yellow-400/20 bg-yellow-400/15 px-2.5 py-1 text-xs font-semibold text-yellow-300">
               {t('sidebar.level')}
             </span>
           </div>
         </div>
 
-        <div className="h-2 w-full rounded-full bg-slate-800">
+        <div className="h-2 w-full rounded-full bg-slate-800/90">
           <div
-            className="h-2 rounded-full bg-yellow-400"
+            className="h-2 rounded-full bg-gradient-to-r from-yellow-300 to-amber-500"
             style={{ width: '60%' }}
           />
         </div>
@@ -341,13 +343,13 @@ export default function UserSidebar({ onBalanceUpdate }: UserSidebarProps) {
         </p>
       </div>
 
-      <div className="mb-6 rounded-xl border border-white/10 bg-slate-800 p-4">
+      <div className="mb-4 rounded-[24px] border border-white/10 bg-white/[0.035] p-3.5 shadow-[0_16px_36px_rgba(2,6,23,0.2)] backdrop-blur-md">
         <h3 className={`mb-3 font-semibold text-white ${isRTL ? 'text-right' : 'text-left'}`}>
           {t('sidebar.availableBalance')}
         </h3>
 
         <div className={`mb-3 ${isRTL ? 'text-right' : 'text-left'}`}>
-          <p className="text-2xl font-bold text-green-400">
+          <p className="text-xl font-bold text-green-400">
             ${Number(user?.walletBalance?.usd || 0).toFixed(2)}
           </p>
 
@@ -362,108 +364,17 @@ export default function UserSidebar({ onBalanceUpdate }: UserSidebarProps) {
             setIsMobileOpen(false)
             refreshBalance()
           }}
-          className="block w-full rounded-lg bg-green-600 px-4 py-2 text-center font-medium text-white transition hover:bg-green-700"
+          className="block w-full rounded-2xl bg-gradient-to-r from-emerald-500 to-green-600 px-4 py-2 text-center text-sm font-semibold text-white transition hover:from-emerald-400 hover:to-green-500"
         >
           {t('sidebar.addBalance')}
         </Link>
       </div>
 
-      <div className="mb-6 rounded-xl border border-white/10 bg-slate-800 p-4">
+      <nav className="mb-4 rounded-[24px] border border-white/10 bg-white/[0.035] p-3.5 shadow-[0_16px_36px_rgba(2,6,23,0.2)] backdrop-blur-md">
         <h3 className={`mb-3 font-semibold text-white ${isRTL ? 'text-right' : 'text-left'}`}>
-          {t('sidebar.purchaseSummary')}
+          Menu
         </h3>
 
-        <div className="space-y-2 text-sm">
-          <div className="flex items-center justify-between rounded-lg bg-slate-900/50 px-3 py-2">
-            <span className="text-slate-300">{t('sidebar.pendingOrders')}</span>
-            <span className="font-semibold text-yellow-300">{orderStats.pending}</span>
-          </div>
-          <div className="flex items-center justify-between rounded-lg bg-slate-900/50 px-3 py-2">
-            <span className="text-slate-300">{t('sidebar.completedOrders')}</span>
-            <span className="font-semibold text-green-300">{orderStats.completed}</span>
-          </div>
-          <div className="flex items-center justify-between rounded-lg bg-slate-900/50 px-3 py-2">
-            <span className="text-slate-300">{t('sidebar.cancelledOrders')}</span>
-            <span className="font-semibold text-red-300">{orderStats.cancelled}</span>
-          </div>
-        </div>
-      </div>
-
-      <div className="mb-6 rounded-xl border border-white/10 bg-slate-800 p-4">
-        <h3 className={`mb-3 font-semibold text-white ${isRTL ? 'text-right' : 'text-left'}`}>
-          {t('sidebar.accountReport')}
-        </h3>
-
-        <div className="space-y-2 text-sm">
-          <div className="flex items-center justify-between rounded-lg bg-slate-900/50 px-3 py-2">
-            <span className="text-slate-300">{t('sidebar.currentBalance')}</span>
-            <span className="font-semibold text-blue-300">${Number(user?.walletBalance?.usd || 0).toFixed(2)}</span>
-          </div>
-          <div className="flex items-center justify-between rounded-lg bg-slate-900/50 px-3 py-2">
-            <span className="text-slate-300">{t('sidebar.currentDebt')}</span>
-            <span className="font-semibold text-red-300">${Number(financeStats.currentDebt || 0).toFixed(2)}</span>
-          </div>
-          <div className="flex items-center justify-between rounded-lg bg-slate-900/50 px-3 py-2">
-            <span className="text-slate-300">{t('sidebar.totalTransactions')}</span>
-            <span className="font-semibold text-white">{financeStats.totalTransactions}</span>
-          </div>
-          <div className="flex items-center justify-between rounded-lg bg-slate-900/50 px-3 py-2">
-            <span className="text-slate-300">{t('sidebar.totalDeposits')}</span>
-            <span className="font-semibold text-green-300">${Number(financeStats.totalDeposits || 0).toFixed(2)}</span>
-          </div>
-          <div className="flex items-center justify-between rounded-lg bg-slate-900/50 px-3 py-2">
-            <span className="text-slate-300">{t('sidebar.totalOrdersAmount')}</span>
-            <span className="font-semibold text-cyan-300">${Number(financeStats.totalOrdersAmount || 0).toFixed(2)}</span>
-          </div>
-          <div className="flex items-center justify-between rounded-lg bg-slate-900/50 px-3 py-2">
-            <span className="text-slate-300">{t('sidebar.totalOrdersCount')}</span>
-            <span className="font-semibold text-white">{orderStats.total}</span>
-          </div>
-        </div>
-      </div>
-
-      <div className="relative mb-6 flex justify-center gap-2">
-        <button
-          onClick={handleLogout}
-          className="flex h-10 w-10 items-center justify-center rounded-lg border border-white/10 bg-slate-800 transition hover:bg-slate-700"
-          type="button"
-        >
-          <LogOut className="h-4 w-4 text-slate-300" />
-        </button>
-
-        <Link
-          href="/products"
-          className="flex h-10 w-10 items-center justify-center rounded-lg border border-white/10 bg-slate-800 transition hover:bg-slate-700"
-        >
-          <Palette className="h-4 w-4 text-slate-300" />
-        </Link>
-
-        <button
-          onClick={() => setIsLangMenuOpen((prev) => !prev)}
-          className="flex h-10 w-10 items-center justify-center rounded-lg border border-white/10 bg-slate-800 transition hover:bg-slate-700"
-          type="button"
-        >
-          <Globe className="h-4 w-4 text-slate-300" />
-        </button>
-
-        {isLangMenuOpen && (
-          <div className="absolute -bottom-40 right-0 z-20 w-44 rounded-xl border border-white/10 bg-slate-900/95 p-1.5 shadow-xl">
-            {languageOptions.map((lang) => (
-              <button
-                key={lang.code}
-                type="button"
-                onClick={() => handleLanguageChange(lang.code)}
-                className="flex w-full items-center justify-between rounded-lg px-3 py-2 text-sm text-slate-200 transition hover:bg-slate-800"
-              >
-                <span>{lang.label}</span>
-                {language === lang.code && <Check className="h-4 w-4 text-cyan-300" />}
-              </button>
-            ))}
-          </div>
-        )}
-      </div>
-
-      <nav className="mb-6">
         <ul className="space-y-1">
           {navigationItems.map((item) => {
             const Icon = item.icon
@@ -474,9 +385,9 @@ export default function UserSidebar({ onBalanceUpdate }: UserSidebarProps) {
                 <Link
                   href={item.href}
                   onClick={() => setIsMobileOpen(false)}
-                  className={`flex items-center justify-between rounded-lg px-3 py-2 transition ${
+                  className={`flex items-center justify-between rounded-2xl px-3 py-2 transition ${
                     isActive
-                      ? 'bg-blue-600 text-white'
+                      ? 'bg-gradient-to-r from-cyan-500 to-sky-600 text-white shadow-[0_12px_24px_rgba(14,165,233,0.22)]'
                       : 'text-slate-300 hover:bg-slate-800 hover:text-white'
                   }`}
                 >
@@ -487,16 +398,111 @@ export default function UserSidebar({ onBalanceUpdate }: UserSidebarProps) {
             )
           })}
         </ul>
+
+        <div className="relative mt-4 flex justify-center gap-2 border-t border-white/6 pt-4">
+          <button
+            onClick={handleLogout}
+            className="flex h-10 w-10 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.04] transition hover:bg-white/[0.08]"
+            type="button"
+          >
+            <LogOut className="h-4 w-4 text-slate-300" />
+          </button>
+
+          <Link
+            href="/products"
+            className="flex h-10 w-10 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.04] transition hover:bg-white/[0.08]"
+          >
+            <Palette className="h-4 w-4 text-slate-300" />
+          </Link>
+
+          <button
+            onClick={() => setIsLangMenuOpen((prev) => !prev)}
+            className="flex h-10 w-10 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.04] transition hover:bg-white/[0.08]"
+            type="button"
+          >
+            <Globe className="h-4 w-4 text-slate-300" />
+          </button>
+
+          {isLangMenuOpen && (
+            <div className="absolute -bottom-40 right-0 z-20 w-44 rounded-2xl border border-white/10 bg-slate-900/95 p-1.5 shadow-xl">
+              {languageOptions.map((lang) => (
+                <button
+                  key={lang.code}
+                  type="button"
+                  onClick={() => handleLanguageChange(lang.code)}
+                  className="flex w-full items-center justify-between rounded-xl px-3 py-2 text-sm text-slate-200 transition hover:bg-slate-800"
+                >
+                  <span>{lang.label}</span>
+                  {language === lang.code && <Check className="h-4 w-4 text-cyan-300" />}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
       </nav>
 
-      <div className={`rounded-xl border border-yellow-400/20 bg-gradient-to-br from-yellow-400/10 to-yellow-600/10 p-4 ${isRTL ? 'text-right' : 'text-left'}`}>
+      <div className="mb-4 rounded-[24px] border border-white/10 bg-white/[0.035] p-3.5 shadow-[0_16px_36px_rgba(2,6,23,0.2)] backdrop-blur-md">
+        <h3 className={`mb-3 font-semibold text-white ${isRTL ? 'text-right' : 'text-left'}`}>
+          {t('sidebar.accountReport')}
+        </h3>
+
+        <div className="space-y-2 text-sm">
+          <div className="flex items-center justify-between rounded-2xl bg-slate-900/60 px-3 py-2">
+            <span className="text-slate-300">{t('sidebar.currentBalance')}</span>
+            <span className="font-semibold text-blue-300">${Number(user?.walletBalance?.usd || 0).toFixed(2)}</span>
+          </div>
+          <div className="flex items-center justify-between rounded-2xl bg-slate-900/60 px-3 py-2">
+            <span className="text-slate-300">{t('sidebar.currentDebt')}</span>
+            <span className="font-semibold text-red-300">${Number(financeStats.currentDebt || 0).toFixed(2)}</span>
+          </div>
+          <div className="flex items-center justify-between rounded-2xl bg-slate-900/60 px-3 py-2">
+            <span className="text-slate-300">{t('sidebar.totalTransactions')}</span>
+            <span className="font-semibold text-white">{financeStats.totalTransactions}</span>
+          </div>
+          <div className="flex items-center justify-between rounded-2xl bg-slate-900/60 px-3 py-2">
+            <span className="text-slate-300">{t('sidebar.totalDeposits')}</span>
+            <span className="font-semibold text-green-300">${Number(financeStats.totalDeposits || 0).toFixed(2)}</span>
+          </div>
+          <div className="flex items-center justify-between rounded-2xl bg-slate-900/60 px-3 py-2">
+            <span className="text-slate-300">{t('sidebar.totalOrdersAmount')}</span>
+            <span className="font-semibold text-cyan-300">${Number(financeStats.totalOrdersAmount || 0).toFixed(2)}</span>
+          </div>
+          <div className="flex items-center justify-between rounded-2xl bg-slate-900/60 px-3 py-2">
+            <span className="text-slate-300">{t('sidebar.totalOrdersCount')}</span>
+            <span className="font-semibold text-white">{orderStats.total}</span>
+          </div>
+        </div>
+      </div>
+
+      <div className="mb-4 rounded-[24px] border border-white/10 bg-white/[0.035] p-3.5 shadow-[0_16px_36px_rgba(2,6,23,0.2)] backdrop-blur-md">
+        <h3 className={`mb-3 font-semibold text-white ${isRTL ? 'text-right' : 'text-left'}`}>
+          {t('sidebar.purchaseSummary')}
+        </h3>
+
+        <div className="space-y-2 text-sm">
+          <div className="flex items-center justify-between rounded-2xl bg-slate-900/60 px-3 py-2">
+            <span className="text-slate-300">{t('sidebar.pendingOrders')}</span>
+            <span className="font-semibold text-yellow-300">{orderStats.pending}</span>
+          </div>
+          <div className="flex items-center justify-between rounded-2xl bg-slate-900/60 px-3 py-2">
+            <span className="text-slate-300">{t('sidebar.completedOrders')}</span>
+            <span className="font-semibold text-green-300">{orderStats.completed}</span>
+          </div>
+          <div className="flex items-center justify-between rounded-2xl bg-slate-900/60 px-3 py-2">
+            <span className="text-slate-300">{t('sidebar.cancelledOrders')}</span>
+            <span className="font-semibold text-red-300">{orderStats.cancelled}</span>
+          </div>
+        </div>
+      </div>
+
+      <div className={`rounded-[24px] border border-yellow-400/20 bg-gradient-to-br from-yellow-400/10 to-yellow-600/10 p-3.5 shadow-[0_18px_36px_rgba(146,64,14,0.12)] ${isRTL ? 'text-right' : 'text-left'}`}>
         <h3 className="mb-2 font-semibold text-yellow-400">{t('sidebar.needHelp')}</h3>
 
         <Link
           href="https://wa.me/96171985887"
           target="_blank"
           rel="noopener noreferrer"
-          className="flex w-full items-center justify-center gap-2 rounded-lg bg-yellow-400 px-4 py-2 font-medium text-slate-900 transition hover:bg-yellow-500"
+          className="flex w-full items-center justify-center gap-2 rounded-2xl bg-yellow-400 px-4 py-2 text-sm font-medium text-slate-900 transition hover:bg-yellow-500"
         >
           <Phone className="h-4 w-4" />
           <span>{t('sidebar.contactSupport')}</span>
@@ -516,48 +522,33 @@ export default function UserSidebar({ onBalanceUpdate }: UserSidebarProps) {
           <Menu className="h-5 w-5 text-white" />
         </button>
 
-        <div className="fixed right-0 top-0 z-40 hidden h-full md:block">
-          <div
-            className="absolute right-0 top-0 h-full w-4"
-            onMouseEnter={() => setIsDesktopOpen(true)}
-          />
-
-          <button
-            onMouseEnter={() => setIsDesktopOpen(true)}
-            type="button"
-            aria-label="Open sidebar"
-            className="absolute right-4 top-4 flex h-10 w-10 items-center justify-center rounded-lg border border-white/10 bg-slate-900/95 text-white shadow-lg"
-          >
-            {isDesktopOpen ? <X className="h-5 w-5" /> : <MoreHorizontal className="h-5 w-5" />}
-          </button>
-
-          <div
-            className={`h-full w-80 transform border-l border-white/10 bg-slate-900 p-6 pt-20 transition-transform duration-300 ${
-              isDesktopOpen ? 'translate-x-0' : 'translate-x-full'
-            }`}
-            onMouseLeave={() => setIsDesktopOpen(false)}
-          >
-            <div className="animate-pulse space-y-6">
-              <div className="flex items-center gap-3">
-                <div className="h-12 w-12 rounded-full bg-slate-700" />
-                <div className="space-y-2">
-                  <div className="h-4 w-24 rounded bg-slate-700" />
-                  <div className="h-3 w-16 rounded bg-slate-700" />
+        <div className="hidden md:block md:w-full">
+          <div className={desktopSticky ? 'sticky top-[90px]' : ''}>
+            <div className="max-h-[calc(100vh-108px)] overflow-y-auto overscroll-contain pr-1 [scrollbar-gutter:stable]">
+              <div className="overflow-hidden rounded-[30px] border border-white/10 bg-[linear-gradient(180deg,rgba(8,15,29,0.98),rgba(5,10,22,1))] p-6">
+              <div className="animate-pulse space-y-6">
+                <div className="flex items-center gap-3">
+                  <div className="h-12 w-12 rounded-full bg-slate-700" />
+                  <div className="space-y-2">
+                    <div className="h-4 w-24 rounded bg-slate-700" />
+                    <div className="h-3 w-16 rounded bg-slate-700" />
+                  </div>
                 </div>
-              </div>
 
-              <div className="space-y-3">
-                <div className="h-20 w-full rounded-lg bg-slate-700" />
-                <div className="h-12 w-full rounded-lg bg-slate-700" />
-              </div>
+                <div className="space-y-3">
+                  <div className="h-20 w-full rounded-lg bg-slate-700" />
+                  <div className="h-12 w-full rounded-lg bg-slate-700" />
+                </div>
 
-              <div className="space-y-2">
-                {Array.from({ length: 9 }).map((_, i) => (
-                  <div key={i} className="h-10 w-full rounded bg-slate-700" />
-                ))}
+                <div className="space-y-2">
+                  {Array.from({ length: 9 }).map((_, i) => (
+                    <div key={i} className="h-10 w-full rounded bg-slate-700" />
+                  ))}
+                </div>
               </div>
             </div>
           </div>
+        </div>
         </div>
       </>
     )
@@ -598,28 +589,11 @@ export default function UserSidebar({ onBalanceUpdate }: UserSidebarProps) {
         {sidebarContent}
       </div>
 
-      <div className="fixed right-0 top-0 z-40 hidden h-full md:block">
-        <div
-          className="absolute right-0 top-0 h-full w-4"
-          onMouseEnter={() => setIsDesktopOpen(true)}
-        />
-
-        <button
-          onMouseEnter={() => setIsDesktopOpen(true)}
-          type="button"
-          aria-label="Open sidebar"
-          className="absolute right-4 top-4 flex h-10 w-10 items-center justify-center rounded-lg border border-white/10 bg-slate-900/95 text-white shadow-lg"
-        >
-          {isDesktopOpen ? <X className="h-5 w-5" /> : <MoreHorizontal className="h-5 w-5" />}
-        </button>
-
-        <div
-          className={`h-full w-80 transform pt-20 transition-transform duration-300 ${
-            isDesktopOpen ? 'translate-x-0' : 'translate-x-full'
-          }`}
-          onMouseLeave={() => setIsDesktopOpen(false)}
-        >
-          {sidebarContent}
+      <div className="hidden md:block md:w-full">
+        <div className={desktopSticky ? 'sticky top-[90px]' : ''}>
+          <div className="max-h-[calc(100vh-108px)] overflow-y-auto overscroll-contain pr-1 [scrollbar-gutter:stable]">
+            {sidebarContent}
+          </div>
         </div>
       </div>
     </>

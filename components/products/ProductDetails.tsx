@@ -29,17 +29,26 @@ const parsePriceFromPackageOption = (source: string, fallbackPrice: number): num
 
 export default function ProductDetails({ product }: ProductDetailsProps) {
   const router = useRouter()
+  const groupedChildren = useMemo(
+    () => (Array.isArray(product.groupChildren) && product.groupChildren.length ? product.groupChildren : [product]),
+    [product]
+  )
+  const [selectedChildSlug, setSelectedChildSlug] = useState(groupedChildren[0]?.slug || product.slug)
 
-  const safeProduct = product as Product & {
-    _id?: string
-    id?: string
-    description?: string
-    shortDescription?: string
-    fullDescription?: string
-    platform?: string
-    startingPrice?: number
-    deliveryTime?: string
-  }
+  const safeProduct = useMemo(
+    () =>
+      (groupedChildren.find((child) => child.slug === selectedChildSlug) || groupedChildren[0] || product) as Product & {
+        _id?: string
+        id?: string
+        description?: string
+        shortDescription?: string
+        fullDescription?: string
+        platform?: string
+        startingPrice?: number
+        deliveryTime?: string
+      },
+    [groupedChildren, product, selectedChildSlug]
+  )
 
   const [playerId, setPlayerId] = useState('')
   const [quantity, setQuantity] = useState(1)
@@ -51,6 +60,10 @@ export default function ProductDetails({ product }: ProductDetailsProps) {
   const [successMessage, setSuccessMessage] = useState('')
   const [productPercent, setProductPercent] = useState(0)
   const [userPercent, setUserPercent] = useState(0)
+
+  useEffect(() => {
+    setSelectedChildSlug(groupedChildren[0]?.slug || product.slug)
+  }, [groupedChildren, product.slug])
 
   const packageField = useMemo(
     () => safeProduct.inputFields?.find((field) => field.type === 'select' && field.name === 'package'),
@@ -93,6 +106,15 @@ export default function ProductDetails({ product }: ProductDetailsProps) {
       setQuantityInput(String(countMin))
     }
   }, [isCountProduct, countMin])
+
+  useEffect(() => {
+    setSelectedPackage('')
+    setQuantity(1)
+    setQuantityInput('1')
+    setError('')
+    setSuccess(false)
+    setSuccessMessage('')
+  }, [safeProduct.slug])
 
   const parsedInputQuantity = Number(quantityInput)
   const effectiveDisplayQuantity =
@@ -276,10 +298,10 @@ export default function ProductDetails({ product }: ProductDetailsProps) {
             </p>
           )}
 
-          <h1 className="mb-4 text-2xl font-bold sm:text-3xl md:text-4xl">{safeProduct.name}</h1>
+          <h1 className="mb-4 text-2xl font-bold sm:text-3xl md:text-4xl">{product.name}</h1>
 
           <p className="mb-6 text-base leading-relaxed text-slate-300 sm:text-lg">
-            {safeProduct.fullDescription || productDescription}
+            {safeProduct.fullDescription || product.fullDescription || productDescription}
           </p>
 
           <p className="mb-8 text-right text-slate-300" dir="rtl">
@@ -310,6 +332,50 @@ export default function ProductDetails({ product }: ProductDetailsProps) {
           </div>
 
           <div className="mb-8 space-y-4">
+            {groupedChildren.length > 1 && (
+              <div>
+                <label className="mb-2 block text-sm font-semibold">
+                  Available Options
+                </label>
+                <div className="grid gap-2 sm:grid-cols-2">
+                  {groupedChildren.map((child) => {
+                    const active = child.slug === safeProduct.slug
+                    const isPackageChild = child.inputFields?.some(
+                      (field) => field.name === 'package' && field.type === 'select'
+                    )
+                    const isCountChild = child.inputFields?.some(
+                      (field) => field.name === 'count' && field.type === 'number'
+                    )
+
+                    return (
+                      <button
+                        key={child.slug}
+                        type="button"
+                        onClick={() => setSelectedChildSlug(child.slug)}
+                        className={`rounded-xl border px-4 py-3 text-left transition ${
+                          active
+                            ? 'border-cyan-400 bg-cyan-500/15 text-cyan-100'
+                            : 'border-white/10 bg-slate-900 text-slate-300 hover:border-cyan-500/40'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between gap-3">
+                          <div className="min-w-0">
+                            <div className="truncate text-sm font-semibold text-white">{child.name}</div>
+                            <div className="mt-1 text-xs text-slate-400">
+                              {isPackageChild ? 'Package options' : isCountChild ? 'Count based' : 'Single option'}
+                            </div>
+                          </div>
+                          <div className="text-sm font-semibold text-cyan-300">
+                            ${Number(child.startingPrice ?? child.price).toFixed(2)}
+                          </div>
+                        </div>
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+            )}
+
             <div>
               <label className="mb-2 block text-sm font-semibold">
                 Player ID / Account
