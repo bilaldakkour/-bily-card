@@ -1,11 +1,15 @@
 import type { Metadata } from "next";
-import Navbar from "@/components/ui/Navbar";
-import SessionExpiredToast from "@/components/ui/SessionExpiredToast";
+import AppChrome from "@/components/shared/AppChrome";
 import "./globals.css";
 
 export const metadata: Metadata = {
   title: "Bily Card - Gaming Top-Up Store",
   description: "Buy PUBG UC, Free Fire Diamonds, Steam Wallet and TikTok Coins instantly",
+  icons: {
+    icon: "/favicon.png",
+    shortcut: "/favicon.png",
+    apple: "/favicon.png",
+  },
 };
 
 export default function RootLayout({
@@ -16,9 +20,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className="antialiased bg-[#020617] text-white min-h-screen">
-        <Navbar />
-        <SessionExpiredToast />
-        <main className="relative pt-[108px] md:pt-[84px]">{children}</main>
+        <AppChrome>{children}</AppChrome>
       </body>
     </html>
   );

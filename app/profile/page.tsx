@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { BadgeCheck, Mail, Shield, Wallet } from 'lucide-react'
 import UserPageLayout from '@/components/shared/UserPageLayout'
 
 interface ProfileData {
@@ -89,13 +90,65 @@ export default function ProfilePage() {
   return (
     <UserPageLayout
       title="My Profile"
+      mobileTitle="إعدادات الحساب"
       subtitle="Your account information in a cleaner, unified layout."
       breadcrumbs={[
         { label: 'Home', href: '/' },
         { label: 'Profile', href: '/profile' },
       ]}
     >
-      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+      <div className="space-y-4 md:hidden">
+        <div className="rounded-[30px] border border-white/10 bg-[#252525] p-5 shadow-[0_24px_70px_rgba(2,6,23,0.22)]">
+          <div className="mb-6 flex items-center justify-between gap-4">
+            <div className="min-w-0 text-right">
+              <h2 className="truncate text-2xl font-black text-white">{displayName}</h2>
+              <p className="mt-1 text-lg text-slate-400">Bilycard@</p>
+            </div>
+            <div className="flex h-20 w-20 items-center justify-center rounded-full bg-amber-500/20">
+              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-amber-300 to-orange-500 text-3xl font-bold text-slate-950">
+                {displayName.charAt(0).toUpperCase()}
+              </div>
+            </div>
+          </div>
+
+          <div className="space-y-5 text-right">
+            <div className="flex items-center justify-between gap-4">
+              <Mail className="h-6 w-6 text-slate-400" />
+              <div className="min-w-0">
+                <p className="text-lg text-slate-400">البريد الإلكتروني</p>
+                <p className="mt-1 break-all text-2xl text-white">{user.email || '-'}</p>
+                <p className="mt-1 text-lg text-emerald-400">{user.isVerified ? 'تم التحقق' : 'غير محقق'}</p>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between gap-4">
+              <Shield className="h-6 w-6 text-slate-400" />
+              <div>
+                <p className="text-lg text-slate-400">الصلاحية</p>
+                <p className="mt-1 text-2xl text-white">{user.role || 'user'}</p>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between gap-4">
+              <Wallet className="h-6 w-6 text-slate-400" />
+              <div>
+                <p className="text-lg text-slate-400">رصيد المحفظة</p>
+                <p className="mt-1 text-2xl text-white">${Number(user.walletBalance?.usd || 0).toFixed(2)}</p>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between gap-4">
+              <BadgeCheck className="h-6 w-6 text-slate-400" />
+              <div>
+                <p className="text-lg text-slate-400">رصيد LBP</p>
+                <p className="mt-1 text-2xl text-white">{Number(user.walletBalance?.lbp || 0).toFixed(0)} LBP</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="hidden md:grid gap-3 md:grid-cols-2 xl:grid-cols-3">
         {profileCards.map((card) => (
           <div
             key={card.label}

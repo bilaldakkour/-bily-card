@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import {
+  ArrowLeft,
   LayoutDashboard,
   ShoppingCart,
   CreditCard,
@@ -66,6 +67,13 @@ export default function AdminSidebar() {
 
       {/* Logout */}
       <div className="p-4 border-t border-slate-700">
+        <Link
+          href="/"
+          className="mb-2 flex items-center w-full px-4 py-3 text-cyan-200 bg-cyan-500/10 hover:bg-cyan-500/15 rounded-lg transition-colors"
+        >
+          <ArrowLeft className="w-5 h-5 mr-3" />
+          Back to Site
+        </Link>
         <button
           onClick={handleLogout}
           className="flex items-center w-full px-4 py-3 text-slate-300 hover:bg-slate-800 hover:text-white rounded-lg transition-colors"

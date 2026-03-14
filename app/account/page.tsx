@@ -117,6 +117,7 @@ export default function AccountPage() {
     <div dir={isRTL ? 'rtl' : 'ltr'}>
       <UserPageLayout
         title={t('account.title')}
+        mobileTitle="حسابي"
         subtitle={t('account.subtitle')}
         breadcrumbs={[
           { label: 'Home', href: '/' },

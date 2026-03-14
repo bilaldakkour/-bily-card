@@ -43,52 +43,56 @@ export function ProductCard({ product, className = '', onProductSelect }: Produc
       ? 'Instant'
       : product.deliveryTime
 
-  const cardClassName = `group relative overflow-hidden rounded-[26px] border border-white/10 bg-[linear-gradient(180deg,rgba(10,18,34,0.98),rgba(7,13,25,0.98))] shadow-[0_22px_60px_rgba(2,6,23,0.2)] backdrop-blur-xl transition-all duration-500 ${
+  const cardClassName = `group relative overflow-hidden rounded-[18px] border border-white/10 bg-[linear-gradient(180deg,rgba(10,18,34,0.98),rgba(7,13,25,0.98))] shadow-[0_10px_24px_rgba(2,6,23,0.16)] backdrop-blur-xl transition-all duration-500 sm:rounded-[26px] sm:shadow-[0_22px_60px_rgba(2,6,23,0.2)] ${
     isOutOfStock
       ? 'cursor-not-allowed opacity-80'
       : 'hover:-translate-y-1 hover:border-cyan-400/25 hover:shadow-[0_26px_70px_rgba(56,189,248,0.12)]'
   } ${className}`
 
   return (
-    <article className={cardClassName}>
+    <div className={cardClassName}>
       {!isOutOfStock && (
         onProductSelect ? (
           <button
             type="button"
             onClick={() => onProductSelect(product)}
-            className="absolute inset-0 z-10 rounded-[26px]"
+            className="absolute inset-0 z-10 rounded-[18px] sm:rounded-[26px]"
             aria-label={`Open ${product.name}`}
-          />
+          >
+            <span className="sr-only">{`Open ${product.name}`}</span>
+          </button>
         ) : (
           <Link
             href={`/products/${product.slug}`}
-            className="absolute inset-0 z-10 rounded-[26px]"
+            className="absolute inset-0 z-10 rounded-[18px] sm:rounded-[26px]"
             aria-label={`Open ${product.name}`}
-          />
+          >
+            <span className="sr-only">{`Open ${product.name}`}</span>
+          </Link>
         )
       )}
 
       {(product.featured || product.bestSeller) && (
-        <div className="absolute left-4 top-4 z-20 flex gap-2">
+        <div className="absolute left-2 top-2 z-20 flex gap-1 sm:left-4 sm:top-4 sm:gap-2">
           {product.bestSeller && (
             <Badge
               variant="primary"
-              className="flex items-center gap-1 px-2.5 py-1 text-[10px] font-bold shadow-lg"
+              className="hidden items-center gap-1 px-2.5 py-1 text-[10px] font-bold shadow-lg sm:inline-flex"
             >
               <Zap className="h-3 w-3" />
               Best Seller
             </Badge>
           )}
           {product.featured && (
-            <Badge variant="secondary" className="px-2.5 py-1 text-[10px] font-bold shadow-lg">
+            <Badge variant="secondary" className="hidden px-2.5 py-1 text-[10px] font-bold shadow-lg sm:inline-flex">
               Featured
             </Badge>
           )}
         </div>
       )}
 
-      <div className="absolute right-4 top-4 z-20 flex items-center gap-2">
-        <div className="flex items-center gap-2">
+      <div className="absolute right-2 top-2 z-20 flex items-center gap-1 sm:right-4 sm:top-4 sm:gap-2">
+        <div className="hidden items-center gap-2 sm:flex">
           <span
             className={`inline-flex rounded-full border px-2.5 py-1 text-[10px] font-semibold ${stockColorByStatus[product.stockStatus]}`}
           >
@@ -100,10 +104,10 @@ export function ProductCard({ product, className = '', onProductSelect }: Produc
             </span>
           ) : null}
         </div>
-        <FavoriteButton slug={product.slug} />
+        <FavoriteButton slug={product.slug} className="scale-90 sm:scale-100" />
       </div>
 
-      <div className="relative h-36 w-full overflow-hidden border-b border-white/6 bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.06),transparent_55%),linear-gradient(180deg,rgba(11,17,31,0.96),rgba(8,14,26,1))] sm:h-40">
+      <div className="relative h-20 w-full overflow-hidden border-b border-white/6 bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.06),transparent_55%),linear-gradient(180deg,rgba(11,17,31,0.96),rgba(8,14,26,1))] sm:h-40">
         <Image
           src={product.image}
           alt={product.name}
@@ -111,7 +115,7 @@ export function ProductCard({ product, className = '', onProductSelect }: Produc
           className={`transition-all duration-700 ${
             isOutOfStock
               ? 'object-cover grayscale'
-              : 'object-contain p-4 group-hover:scale-[1.03]'
+              : 'object-contain p-1.5 group-hover:scale-[1.03] sm:p-4'
           }`}
         />
 
@@ -127,24 +131,24 @@ export function ProductCard({ product, className = '', onProductSelect }: Produc
         <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-slate-950/40" />
       </div>
 
-      <div className="relative space-y-3 p-4">
+      <div className="relative space-y-1.5 p-2 sm:space-y-3 sm:p-4">
         <div className="space-y-1">
           <span
-            className={`inline-block rounded-full border px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.18em] ${accentClass}`}
+            className={`inline-block max-w-full truncate rounded-full border px-1.5 py-0.5 text-[8px] font-bold uppercase tracking-[0.08em] sm:px-2.5 sm:py-1 sm:text-[10px] sm:tracking-[0.18em] ${accentClass}`}
           >
             {product.platform}
           </span>
         </div>
 
-        <div className="space-y-1.5">
-          <h3 className="line-clamp-2 min-h-[3rem] text-[1.2rem] font-extrabold leading-tight text-white transition-colors duration-300 group-hover:text-cyan-50">
+        <div className="space-y-1">
+          <h3 className="line-clamp-2 min-h-[2rem] text-[0.74rem] font-bold leading-snug text-white transition-colors duration-300 group-hover:text-cyan-50 sm:min-h-[3rem] sm:text-[1.2rem] sm:font-extrabold">
             {product.name}
           </h3>
         </div>
       </div>
 
-      <div className="pointer-events-none absolute inset-0 rounded-[26px] bg-[linear-gradient(180deg,rgba(56,189,248,0.04),transparent_24%,transparent_76%,rgba(96,165,250,0.03))] opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
+      <div className="pointer-events-none absolute inset-0 rounded-[18px] bg-[linear-gradient(180deg,rgba(56,189,248,0.04),transparent_24%,transparent_76%,rgba(96,165,250,0.03))] opacity-0 transition-opacity duration-500 group-hover:opacity-100 sm:rounded-[26px]" />
       <div className="pointer-events-none absolute right-0 top-0 h-28 w-28 rounded-full bg-cyan-400/6 blur-3xl transition-all duration-500 group-hover:bg-cyan-400/10" />
-    </article>
+    </div>
   )
 }

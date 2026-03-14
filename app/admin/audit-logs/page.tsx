@@ -240,7 +240,42 @@ export default function AdminAuditLogsPage() {
           No audit logs found.
         </div>
       ) : (
-        <div className="overflow-x-auto rounded-lg border border-white/10 bg-slate-900">
+        <>
+        <div className="grid gap-4 md:hidden">
+          {safeLogs.map((log) => (
+            <div key={log._id} className="rounded-2xl border border-white/10 bg-slate-900 p-4">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold text-white">{log.action}</p>
+                  <p className="mt-1 text-xs text-slate-400">{new Date(log.createdAt).toLocaleString('en-US')}</p>
+                </div>
+                <span className="shrink-0 rounded bg-blue-500/15 px-3 py-1 text-xs font-medium text-blue-300">
+                  {log.targetType}
+                </span>
+              </div>
+
+              <div className="mt-4 space-y-3 text-sm">
+                <div className="rounded-xl bg-slate-800/60 p-3">
+                  <p className="text-xs text-slate-400">Admin</p>
+                  <p className="mt-1 text-slate-200">
+                    {log.adminUserId?.displayName || log.adminUserId?.username || 'Admin'}
+                  </p>
+                  <p className="mt-1 break-all text-xs text-slate-500">{log.adminUserId?.email || ''}</p>
+                </div>
+                <div className="rounded-xl bg-slate-800/60 p-3">
+                  <p className="text-xs text-slate-400">Target ID</p>
+                  <p className="mt-1 break-all font-mono text-slate-200">{log.targetId || '-'}</p>
+                </div>
+                <div className="rounded-xl bg-slate-800/60 p-3">
+                  <p className="text-xs text-slate-400">Details</p>
+                  <p className="mt-1 break-words text-slate-300">{detailsText(log.details)}</p>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div className="hidden overflow-x-auto rounded-lg border border-white/10 bg-slate-900 md:block">
           <table className="w-full text-sm">
             <thead className="border-b border-white/10 bg-slate-800">
               <tr className="text-left text-slate-300">
@@ -271,6 +306,7 @@ export default function AdminAuditLogsPage() {
             </tbody>
           </table>
         </div>
+        </>
       )}
 
       {totalPages > 1 && (

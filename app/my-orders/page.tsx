@@ -82,6 +82,7 @@ export default function MyOrdersPage() {
   return (
     <UserPageLayout
       title="My Orders"
+      mobileTitle="طلباتي"
       subtitle="Track and review your recent purchases in one place."
       breadcrumbs={[
         { label: 'Home', href: '/' },

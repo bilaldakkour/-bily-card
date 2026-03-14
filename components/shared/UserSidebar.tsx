@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import Link from 'next/link'
 import { useLanguage, type LanguageCode } from '@/hooks/useLanguage'
+import { useSupportContact } from '@/hooks/useSupportContact'
 import { clearAuthUserCache, fetchAuthUser } from '@/lib/utils/authClient'
 import { notifySessionExpired } from '@/lib/utils/sessionNotice'
 import {
@@ -60,6 +61,7 @@ export default function UserSidebar({
   const router = useRouter()
   const pathname = usePathname()
   const { language, t, setAppLanguage, isRTL } = useLanguage()
+  const supportContact = useSupportContact()
 
   const [user, setUser] = useState<UserData | null>(null)
   const [loading, setLoading] = useState(true)
@@ -500,7 +502,7 @@ export default function UserSidebar({
           <h3 className="mb-2 font-semibold text-yellow-400">{t('sidebar.needHelp')}</h3>
 
           <Link
-            href="https://wa.me/96171985887"
+            href={supportContact.whatsappUrl}
             target="_blank"
             rel="noopener noreferrer"
             className="flex w-full items-center justify-center gap-2 rounded-2xl bg-yellow-400 px-4 py-2.5 text-sm font-medium text-slate-900 transition hover:bg-yellow-500"

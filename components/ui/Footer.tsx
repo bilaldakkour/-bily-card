@@ -1,11 +1,15 @@
+'use client'
+
 import Link from 'next/link'
 import { Truck, Shield, HeadphonesIcon, Clock, Mail, Phone, MapPin, Gamepad2, ChevronRight } from 'lucide-react'
+import { useSupportContact } from '@/hooks/useSupportContact'
 
 type FooterProps = {
   withRightRailOffset?: boolean
 }
 
 export default function Footer({ withRightRailOffset = false }: FooterProps) {
+  const supportContact = useSupportContact()
   return (
     <footer className="relative mt-16 overflow-hidden border-t border-white/10 bg-[linear-gradient(180deg,rgba(4,10,20,0.98),rgba(3,8,18,1))] py-12 sm:py-16">
       <div className="absolute inset-0">
@@ -109,20 +113,26 @@ export default function Footer({ withRightRailOffset = false }: FooterProps) {
             <div className="space-y-3">
               <div className="flex items-center gap-3">
                 <Mail className="h-4 w-4 text-slate-400" />
-                <a href="mailto:support@bilycard.com" className="text-slate-300 transition-colors hover:text-white">
-                  support@bilycard.com
+                <a
+                  href={`mailto:${supportContact.email}`}
+                  className="min-w-0 break-all text-slate-300 transition-colors hover:text-white"
+                >
+                  {supportContact.email}
                 </a>
               </div>
               <div className="flex items-center gap-3">
                 <Phone className="h-4 w-4 text-slate-400" />
-                <a href="tel:+96171985887" className="text-slate-300 transition-colors hover:text-white">
-                  +961 71 985 887
+                <a
+                  href={`tel:${supportContact.phoneTel}`}
+                  className="min-w-0 break-words text-slate-300 transition-colors hover:text-white"
+                >
+                  {supportContact.phoneDisplay}
                 </a>
               </div>
               <div className="flex items-center gap-3">
                 <MapPin className="h-4 w-4 text-slate-400" />
                 <a
-                  href="https://wa.me/96171985887"
+                  href={supportContact.whatsappUrl}
                   target="_blank"
                   rel="noreferrer"
                   className="text-slate-300 transition-colors hover:text-white"

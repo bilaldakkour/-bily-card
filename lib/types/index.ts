@@ -112,6 +112,13 @@ export interface IPaymentMethodSettings {
   active: boolean;
 }
 
+export interface ISupportContactSettings {
+  email: string;
+  phoneDisplay: string;
+  phoneTel: string;
+  whatsappNumber: string;
+}
+
 // Settings & Logs
 export interface ISystemSettings {
   _id: string;
@@ -131,6 +138,7 @@ export interface ISystemSettings {
   autoRefundFailedOrders: boolean;
   maxRetryAttempts: number;
   paymentMethods?: IPaymentMethodSettings[];
+  supportContact?: ISupportContactSettings;
   updatedAt: Date;
 }
 

@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
+import { useSupportContact } from '@/hooks/useSupportContact'
 import { bilycardProducts } from '@/lib/data/bilycardProducts'
 import {
   MessageCircle,
@@ -26,6 +27,7 @@ export default function TopPromoCarousel({
   compact = false,
   showQuickTabs = true,
 }: TopPromoCarouselProps) {
+  const supportContact = useSupportContact()
   const slides = useMemo(() => {
     const productSlides = bilycardProducts
       .map((product) => String(product.image || '').trim())
@@ -128,7 +130,7 @@ export default function TopPromoCarousel({
     { key: 'accounts', label: 'الاشتراكات', href: '/products?category=accounts-subscriptions', icon: Crown, colorClass: 'text-fuchsia-300 border-fuchsia-400/40 bg-fuchsia-500/10' },
     { key: 'redemption', label: 'الكوبونات', href: '/products?category=redemption-coupons', icon: Ticket, colorClass: 'text-rose-300 border-rose-400/40 bg-rose-500/10' },
     { key: 'secure', label: 'الدفع الآمن', href: '/wallet', icon: ShieldCheck, colorClass: 'text-blue-300 border-blue-400/40 bg-blue-500/10' },
-    { key: 'support', label: 'الدعم', href: 'https://wa.me/96171985887', icon: MessageCircle, colorClass: 'text-teal-300 border-teal-400/40 bg-teal-500/10' },
+    { key: 'support', label: 'الدعم', href: supportContact.whatsappUrl, icon: MessageCircle, colorClass: 'text-teal-300 border-teal-400/40 bg-teal-500/10' },
   ]
 
   return (

@@ -410,9 +410,9 @@ export default function AdminProducts() {
   };
 
   return (
-    <main className="min-h-screen bg-slate-950">
+    <main className="bg-slate-950">
       {/* Header */}
-      <header className="border-b border-slate-700 bg-slate-900/50 backdrop-blur sticky top-0 z-50">
+      <header className="sticky top-0 z-30 hidden border-b border-slate-700 bg-slate-900/50 backdrop-blur lg:block">
         <div className="mx-auto max-w-7xl px-6 py-4 flex items-center justify-between">
           <Link href="/admin" className="text-2xl font-bold text-white">
             Bily Card Admin
@@ -452,7 +452,50 @@ export default function AdminProducts() {
             </span>
           </div>
 
-          <div className="overflow-x-auto rounded border border-white/10">
+          <div className="grid gap-4 md:hidden">
+            {filteredManageProducts.map((product) => (
+              <div key={product.slug} className="rounded-2xl border border-white/10 bg-slate-950/70 p-4">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="text-base font-semibold text-white">{product.name}</p>
+                    <p className="mt-1 text-xs text-slate-400">{product.category}</p>
+                    <p className="mt-1 text-sm text-emerald-300">{formatPrice(Number(product.price || 0))}</p>
+                  </div>
+                  <span
+                    className={`rounded px-2 py-1 text-xs font-semibold ${
+                      product.source === 'custom' ? 'bg-emerald-700 text-emerald-100' : 'bg-blue-700 text-blue-100'
+                    }`}
+                  >
+                    {product.source}
+                  </span>
+                </div>
+
+                <div className="mt-4 grid grid-cols-2 gap-2">
+                  <button
+                    onClick={() => openEditProduct(product)}
+                    className="rounded-xl bg-amber-600 px-3 py-3 text-sm text-white hover:bg-amber-700"
+                  >
+                    Edit
+                  </button>
+                  <button
+                    onClick={() => handleDeleteProduct(product.slug, product.name)}
+                    disabled={deleteSavingSlug === product.slug}
+                    className="rounded-xl bg-rose-600 px-3 py-3 text-sm text-white hover:bg-rose-700 disabled:opacity-50"
+                  >
+                    {deleteSavingSlug === product.slug ? 'Deleting...' : 'Delete'}
+                  </button>
+                </div>
+              </div>
+            ))}
+
+            {filteredManageProducts.length === 0 && (
+              <div className="rounded-2xl border border-white/10 bg-slate-950/70 p-6 text-center text-sm text-slate-400">
+                No products match your search.
+              </div>
+            )}
+          </div>
+
+          <div className="hidden overflow-x-auto rounded border border-white/10 md:block">
             <table className="min-w-full">
               <thead className="bg-slate-900">
                 <tr>
@@ -851,7 +894,64 @@ export default function AdminProducts() {
         {loading ? (
           <div className="text-slate-400">Loading...</div>
         ) : (
-          <div className="bg-slate-800 rounded-lg border border-slate-700 overflow-hidden">
+          <>
+          <div className="space-y-4 md:hidden">
+            {products.map((product) => (
+              <div key={product.id} className="rounded-2xl border border-slate-700 bg-slate-800/70 p-4">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="text-base font-semibold text-white">{product.name}</p>
+                    <p className="text-sm text-slate-400">{product.category}</p>
+                  </div>
+                  <span
+                    className={`rounded-full px-3 py-1 text-xs text-white ${
+                      product.stockStatus === 'out_of_stock'
+                        ? 'bg-red-600'
+                        : product.stockStatus === 'limited'
+                        ? 'bg-amber-600'
+                        : 'bg-green-600'
+                    }`}
+                  >
+                    {product.stockStatus}
+                  </span>
+                </div>
+
+                <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
+                  <div className="rounded-xl bg-slate-900/70 p-3">
+                    <p className="text-xs text-slate-400">Base Price</p>
+                    <p className="mt-1 text-slate-200">{formatPrice(product.basePrice)}</p>
+                  </div>
+                  <div className="rounded-xl bg-slate-900/70 p-3">
+                    <p className="text-xs text-slate-400">Final Preview</p>
+                    <p className="mt-1 font-semibold text-emerald-300">{formatPrice(getFinalPreviewPrice(product))}</p>
+                  </div>
+                </div>
+
+                <div className="mt-4 rounded-xl border border-white/10 bg-slate-900/50 p-3">
+                  <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-400">Product Percent</p>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="number"
+                      value={percentInputs[product.slug] ?? String(Number(product.productPercent || 0))}
+                      onChange={(e) =>
+                        setPercentInputs((prev) => ({ ...prev, [product.slug]: e.target.value }))
+                      }
+                      className="w-full rounded-xl border border-white/10 bg-slate-800 px-3 py-2 text-white"
+                    />
+                    <button
+                      onClick={() => handleSavePercent(product.slug)}
+                      disabled={savingSlug === product.slug}
+                      className="rounded-xl bg-blue-600 px-4 py-2 text-sm text-white hover:bg-blue-700 disabled:opacity-50"
+                    >
+                      {savingSlug === product.slug ? 'Saving...' : 'Save'}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="hidden overflow-hidden rounded-lg border border-slate-700 bg-slate-800 md:block">
             <table className="w-full">
               <thead className="bg-slate-900">
                 <tr>
@@ -920,6 +1020,7 @@ export default function AdminProducts() {
               </tbody>
             </table>
           </div>
+          </>
         )}
       </div>
     </main>

@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { DEFAULT_SUPPORT_CONTACT } from '@/lib/supportContactConfig'
 
 type PaymentMethod = {
   key: string
@@ -10,6 +11,13 @@ type PaymentMethod = {
   minAmount: number
   feePercent: number
   active: boolean
+}
+
+type SupportContact = {
+  email: string
+  phoneDisplay: string
+  phoneTel: string
+  whatsappNumber: string
 }
 
 function toKey(value: string): string {
@@ -54,6 +62,7 @@ function createEmptyMethod(existingKeys: Set<string>): PaymentMethod {
 export default function AdminPaymentMethodsPage() {
   const [token, setToken] = useState('')
   const [methods, setMethods] = useState<PaymentMethod[]>([])
+  const [supportContact, setSupportContact] = useState<SupportContact>(DEFAULT_SUPPORT_CONTACT)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [message, setMessage] = useState('')
@@ -81,7 +90,17 @@ export default function AdminPaymentMethodsPage() {
           throw new Error(data?.message || 'Failed to load payment methods')
         }
 
-        setMethods(Array.isArray(data?.data) ? data.data : [])
+        setMethods(Array.isArray(data?.data?.paymentMethods) ? data.data.paymentMethods : [])
+        setSupportContact({
+          email: String(data?.data?.supportContact?.email || DEFAULT_SUPPORT_CONTACT.email),
+          phoneDisplay: String(
+            data?.data?.supportContact?.phoneDisplay || DEFAULT_SUPPORT_CONTACT.phoneDisplay
+          ),
+          phoneTel: String(data?.data?.supportContact?.phoneTel || DEFAULT_SUPPORT_CONTACT.phoneTel),
+          whatsappNumber: String(
+            data?.data?.supportContact?.whatsappNumber || DEFAULT_SUPPORT_CONTACT.whatsappNumber
+          ),
+        })
       } catch (error: any) {
         setMessage(error?.message || 'Failed to load payment methods')
       } finally {
@@ -122,6 +141,13 @@ export default function AdminPaymentMethodsPage() {
     setMethods((prev) => prev.filter((_, idx) => idx !== index))
   }
 
+  const updateSupportContact = (field: keyof SupportContact, value: string) => {
+    setSupportContact((prev) => ({
+      ...prev,
+      [field]: value,
+    }))
+  }
+
   const handleSave = async () => {
     try {
       setSaving(true)
@@ -145,7 +171,10 @@ export default function AdminPaymentMethodsPage() {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ paymentMethods: normalizedMethods }),
+        body: JSON.stringify({
+          paymentMethods: normalizedMethods,
+          supportContact,
+        }),
       })
 
       const data = await res.json()
@@ -153,7 +182,19 @@ export default function AdminPaymentMethodsPage() {
         throw new Error(data?.message || 'Failed to save payment methods')
       }
 
-      setMethods(Array.isArray(data?.data) ? data.data : methods)
+      setMethods(Array.isArray(data?.data?.paymentMethods) ? data.data.paymentMethods : methods)
+      if (data?.data?.supportContact) {
+        setSupportContact({
+          email: String(data.data.supportContact.email || DEFAULT_SUPPORT_CONTACT.email),
+          phoneDisplay: String(
+            data.data.supportContact.phoneDisplay || DEFAULT_SUPPORT_CONTACT.phoneDisplay
+          ),
+          phoneTel: String(data.data.supportContact.phoneTel || DEFAULT_SUPPORT_CONTACT.phoneTel),
+          whatsappNumber: String(
+            data.data.supportContact.whatsappNumber || DEFAULT_SUPPORT_CONTACT.whatsappNumber
+          ),
+        })
+      }
       setMessage('Saved successfully')
     } catch (error: any) {
       setMessage(error?.message || 'Failed to save payment methods')
@@ -168,13 +209,15 @@ export default function AdminPaymentMethodsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div>
           <h1 className="text-2xl font-bold text-white">Payment Methods</h1>
-          <p className="text-slate-400">Control logos, addresses and fees shown in wallet top-up.</p>
+          <p className="text-slate-400">
+            Control wallet top-up methods and support contact details shown across the website.
+          </p>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <button
             onClick={addMethod}
             className="rounded-lg border border-white/20 bg-white/5 px-4 py-2 text-white hover:bg-white/10"
@@ -197,6 +240,53 @@ export default function AdminPaymentMethodsPage() {
           {message}
         </div>
       )}
+
+      <div className="rounded-xl border border-white/10 bg-slate-900/70 p-5">
+        <div className="mb-4">
+          <h2 className="text-lg font-semibold text-white">Support Contact</h2>
+          <p className="text-sm text-slate-400">
+            These details are used in the footer, contact page, WhatsApp shortcuts, and phone links.
+          </p>
+        </div>
+
+        <div className="grid gap-4 md:grid-cols-2">
+          <label className="text-sm text-slate-300">
+            Support Email
+            <input
+              value={supportContact.email}
+              onChange={(e) => updateSupportContact('email', e.target.value)}
+              className="mt-1 w-full rounded-lg border border-white/10 bg-slate-800 px-3 py-2 text-white"
+            />
+          </label>
+
+          <label className="text-sm text-slate-300">
+            Phone Display
+            <input
+              value={supportContact.phoneDisplay}
+              onChange={(e) => updateSupportContact('phoneDisplay', e.target.value)}
+              className="mt-1 w-full rounded-lg border border-white/10 bg-slate-800 px-3 py-2 text-white"
+            />
+          </label>
+
+          <label className="text-sm text-slate-300">
+            Phone `tel:` Value
+            <input
+              value={supportContact.phoneTel}
+              onChange={(e) => updateSupportContact('phoneTel', e.target.value)}
+              className="mt-1 w-full rounded-lg border border-white/10 bg-slate-800 px-3 py-2 text-white"
+            />
+          </label>
+
+          <label className="text-sm text-slate-300">
+            WhatsApp Number
+            <input
+              value={supportContact.whatsappNumber}
+              onChange={(e) => updateSupportContact('whatsappNumber', e.target.value)}
+              className="mt-1 w-full rounded-lg border border-white/10 bg-slate-800 px-3 py-2 text-white"
+            />
+          </label>
+        </div>
+      </div>
 
       <div className="grid gap-4">
         {methods.map((method, index) => (

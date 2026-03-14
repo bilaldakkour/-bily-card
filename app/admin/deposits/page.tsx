@@ -107,7 +107,7 @@ export default function AdminDepositsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold text-white">Deposit Management</h1>
           <p className="text-slate-400">Review and approve wallet top-up requests</p>
@@ -121,7 +121,7 @@ export default function AdminDepositsPage() {
       )}
 
       {/* Status Filter */}
-      <div className="flex gap-4">
+      <div className="flex flex-wrap gap-3">
         {['pending', 'approved', 'rejected'].map((status) => (
           <button
             key={status}
@@ -140,7 +140,117 @@ export default function AdminDepositsPage() {
         {loading ? (
           <div className="text-center text-gray-400">Loading deposits...</div>
         ) : (
-          <div className="bg-slate-800/50 border border-purple-500/20 rounded-lg overflow-hidden">
+          <>
+            <div className="grid gap-4 md:hidden">
+              {deposits.length === 0 ? (
+                <div className="rounded-2xl border border-white/10 bg-slate-900 p-6 text-center text-slate-400">
+                  No {selectedStatus} deposits
+                </div>
+              ) : (
+                deposits.map((deposit) => (
+                  <div key={deposit._id} className="rounded-2xl border border-purple-500/20 bg-slate-900/80 p-4">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <p className="font-semibold text-white">{deposit.username}</p>
+                        <p className="mt-1 break-all text-sm text-slate-400">{deposit.email}</p>
+                      </div>
+                      <span
+                        className={`shrink-0 rounded px-3 py-1 text-xs font-semibold ${
+                          deposit.status === 'pending'
+                            ? 'bg-yellow-500/20 text-yellow-400'
+                            : deposit.status === 'approved'
+                            ? 'bg-green-500/20 text-green-400'
+                            : 'bg-red-500/20 text-red-400'
+                        }`}
+                      >
+                        {deposit.status}
+                      </span>
+                    </div>
+
+                    <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
+                      <div className="rounded-xl bg-slate-800/70 p-3">
+                        <p className="text-xs text-slate-400">Amount</p>
+                        <p className="mt-1 font-semibold text-white">${deposit.amount}</p>
+                      </div>
+                      <div className="rounded-xl bg-slate-800/70 p-3">
+                        <p className="text-xs text-slate-400">Currency</p>
+                        <p className="mt-1 text-slate-200">{deposit.currency}</p>
+                      </div>
+                      <div className="rounded-xl bg-slate-800/70 p-3">
+                        <p className="text-xs text-slate-400">Method</p>
+                        <p className="mt-1 text-slate-200">{deposit.paymentMethodName || '-'}</p>
+                      </div>
+                      <div className="rounded-xl bg-slate-800/70 p-3">
+                        <p className="text-xs text-slate-400">Date</p>
+                        <p className="mt-1 text-slate-200">{new Date(deposit.createdAt).toLocaleDateString()}</p>
+                      </div>
+                    </div>
+
+                    <div className="mt-3 rounded-xl bg-slate-800/50 p-3 text-sm">
+                      <p className="text-xs text-slate-400">Address</p>
+                      <p className="mt-1 break-all text-slate-200">{deposit.paymentAddress || '-'}</p>
+                    </div>
+
+                    {deposit.proofImage ? (
+                      <a
+                        href={deposit.proofImage}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="mt-3 inline-flex rounded-xl border border-cyan-400/20 bg-cyan-500/10 px-3 py-2 text-sm text-cyan-300"
+                      >
+                        View Proof
+                      </a>
+                    ) : null}
+
+                    {deposit.status === 'pending' && (
+                      <div className="mt-4 space-y-3">
+                        <div className="grid grid-cols-2 gap-2">
+                          <button
+                            onClick={() => handleApprove(deposit._id)}
+                            disabled={actionLoadingId === deposit._id}
+                            className="rounded-xl bg-green-600 px-3 py-3 text-sm font-medium text-white disabled:opacity-60"
+                          >
+                            {actionLoadingId === deposit._id ? 'Working...' : 'Approve'}
+                          </button>
+                          <button
+                            onClick={() => {
+                              setRejectingId(rejectingId === deposit._id ? '' : deposit._id);
+                              setRejectionReason('');
+                              setError('');
+                            }}
+                            disabled={actionLoadingId === deposit._id}
+                            className="rounded-xl bg-red-600 px-3 py-3 text-sm font-medium text-white disabled:opacity-60"
+                          >
+                            Reject
+                          </button>
+                        </div>
+
+                        {rejectingId === deposit._id && (
+                          <div className="space-y-2">
+                            <input
+                              type="text"
+                              value={rejectionReason}
+                              onChange={(e) => setRejectionReason(e.target.value)}
+                              placeholder="Enter rejection reason"
+                              className="w-full rounded-xl border border-slate-600 bg-slate-950 px-3 py-2 text-sm text-white"
+                            />
+                            <button
+                              onClick={() => handleReject(deposit._id)}
+                              disabled={actionLoadingId === deposit._id}
+                              className="w-full rounded-xl bg-red-700 px-3 py-3 text-sm font-medium text-white disabled:opacity-60"
+                            >
+                              Confirm Reject
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                ))
+              )}
+            </div>
+
+            <div className="hidden overflow-hidden rounded-lg border border-purple-500/20 bg-slate-800/50 md:block">
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead className="bg-slate-900/50 border-b border-purple-500/20">
@@ -256,6 +366,7 @@ export default function AdminDepositsPage() {
               </table>
             </div>
           </div>
+          </>
         )}
     </div>
   );

@@ -143,7 +143,7 @@ export default function AdminOrdersPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold text-white">Orders Management</h1>
           <p className="text-slate-400">Review and manage customer orders</p>
@@ -184,7 +184,7 @@ export default function AdminOrdersPage() {
             placeholder="Search orders..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="rounded-lg border border-white/10 bg-slate-800 px-3 py-2 text-white placeholder-slate-400 focus:border-blue-500 focus:outline-none"
+            className="w-full rounded-lg border border-white/10 bg-slate-800 px-3 py-2 text-white placeholder-slate-400 focus:border-blue-500 focus:outline-none sm:w-auto"
           />
         </div>
       </div>
@@ -195,7 +195,96 @@ export default function AdminOrdersPage() {
             <p className="text-slate-400">No orders found</p>
           </div>
         ) : (
-          <div className="overflow-x-auto rounded-lg border border-white/10 bg-slate-900">
+          <>
+            <div className="grid gap-4 md:hidden">
+              {filteredOrders.map((order) => {
+                const orderProfit = Number(order.grossProfit || 0)
+                const canManage = order.status === 'pending' || order.status === 'processing'
+
+                return (
+                  <div key={order._id} className="rounded-2xl border border-white/10 bg-slate-900 p-4 shadow-sm">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <Link
+                          href={`/admin/orders/${order._id}`}
+                          className="block font-mono text-xs text-blue-400 hover:text-blue-300"
+                        >
+                          {order.orderId}
+                        </Link>
+                        <h2 className="mt-1 text-sm font-semibold text-white">{order.productName}</h2>
+                        <p className="mt-1 text-xs text-slate-400">
+                          {new Date(order.createdAt).toLocaleDateString('en-US', {
+                            year: 'numeric',
+                            month: 'short',
+                            day: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit',
+                          })}
+                        </p>
+                      </div>
+                      <span className={`shrink-0 rounded px-3 py-1 text-xs font-medium capitalize ${getStatusColor(order.status)}`}>
+                        {order.status}
+                      </span>
+                    </div>
+
+                    <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
+                      <div className="rounded-xl bg-slate-800/70 p-3">
+                        <p className="text-xs text-slate-400">Player ID</p>
+                        <p className="mt-1 break-all font-mono text-slate-200">{order.playerId}</p>
+                      </div>
+                      <div className="rounded-xl bg-slate-800/70 p-3">
+                        <p className="text-xs text-slate-400">Quantity</p>
+                        <p className="mt-1 text-white">{Number(order.quantity || 1)}</p>
+                      </div>
+                      <div className="rounded-xl bg-slate-800/70 p-3">
+                        <p className="text-xs text-slate-400">Sale Total</p>
+                        <p className="mt-1 font-semibold text-green-400">${Number(order.total || 0).toFixed(2)}</p>
+                      </div>
+                      <div className="rounded-xl bg-slate-800/70 p-3">
+                        <p className="text-xs text-slate-400">Profit</p>
+                        <p className={`mt-1 font-semibold ${orderProfit >= 0 ? 'text-emerald-300' : 'text-red-300'}`}>
+                          ${orderProfit.toFixed(2)}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="mt-4 rounded-xl border border-white/8 bg-slate-800/40 p-3 text-xs text-slate-300">
+                      <p><span className="text-slate-500">Provider:</span> <span className="text-cyan-300">{order.providerStatus || 'n/a'}</span></p>
+                      {order.selectedPackageOption && (
+                        <p className="mt-1"><span className="text-slate-500">Selected:</span> {order.selectedPackageOption}</p>
+                      )}
+                      {order.providerMatchedProductName && (
+                        <p className="mt-1"><span className="text-slate-500">Matched:</span> <span className="text-emerald-300">{order.providerMatchedProductName}</span></p>
+                      )}
+                      {order.failureReason && (
+                        <p className="mt-1 text-red-300"><span className="text-slate-500">Reason:</span> {order.failureReason}</p>
+                      )}
+                    </div>
+
+                    {canManage && (
+                      <div className="mt-4 grid grid-cols-2 gap-2">
+                        <button
+                          onClick={() => handleAction(order._id, 'approve')}
+                          disabled={processingId === order._id}
+                          className="rounded-xl bg-green-600 px-3 py-3 text-sm font-medium text-white transition hover:bg-green-500 disabled:opacity-50"
+                        >
+                          {processingId === order._id ? 'Processing...' : 'Approve'}
+                        </button>
+                        <button
+                          onClick={() => handleAction(order._id, 'reject')}
+                          disabled={processingId === order._id}
+                          className="rounded-xl bg-red-600 px-3 py-3 text-sm font-medium text-white transition hover:bg-red-500 disabled:opacity-50"
+                        >
+                          {processingId === order._id ? 'Processing...' : 'Reject'}
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+
+            <div className="hidden overflow-x-auto rounded-lg border border-white/10 bg-slate-900 md:block">
             <table className="w-full text-sm">
               <thead className="border-b border-white/10 bg-slate-800">
                 <tr className="text-left text-slate-300">
@@ -294,6 +383,7 @@ export default function AdminOrdersPage() {
               </tbody>
             </table>
           </div>
+          </>
         )}
     </div>
   )

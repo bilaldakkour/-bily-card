@@ -309,7 +309,156 @@ export default function AdminUsersPage() {
         </div>
       ) : (
         <div className="space-y-4">
-          <div className="overflow-x-auto rounded-lg border border-white/10 bg-slate-900">
+          <div className="grid gap-4 md:hidden">
+            {filteredUsers.map((user) => (
+              <div key={user._id} className="rounded-2xl border border-white/10 bg-slate-900 p-4">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="text-base font-semibold text-white">{user.displayName}</p>
+                    <p className="text-sm text-slate-400">@{user.username}</p>
+                    <p className="mt-1 break-all text-xs text-slate-500">{user.email}</p>
+                  </div>
+                  <div className="flex flex-col items-end gap-2">
+                    <span
+                      className={`inline-block rounded px-3 py-1 text-xs font-medium capitalize ${
+                        user.role === 'admin' ? 'bg-purple-500/20 text-purple-400' : 'bg-blue-500/20 text-blue-400'
+                      }`}
+                    >
+                      {user.role}
+                    </span>
+                    <span
+                      className={`inline-block rounded px-3 py-1 text-xs font-medium capitalize ${
+                        user.isBlocked ? 'bg-red-500/20 text-red-400' : 'bg-green-500/20 text-green-400'
+                      }`}
+                    >
+                      {user.isBlocked ? 'Blocked' : 'Active'}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
+                  <div className="rounded-xl bg-slate-800/70 p-3">
+                    <p className="text-xs text-slate-400">Phone</p>
+                    <p className="mt-1 break-all text-slate-200">{user.phoneNumber || '-'}</p>
+                  </div>
+                  <div className="rounded-xl bg-slate-800/70 p-3">
+                    <p className="text-xs text-slate-400">Joined</p>
+                    <p className="mt-1 text-slate-200">
+                      {new Date(user.createdAt).toLocaleDateString('en-US', {
+                        year: 'numeric',
+                        month: 'short',
+                        day: 'numeric',
+                      })}
+                    </p>
+                  </div>
+                  <div className="rounded-xl bg-slate-800/70 p-3">
+                    <p className="text-xs text-slate-400">USD Wallet</p>
+                    <p className="mt-1 font-semibold text-emerald-300">${Number(user.walletBalance?.usd || 0).toFixed(2)}</p>
+                  </div>
+                  <div className="rounded-xl bg-slate-800/70 p-3">
+                    <p className="text-xs text-slate-400">LBP Wallet</p>
+                    <p className="mt-1 text-slate-200">{Number(user.walletBalance?.lbp || 0).toLocaleString('en-US')}</p>
+                  </div>
+                </div>
+
+                <div className="mt-4 rounded-xl border border-white/10 bg-slate-800/40 p-3">
+                  <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-400">User Percent</p>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="number"
+                      value={pricingInputs[user._id] ?? String(Number(user.pricingPercent || 0))}
+                      onChange={(e) =>
+                        setPricingInputs((prev) => ({ ...prev, [user._id]: e.target.value }))
+                      }
+                      className="w-full rounded-xl border border-white/10 bg-slate-900 px-3 py-2 text-white"
+                    />
+                    <button
+                      onClick={() => handleSaveUserPercent(user._id)}
+                      disabled={processingId === user._id}
+                      className="rounded-xl bg-blue-600 px-4 py-2 text-sm text-white hover:bg-blue-700 disabled:opacity-50"
+                    >
+                      Save
+                    </button>
+                  </div>
+                </div>
+
+                <div className="mt-4 rounded-xl border border-white/10 bg-slate-800/40 p-3">
+                  <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-400">Wallet Adjustment</p>
+                  <div className="grid grid-cols-3 gap-2">
+                    <select
+                      value={walletDirectionInputs[user._id] || 'add'}
+                      onChange={(e) =>
+                        setWalletDirectionInputs((prev) => ({
+                          ...prev,
+                          [user._id]: e.target.value as 'add' | 'deduct',
+                        }))
+                      }
+                      className="rounded-xl border border-white/10 bg-slate-900 px-2 py-2 text-xs text-white"
+                    >
+                      <option value="add">Add</option>
+                      <option value="deduct">Deduct</option>
+                    </select>
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      placeholder="Amount"
+                      value={walletAmountInputs[user._id] ?? ''}
+                      onChange={(e) =>
+                        setWalletAmountInputs((prev) => ({ ...prev, [user._id]: e.target.value }))
+                      }
+                      className="rounded-xl border border-white/10 bg-slate-900 px-3 py-2 text-xs text-white"
+                    />
+                    <select
+                      value={walletCurrencyInputs[user._id] || 'USD'}
+                      onChange={(e) =>
+                        setWalletCurrencyInputs((prev) => ({
+                          ...prev,
+                          [user._id]: e.target.value as 'USD' | 'LBP',
+                        }))
+                      }
+                      className="rounded-xl border border-white/10 bg-slate-900 px-2 py-2 text-xs text-white"
+                    >
+                      <option value="USD">USD</option>
+                      <option value="LBP">LBP</option>
+                    </select>
+                  </div>
+                  <div className="mt-2 flex gap-2">
+                    <input
+                      type="text"
+                      placeholder="Reason"
+                      value={walletNoteInputs[user._id] ?? ''}
+                      onChange={(e) =>
+                        setWalletNoteInputs((prev) => ({ ...prev, [user._id]: e.target.value }))
+                      }
+                      className="w-full rounded-xl border border-white/10 bg-slate-900 px-3 py-2 text-xs text-white"
+                    />
+                    <button
+                      onClick={() => handleWalletAdjustment(user._id)}
+                      disabled={processingId === user._id}
+                      className="rounded-xl bg-amber-600 px-4 py-2 text-xs text-white hover:bg-amber-700 disabled:opacity-50"
+                    >
+                      Apply
+                    </button>
+                  </div>
+                </div>
+
+                <button
+                  onClick={() => handleBlockToggle(user._id, user.isBlocked)}
+                  disabled={processingId === user._id}
+                  className={`mt-4 w-full rounded-xl px-3 py-3 text-sm font-medium ${
+                    user.isBlocked
+                      ? 'bg-green-600 hover:bg-green-700 text-white'
+                      : 'bg-red-600 hover:bg-red-700 text-white'
+                  } disabled:opacity-50`}
+                >
+                  {processingId === user._id ? 'Processing...' : user.isBlocked ? 'Unblock User' : 'Block User'}
+                </button>
+              </div>
+            ))}
+          </div>
+
+          <div className="hidden overflow-x-auto rounded-lg border border-white/10 bg-slate-900 md:block">
             <table className="w-full text-sm">
               <thead className="border-b border-white/10 bg-slate-800">
                 <tr className="text-left text-slate-300">

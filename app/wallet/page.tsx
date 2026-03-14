@@ -242,6 +242,7 @@ export default function WalletPage() {
     <div dir={isRTL ? 'rtl' : 'ltr'}>
       <UserPageLayout
         title={t('wallet.title')}
+        mobileTitle="المحفظة"
         subtitle={t('wallet.subtitle')}
         breadcrumbs={[
           { label: 'Home', href: '/' },

@@ -1,43 +1,6 @@
+import MobileUserShell from '@/components/shared/MobileUserShell'
 import { Mail, MessageCircle, Phone, ShieldCheck, Clock3, Headphones } from 'lucide-react'
-
-const WHATSAPP_URL = 'https://wa.me/96171985887'
-const SUPPORT_EMAIL = 'support@bilycard.com'
-const SUPPORT_PHONE_DISPLAY = '+961 71 985 887'
-const SUPPORT_PHONE_TEL = '+96171985887'
-
-const contactCards = [
-  {
-    href: WHATSAPP_URL,
-    label: 'WhatsApp',
-    title: 'Chat With Support',
-    description: 'Fast help for orders, wallet top-ups, and urgent account issues.',
-    value: 'Open WhatsApp',
-    icon: MessageCircle,
-    className: 'border-emerald-500/25 bg-emerald-500/10 text-emerald-100 hover:border-emerald-400/50 hover:bg-emerald-500/15',
-    iconWrap: 'bg-emerald-500/15 text-emerald-300',
-    external: true,
-  },
-  {
-    href: `mailto:${SUPPORT_EMAIL}`,
-    label: 'Mail',
-    title: 'Send An Email',
-    description: 'Best for detailed issues, screenshots, and longer requests.',
-    value: SUPPORT_EMAIL,
-    icon: Mail,
-    className: 'border-cyan-500/25 bg-cyan-500/10 text-cyan-100 hover:border-cyan-400/50 hover:bg-cyan-500/15',
-    iconWrap: 'bg-cyan-500/15 text-cyan-300',
-  },
-  {
-    href: `tel:${SUPPORT_PHONE_TEL}`,
-    label: 'Phone',
-    title: 'Call Directly',
-    description: 'Reach us quickly if you prefer direct voice support.',
-    value: SUPPORT_PHONE_DISPLAY,
-    icon: Phone,
-    className: 'border-amber-500/25 bg-amber-500/10 text-amber-100 hover:border-amber-400/50 hover:bg-amber-500/15',
-    iconWrap: 'bg-amber-500/15 text-amber-300',
-  },
-]
+import { getSupportContactSettings, getWhatsappUrl } from '@/lib/supportContact'
 
 const supportNotes = [
   {
@@ -57,10 +20,53 @@ const supportNotes = [
   },
 ]
 
-export default function ContactPage() {
+export default async function ContactPage() {
+  const supportContact = await getSupportContactSettings()
+  const whatsappUrl = getWhatsappUrl(supportContact)
+  const contactCards = [
+    {
+      href: whatsappUrl,
+      label: 'WhatsApp',
+      title: 'Chat With Support',
+      description: 'Fast help for orders, wallet top-ups, and urgent account issues.',
+      value: 'Open WhatsApp',
+      icon: MessageCircle,
+      className:
+        'border-emerald-500/25 bg-emerald-500/10 text-emerald-100 hover:border-emerald-400/50 hover:bg-emerald-500/15',
+      iconWrap: 'bg-emerald-500/15 text-emerald-300',
+      external: true,
+    },
+    {
+      href: `mailto:${supportContact.email}`,
+      label: 'Mail',
+      title: 'Send An Email',
+      description: 'Best for detailed issues, screenshots, and longer requests.',
+      value: supportContact.email,
+      icon: Mail,
+      className:
+        'border-cyan-500/25 bg-cyan-500/10 text-cyan-100 hover:border-cyan-400/50 hover:bg-cyan-500/15',
+      iconWrap: 'bg-cyan-500/15 text-cyan-300',
+    },
+    {
+      href: `tel:${supportContact.phoneTel}`,
+      label: 'Phone',
+      title: 'Call Directly',
+      description: 'Reach us quickly if you prefer direct voice support.',
+      value: supportContact.phoneDisplay,
+      icon: Phone,
+      className:
+        'border-amber-500/25 bg-amber-500/10 text-amber-100 hover:border-amber-400/50 hover:bg-amber-500/15',
+      iconWrap: 'bg-amber-500/15 text-amber-300',
+    },
+  ]
+
   return (
     <div className="min-h-screen bg-slate-950 text-white">
-      <div className="mx-auto max-w-[1480px] px-4 pb-12 pt-3 sm:px-5 lg:px-6">
+      <div className="mx-auto max-w-[1480px] px-4 pb-0 pt-3 sm:px-5 md:hidden">
+        <MobileUserShell title="Contact" />
+      </div>
+
+      <div className="mx-auto max-w-[1480px] px-4 pb-28 pt-0 sm:px-5 lg:px-6 lg:pb-12 lg:pt-3">
         <div className="relative overflow-hidden rounded-[34px] border border-white/10 bg-[linear-gradient(155deg,rgba(8,15,29,0.98),rgba(4,10,22,0.98))] p-5 shadow-[0_28px_90px_rgba(2,6,23,0.28)] sm:p-6 lg:p-7">
           <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(56,189,248,0.16),transparent_32%),radial-gradient(circle_at_80%_20%,rgba(16,185,129,0.12),transparent_28%)]" />
 
@@ -94,7 +100,7 @@ export default function ContactPage() {
                       <p className="text-xs font-black uppercase tracking-[0.22em] text-white/75">{card.label}</p>
                       <h2 className="mt-2 text-xl font-bold text-white">{card.title}</h2>
                       <p className="mt-2 min-h-[66px] text-sm leading-6 text-slate-300">{card.description}</p>
-                      <div className="mt-5 rounded-2xl border border-white/10 bg-black/10 px-4 py-3 text-sm font-semibold text-white">
+                      <div className="mt-5 break-words rounded-2xl border border-white/10 bg-black/10 px-4 py-3 text-sm font-semibold text-white">
                         {card.value}
                       </div>
                     </a>

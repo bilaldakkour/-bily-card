@@ -5,6 +5,7 @@ import { createPortal } from 'react-dom'
 import Image from 'next/image'
 import Link from 'next/link'
 import UserSidebar from '@/components/shared/UserSidebar'
+import MobileUserShell from '@/components/shared/MobileUserShell'
 import FavoriteButton from '@/components/ui/FavoriteButton'
 import Footer from '@/components/ui/Footer'
 import HeroSection from '@/components/ui/HeroSection'
@@ -17,6 +18,7 @@ import { groupCatalogProducts } from '@/lib/data/catalogGrouping'
 import { classifyCatalogProduct } from '@/lib/data/catalogTaxonomy'
 import type { Product } from '@/lib/data'
 import {
+  ArrowLeft,
   Flame,
   ChevronRight,
   Sparkles,
@@ -57,6 +59,7 @@ export default function HomeCompactDashboard() {
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null)
   const [isModalVisible, setIsModalVisible] = useState(false)
   const [isClient, setIsClient] = useState(false)
+  const [mobileBannerIndex, setMobileBannerIndex] = useState(0)
 
   const rankedProducts = useMemo(() => {
     const available = groupCatalogProducts(
@@ -96,6 +99,16 @@ export default function HomeCompactDashboard() {
         .filter((product) => classifyCatalogProduct(product).category === 'cards')
         .slice(0, 4),
     [rankedProducts]
+  )
+
+  const mobileFeaturedProducts = useMemo(() => rankedProducts.slice(0, 6), [rankedProducts])
+  const mobileBannerSlides = useMemo(
+    () => [
+      '/games/playstation.jpg',
+      '/games/pubg.jpg',
+      '/games/google-play.jpg',
+    ],
+    []
   )
 
   const quickTabs = [
@@ -200,6 +213,14 @@ export default function HomeCompactDashboard() {
   useEffect(() => {
     setIsClient(true)
   }, [])
+
+  useEffect(() => {
+    const interval = window.setInterval(() => {
+      setMobileBannerIndex((current) => (current + 1) % mobileBannerSlides.length)
+    }, 3200)
+
+    return () => window.clearInterval(interval)
+  }, [mobileBannerSlides.length])
 
   useEffect(() => {
     const token = localStorage.getItem('bilycard_token')
@@ -347,6 +368,16 @@ export default function HomeCompactDashboard() {
   }, [isModalVisible, selectedProduct])
 
   const handleProductSelect = useCallback((product: Product) => {
+    const productVariants = product.groupChildren?.length ? product.groupChildren : [product]
+    const isPackageProduct = productVariants.some((child) =>
+      child.inputFields?.some((field) => field.name === 'package' && field.type === 'select')
+    )
+
+    if (isPackageProduct) {
+      window.location.href = `/products/${product.slug}`
+      return
+    }
+
     setSelectedProduct(product)
     setIsModalVisible(false)
   }, [])
@@ -357,9 +388,120 @@ export default function HomeCompactDashboard() {
 
   return (
     <>
-      <main className="mx-auto max-w-[1480px] px-4 pb-12 pt-3 sm:px-5 lg:px-6">
+      <div className="mx-auto max-w-[1480px] px-4 pt-3 sm:px-5 md:hidden">
+        <MobileUserShell />
+      </div>
+
+      <main className="mx-auto max-w-[1480px] px-4 pb-12 pt-0 sm:px-5 lg:px-6">
+        <section className="space-y-4 md:hidden">
+          <div className="overflow-hidden rounded-[30px] border border-rose-300/12 bg-[linear-gradient(145deg,#091323,#161420)] p-3 shadow-[0_24px_70px_rgba(2,6,23,0.32)] ring-1 ring-cyan-400/10">
+            <div className="relative h-[148px] overflow-hidden rounded-[24px]">
+              <Image
+                src={mobileBannerSlides[mobileBannerIndex]}
+                alt="Featured banner"
+                fill
+                className="object-cover transition-transform duration-700"
+              />
+              <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(5,10,24,0.6),rgba(5,10,24,0.14))]" />
+              <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(125,211,252,0.18),transparent_34%),radial-gradient(circle_at_bottom_right,rgba(251,113,133,0.16),transparent_34%)]" />
+              <div className="absolute inset-x-0 bottom-0 flex items-center justify-between px-4 pb-4">
+                <div className="flex items-center gap-2">
+                  {mobileBannerSlides.map((slide, index) => (
+                    <button
+                      key={slide}
+                      type="button"
+                      onClick={() => setMobileBannerIndex(index)}
+                      className={`h-2.5 rounded-full transition-all ${
+                        mobileBannerIndex === index ? 'w-6 bg-cyan-300' : 'w-2.5 bg-white/45'
+                      }`}
+                      aria-label={`Go to banner ${index + 1}`}
+                    />
+                  ))}
+                </div>
+                <div className="rounded-full border border-white/10 bg-slate-950/45 px-3 py-1 text-xs font-semibold text-slate-100 backdrop-blur">
+                  {'\u0645\u0645\u064a\u0632'}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-3 gap-3 rounded-[30px] border border-rose-300/10 bg-[linear-gradient(180deg,rgba(11,19,34,0.98),rgba(21,23,38,0.94))] p-4 shadow-[0_18px_50px_rgba(2,6,23,0.22)]">
+            {[
+              { label: '\u0627\u0644\u0631\u0635\u064a\u062f', icon: BadgeDollarSign, href: '/wallet', active: false },
+              { label: '\u0627\u0644\u0645\u062d\u0627\u0641\u0638', icon: WalletCards, href: '/products?category=wallets', active: false },
+              { label: '\u0627\u0644\u0623\u0644\u0639\u0627\u0628', icon: Gamepad2, href: '/products?category=games', active: false },
+              { label: '\u0627\u0644\u062a\u0637\u0628\u064a\u0642\u0627\u062a', icon: AppWindow, href: '/products?category=applications', active: false },
+              { label: '\u0627\u0644\u0628\u0637\u0627\u0642\u0627\u062a', icon: CreditCard, href: '/products?category=cards', active: false },
+              { label: '\u0627\u0644\u0623\u0643\u062b\u0631 \u0645\u0628\u064a\u0639\u0627\u064b', icon: Flame, href: '/products?sort=popular', active: true },
+            ].map((item) => {
+              const Icon = item.icon
+              return (
+                <Link key={item.label} href={item.href} className="flex flex-col items-center gap-2 text-center">
+                  <span
+                    className={`flex h-16 w-16 items-center justify-center rounded-full border ${
+                      item.active
+                        ? 'border-rose-300/60 bg-[linear-gradient(145deg,rgba(125,211,252,0.12),rgba(251,113,133,0.12))] text-rose-200 shadow-[0_0_0_1px_rgba(251,113,133,0.12)]'
+                        : 'border-slate-600/70 bg-white/[0.015] text-slate-200'
+                    }`}
+                  >
+                    <Icon className="h-7 w-7" />
+                  </span>
+                  <span className={`text-base ${item.active ? 'text-rose-200' : 'text-slate-200'}`}>{item.label}</span>
+                </Link>
+              )
+            })}
+          </div>
+
+          <div className="space-y-1 px-1 text-right">
+            <h2 className="text-[2.2rem] font-black leading-none text-rose-300">{'\u0627\u0644\u0623\u0643\u062b\u0631 \u0645\u0628\u064a\u0639\u0627\u064b'}</h2>
+            <p className="text-[1.6rem] font-bold text-sky-200">{'\u0627\u0644\u0645\u0646\u062a\u062c\u0627\u062a \u0627\u0644\u0623\u0639\u0644\u0649 \u0637\u0644\u0628\u0627\u064b'}</p>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            {mobileFeaturedProducts.map((product) => (
+              <button
+                key={`mobile-home-${product.id}`}
+                type="button"
+                onClick={() => handleProductSelect(product)}
+                className="group overflow-hidden rounded-[28px] border border-rose-300/10 bg-[linear-gradient(180deg,rgba(11,19,34,0.96),rgba(24,24,36,0.92))] text-right shadow-[0_20px_40px_rgba(2,6,23,0.3)]"
+              >
+                <div className="relative h-[188px] overflow-hidden bg-[radial-gradient(circle_at_top,rgba(125,211,252,0.18),transparent_44%),radial-gradient(circle_at_bottom_right,rgba(251,113,133,0.18),transparent_35%),linear-gradient(180deg,#102033,#171523)]">
+                  <Image
+                    src={product.image}
+                    alt={product.name}
+                    fill
+                    className="object-cover transition duration-500 group-hover:scale-105"
+                  />
+                  <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(5,10,24,0.12),rgba(5,10,24,0.84))]" />
+                  <div className="absolute left-2 top-2 rounded-full bg-gradient-to-r from-sky-400 to-rose-400 px-3 py-1 text-xs font-bold text-slate-950">
+                    {'\u0641\u0648\u0631\u064a'}
+                  </div>
+                  <div className="absolute inset-x-0 bottom-0 space-y-2 p-3.5 text-right">
+                    <div className="flex items-center justify-between text-rose-200">
+                      <ArrowLeft className="h-4 w-4" />
+                      <span className="rounded-full border border-white/10 bg-black/25 px-2.5 py-1 text-xs font-semibold text-sky-100">
+                        ${Number(product.price || 0).toFixed(2)}
+                      </span>
+                    </div>
+                    <h3 className="line-clamp-1 text-[1.05rem] font-bold text-white">
+                      {product.name}
+                    </h3>
+                    <p className="line-clamp-3 text-xs leading-5 text-slate-200/90">
+                      {product.shortDescription || '\u0627\u0634\u062d\u0646 \u0645\u0646\u062a\u062c\u0643 \u0627\u0644\u0645\u0641\u0636\u0644 \u0628\u0633\u0631\u0639\u0629 \u0648\u0628\u0623\u0645\u0627\u0646.'}
+                    </p>
+                    <span className="inline-flex items-center gap-2 text-xs font-semibold text-cyan-200">
+                      {'\u0627\u0636\u063a\u0637 \u0644\u0644\u0639\u0631\u0636'}
+                      <ArrowLeft className="h-3.5 w-3.5" />
+                    </span>
+                  </div>
+                </div>
+              </button>
+            ))}
+          </div>
+        </section>
+
         <div className="relative lg:pr-[372px]">
-          <section className="space-y-4">
+          <section className="hidden space-y-4 md:block">
             <TopPromoCarousel showQuickTabs={false} />
 
             <div className="grid gap-4 xl:grid-cols-[260px_minmax(0,1fr)]">
@@ -463,9 +605,6 @@ export default function HomeCompactDashboard() {
           </aside>
         </div>
 
-      <div className="lg:hidden">
-        <UserSidebar />
-      </div>
       </main>
       {isClient && selectedProduct && createPortal(
         <div

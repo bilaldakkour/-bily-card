@@ -2,10 +2,12 @@
 
 import type { ReactNode } from 'react'
 import { PageHeader } from '@/components/ui/PageHeader'
+import MobileUserShell from './MobileUserShell'
 import UserSidebar from './UserSidebar'
 
 interface UserPageLayoutProps {
   title: string
+  mobileTitle?: string
   subtitle?: string
   breadcrumbs?: Array<{
     label: string
@@ -24,6 +26,7 @@ interface UserPageLayoutProps {
 
 export default function UserPageLayout({
   title,
+  mobileTitle,
   subtitle,
   breadcrumbs,
   action,
@@ -38,16 +41,24 @@ export default function UserPageLayout({
 }: UserPageLayoutProps) {
   return (
     <div className="min-h-screen bg-slate-950">
+      <div className="md:hidden">
+        <div className="mx-auto max-w-[1480px] px-4 pb-0 pt-3 sm:px-5">
+          <MobileUserShell title={mobileTitle || title} />
+        </div>
+      </div>
+
       {showHeader && (
-        <PageHeader
-          title={title}
-          subtitle={subtitle}
-          breadcrumbs={breadcrumbs}
-          action={action}
-        />
+        <div className="hidden md:block">
+          <PageHeader
+            title={title}
+            subtitle={subtitle}
+            breadcrumbs={breadcrumbs}
+            action={action}
+          />
+        </div>
       )}
 
-      <div className={`mx-auto ${maxWidthClass} px-4 sm:px-5 lg:px-6 ${showHeader ? 'py-8' : 'pb-8 pt-3'} ${bodyClassName}`.trim()}>
+      <div className={`mx-auto ${maxWidthClass} px-4 sm:px-5 lg:px-6 ${showHeader ? 'py-8 md:py-8' : 'pb-28 pt-0 md:pb-8 md:pt-3'} ${bodyClassName}`.trim()}>
         {fixedSidebarDesktop ? (
           <div className="relative">
             <section className="min-w-0 space-y-4 lg:pr-[372px]">{children}</section>
@@ -60,9 +71,6 @@ export default function UserPageLayout({
                 />
               </div>
 
-              <div className="lg:hidden">
-                <UserSidebar onBalanceUpdate={sidebarBalanceUpdate} />
-              </div>
             </aside>
           </div>
         ) : (
@@ -77,9 +85,6 @@ export default function UserPageLayout({
                 />
               </div>
 
-              <div className="lg:hidden">
-                <UserSidebar onBalanceUpdate={sidebarBalanceUpdate} />
-              </div>
             </aside>
           </div>
         )}

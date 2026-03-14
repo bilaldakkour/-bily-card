@@ -31,6 +31,12 @@ const SystemSettingsSchema = new Schema(
         active: { type: Boolean, default: true },
       },
     ],
+    supportContact: {
+      email: { type: String, default: '' },
+      phoneDisplay: { type: String, default: '' },
+      phoneTel: { type: String, default: '' },
+      whatsappNumber: { type: String, default: '' },
+    },
   },
   { timestamps: true }
 );
