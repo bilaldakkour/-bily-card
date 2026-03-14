@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft } from 'lucide-react'
 import { PageHeader } from '@/components/ui/PageHeader'
+import MobileUserShell from '@/components/shared/MobileUserShell'
 import ProductDetails from '@/components/products/ProductDetails'
 import { ProductGrid } from '@/components/ui/ProductGrid'
 import { Button } from '@/components/ui/Button'
@@ -35,23 +36,31 @@ export default async function ProductPage({ params }: ProductPageProps) {
 
   return (
     <div className="min-h-screen">
-      <PageHeader
-        title={product.name}
-        subtitle={product.shortDescription || product.fullDescription}
-        breadcrumbs={[
-          { label: 'Home', href: '/' },
-          { label: 'Products', href: '/products' },
-          { label: product.name, href: `/products/${product.slug}` }
-        ]}
-        action={
-          <Link href="/products">
-            <Button variant="outline">
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Back to Products
-            </Button>
-          </Link>
-        }
-      />
+      <div className="md:hidden">
+        <div className="mx-auto max-w-[1480px] px-4 pb-0 pt-3 sm:px-5">
+          <MobileUserShell title={product.name} />
+        </div>
+      </div>
+
+      <div className="hidden md:block">
+        <PageHeader
+          title={product.name}
+          subtitle={product.shortDescription || product.fullDescription}
+          breadcrumbs={[
+            { label: 'Home', href: '/' },
+            { label: 'Products', href: '/products' },
+            { label: product.name, href: `/products/${product.slug}` },
+          ]}
+          action={
+            <Link href="/products">
+              <Button variant="outline">
+                <ArrowLeft className="mr-2 h-4 w-4" />
+                Back to Products
+              </Button>
+            </Link>
+          }
+        />
+      </div>
 
       <div className="relative mx-auto max-w-[1480px] px-4 pb-12 sm:px-5 lg:px-6">
         <div className="absolute inset-x-4 top-0 -z-10 h-40 rounded-[32px] bg-[radial-gradient(circle_at_top,rgba(56,189,248,0.14),transparent_70%)] blur-3xl sm:inset-x-5 lg:inset-x-6" />
@@ -73,13 +82,13 @@ export default async function ProductPage({ params }: ProductPageProps) {
 
           <div className="mt-8 rounded-[26px] border border-white/10 bg-white/[0.03] p-5 sm:p-6">
             <h3 className="mb-4 text-xl font-bold text-white">Important Notes</h3>
-            <div className="grid gap-3 text-sm text-slate-400 sm:grid-cols-2">
-              <p>• All digital products are delivered instantly after payment confirmation.</p>
-              <p>• Please ensure your account details are entered correctly to avoid delivery issues.</p>
-              <p>• For gaming top-ups, make sure your game account is active and accessible.</p>
-              <p>• Refunds are available within 24 hours if the product hasn&apos;t been delivered.</p>
-              <p>• Contact our support team if you encounter any issues with your order.</p>
-            </div>
+            <ul className="grid gap-3 text-sm text-slate-400 sm:grid-cols-2">
+              <li>All digital products are delivered instantly after payment confirmation.</li>
+              <li>Please ensure your account details are entered correctly to avoid delivery issues.</li>
+              <li>For gaming top-ups, make sure your game account is active and accessible.</li>
+              <li>Refunds are available within 24 hours if the product hasn&apos;t been delivered.</li>
+              <li>Contact our support team if you encounter any issues with your order.</li>
+            </ul>
           </div>
         </div>
       </div>

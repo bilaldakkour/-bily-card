@@ -61,7 +61,7 @@ export default function NotificationsPage() {
           id: order._id || `order-${index}`,
           title:
             String(order.status || '').toLowerCase() === 'completed'
-              ? `تم اكمال طلبك ${order.productName || ''} بنجاح`
+              ? `تم إكمال طلبك ${order.productName || ''} بنجاح`
               : `تم تحديث طلبك ${order.productName || ''}`,
           time: order.createdAt || new Date().toISOString(),
         })),
@@ -94,12 +94,7 @@ export default function NotificationsPage() {
     () =>
       notifications.map((item) => ({
         ...item,
-        timeLabel: new Date(item.time).toLocaleString('en-US', {
-          month: 'short',
-          day: 'numeric',
-          hour: '2-digit',
-          minute: '2-digit',
-        }),
+        timeLabel: new Date(item.time).toLocaleString(),
       })),
     [notifications]
   )
@@ -117,8 +112,8 @@ export default function NotificationsPage() {
       maxWidthClass="max-w-[1720px]"
       fixedSidebarRightClass="lg:right-6"
     >
-      <div className="rounded-[30px] border border-rose-300/10 bg-[linear-gradient(180deg,rgba(10,17,30,0.98),rgba(23,22,35,0.95))] p-4 shadow-[0_24px_70px_rgba(2,6,23,0.22)] sm:p-5">
-        <div className="mb-4 flex items-center justify-between">
+      <div className="rounded-[24px] border border-rose-300/10 bg-[linear-gradient(180deg,rgba(10,17,30,0.98),rgba(23,22,35,0.95))] p-3.5 shadow-[0_24px_70px_rgba(2,6,23,0.22)] sm:rounded-[30px] sm:p-5">
+        <div className="mb-3 flex items-center justify-between sm:mb-4">
           <div className="flex items-center gap-3">
             <button
               type="button"
@@ -127,46 +122,46 @@ export default function NotificationsPage() {
             >
               <RefreshCw className="h-4 w-4" />
             </button>
-            <div className="flex h-8 min-w-8 items-center justify-center rounded-full bg-gradient-to-r from-sky-400 to-rose-400 px-2 text-sm font-bold text-slate-950">
+            <div className="flex h-7 min-w-7 items-center justify-center rounded-full bg-gradient-to-r from-sky-400 to-rose-400 px-2 text-xs font-bold text-slate-950 sm:h-8 sm:min-w-8 sm:text-sm">
               {count}
             </div>
           </div>
           <h2 className="text-right text-3xl font-black text-white">الإشعارات</h2>
         </div>
 
-        <div className="mb-4 grid gap-3 sm:grid-cols-3">
-          <div className="rounded-2xl border border-cyan-400/12 bg-cyan-500/10 px-4 py-4 text-center text-lg font-medium text-cyan-100">
+        <div className="mb-4 grid gap-2 sm:grid-cols-3 sm:gap-3">
+          <div className="rounded-[18px] border border-cyan-400/12 bg-cyan-500/10 px-3 py-3 text-center text-sm font-medium text-cyan-100 sm:rounded-2xl sm:px-4 sm:py-4 sm:text-lg">
             جميع الإشعارات
           </div>
-          <div className="rounded-2xl border border-white/8 bg-white/[0.04] px-4 py-4 text-center text-lg font-medium text-slate-200">
+          <div className="rounded-[18px] border border-white/8 bg-white/[0.04] px-3 py-3 text-center text-sm font-medium text-slate-200 sm:rounded-2xl sm:px-4 sm:py-4 sm:text-lg">
             غير المقروءة فقط
           </div>
-          <div className="rounded-2xl border border-white/8 bg-white/[0.04] px-4 py-4 text-center text-lg font-medium text-slate-200">
+          <div className="rounded-[18px] border border-white/8 bg-white/[0.04] px-3 py-3 text-center text-sm font-medium text-slate-200 sm:rounded-2xl sm:px-4 sm:py-4 sm:text-lg">
             المقروءة فقط
           </div>
         </div>
 
         {loading ? (
           <div className="rounded-2xl bg-white/[0.04] p-8 text-center text-slate-400">
-            Loading notifications...
+            جاري تحميل الإشعارات...
           </div>
         ) : formattedNotifications.length === 0 ? (
           <div className="rounded-2xl bg-white/[0.04] p-8 text-center text-slate-400">
-            No notifications yet.
+            لا توجد إشعارات بعد.
           </div>
         ) : (
           <div className="space-y-3">
             {formattedNotifications.map((item) => (
               <div
                 key={item.id}
-                className="flex items-center justify-between gap-4 rounded-[24px] border border-rose-300/10 bg-[linear-gradient(180deg,rgba(36,33,42,0.96),rgba(24,25,37,0.96))] px-4 py-5 shadow-[0_14px_34px_rgba(2,6,23,0.16)]"
+                className="flex items-center justify-between gap-3 rounded-[20px] border border-rose-300/10 bg-[linear-gradient(180deg,rgba(36,33,42,0.96),rgba(24,25,37,0.96))] px-3.5 py-4 shadow-[0_14px_34px_rgba(2,6,23,0.16)] sm:rounded-[24px] sm:px-4 sm:py-5"
               >
-                <div className="flex h-12 w-2 shrink-0 rounded-full bg-gradient-to-b from-sky-400 to-rose-400" />
+                <div className="flex h-10 w-1.5 shrink-0 rounded-full bg-gradient-to-b from-sky-400 to-rose-400 sm:h-12 sm:w-2" />
                 <div className="min-w-0 flex-1 text-right">
-                  <p className="text-lg text-white">{item.title}</p>
-                  <p className="mt-2 text-sm text-slate-400">{item.timeLabel}</p>
+                  <p className="text-sm text-white sm:text-lg">{item.title}</p>
+                  <p className="mt-1.5 text-xs text-slate-400 sm:mt-2 sm:text-sm">{item.timeLabel}</p>
                 </div>
-                <Bell className="h-6 w-6 shrink-0 text-rose-300" />
+                <Bell className="h-5 w-5 shrink-0 text-rose-300 sm:h-6 sm:w-6" />
               </div>
             ))}
           </div>

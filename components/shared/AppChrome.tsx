@@ -9,19 +9,23 @@ interface AppChromeProps {
 }
 
 export default function AppChrome({ children }: AppChromeProps) {
-  const pathname = usePathname()
+  const pathname = usePathname() || ''
   const isAdminRoute = pathname.startsWith('/admin')
-  const usesMobileUserShell = [
-    '/',
-    '/account',
-    '/profile',
-    '/wallet',
-    '/orders',
-    '/my-orders',
-    '/my-favorites',
-    '/notifications',
-    '/contact',
-  ].includes(pathname)
+  const usesMobileUserShell =
+    [
+      '/',
+      '/account',
+      '/profile',
+      '/wallet',
+      '/orders',
+      '/my-orders',
+      '/my-favorites',
+      '/notifications',
+      '/contact',
+      '/products',
+    ].includes(pathname) ||
+    pathname.startsWith('/products/') ||
+    pathname.startsWith('/categories/')
 
   return (
     <>

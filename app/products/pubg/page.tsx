@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import MobileUserShell from "@/components/shared/MobileUserShell";
 
 const packages = [
   { id: 1, name: "60 UC", price: "$0.95" },
@@ -38,6 +39,10 @@ export default function PubgPage() {
   return (
     <main className="min-h-screen bg-slate-950 px-4 py-16 text-white sm:px-5 lg:px-6">
       <div className="mx-auto max-w-[1480px]">
+        <div className="mb-4 md:hidden">
+          <MobileUserShell title="PUBG Mobile" />
+        </div>
+
         <div className="mb-8">
           <p className="mb-2 text-sm font-semibold uppercase tracking-[0.2em] text-blue-400">
             PUBG Mobile

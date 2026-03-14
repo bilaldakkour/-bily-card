@@ -70,6 +70,35 @@ function extractOptionName(option?: string) {
   return left?.trim() || option.trim()
 }
 
+function isPackageOptionOutOfStock(option?: string) {
+  return /out of stock/i.test(String(option || ''))
+}
+
+function resolveCatalogPackageOption(
+  product: Awaited<ReturnType<typeof getCatalogProductBySlug>>,
+  selectedOption: string
+) {
+  const packageField = product?.inputFields?.find(
+    (field) => field.type === 'select' && field.name === 'package'
+  )
+
+  const options = Array.isArray(packageField?.options) ? packageField.options.map((option) => String(option)) : []
+  if (!options.length) return null
+
+  const requested = String(selectedOption || '').trim()
+  if (!requested) return null
+
+  const exact = options.find((option) => option.trim() === requested)
+  if (exact) return exact
+
+  const requestedLabel = extractOptionName(requested)
+  if (!requestedLabel) return null
+
+  return (
+    options.find((option) => extractOptionName(option).toLowerCase() === requestedLabel.toLowerCase()) || null
+  )
+}
+
 function extractNumberTokens(value: string): string[] {
   const matches = String(value || '').match(/\d+(?:\.\d+)?/g)
   if (!matches) return []
@@ -520,7 +549,7 @@ export async function POST(request: NextRequest) {
     const slug = typeof body.slug === 'string' ? body.slug.trim() : ''
     const providedName = typeof body.name === 'string' ? body.name.trim() : ''
     const cleanPlayerId = typeof body.playerId === 'string' ? body.playerId.trim() : ''
-    const packageOption = typeof body.packageOption === 'string' ? body.packageOption.trim() : ''
+    let packageOption = typeof body.packageOption === 'string' ? body.packageOption.trim() : ''
 
     if (!productId || !cleanPlayerId) {
       return NextResponse.json(
@@ -558,6 +587,29 @@ export async function POST(request: NextRequest) {
         { success: false, message: 'Product name is required' },
         { status: 400 }
       )
+    }
+
+    const matchedCatalogPackage = resolveCatalogPackageOption(catalogProduct, packageOption)
+    const expectsPackageSelection = Boolean(
+      catalogProduct?.inputFields?.some((field) => field.type === 'select' && field.name === 'package')
+    )
+
+    if (expectsPackageSelection) {
+      if (!matchedCatalogPackage) {
+        return NextResponse.json(
+          { success: false, message: 'Please choose a valid package' },
+          { status: 400 }
+        )
+      }
+
+      if (isPackageOptionOutOfStock(matchedCatalogPackage)) {
+        return NextResponse.json(
+          { success: false, message: 'This package is currently out of stock' },
+          { status: 400 }
+        )
+      }
+
+      packageOption = matchedCatalogPackage
     }
 
     if (!Number.isFinite(price) || !Number.isFinite(quantity)) {

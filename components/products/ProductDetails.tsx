@@ -28,6 +28,14 @@ const parsePriceFromPackageOption = (source: string, fallbackPrice: number): num
   return fallbackPrice
 }
 
+const isPackageOptionOutOfStock = (source: string): boolean =>
+  /out of stock/i.test(String(source || ''))
+
+const cleanPackageOptionLabel = (source: string): string =>
+  String(source || '')
+    .replace(/\s*\(out of stock\)\s*/i, '')
+    .trim()
+
 export default function ProductDetails({ product, compact = false }: ProductDetailsProps) {
   const router = useRouter()
   const groupedChildren = useMemo(
@@ -59,6 +67,7 @@ export default function ProductDetails({ product, compact = false }: ProductDeta
   const [showConfirm, setShowConfirm] = useState(false)
   const [error, setError] = useState('')
   const [successMessage, setSuccessMessage] = useState('')
+  const [shareNotice, setShareNotice] = useState('')
   const [productPercent, setProductPercent] = useState(0)
   const [userPercent, setUserPercent] = useState(0)
 
@@ -83,20 +92,30 @@ export default function ProductDetails({ product, compact = false }: ProductDeta
       const source = String(raw)
       const [labelPart] = source.split(' - ')
       const parsedPrice = parsePriceFromPackageOption(source, safeProduct.price)
+      const inStock = !isPackageOptionOutOfStock(source)
 
       return {
-        label: labelPart?.trim() || source,
+        label: cleanPackageOptionLabel(labelPart?.trim() || source),
         display: source,
         price: Number.isFinite(parsedPrice) ? parsedPrice : safeProduct.price,
+        inStock,
       }
     })
   }, [packageField?.options, safeProduct.price])
 
   const [selectedPackage, setSelectedPackage] = useState<string>('')
 
-  const resolvedSelectedPackage = packageOptions.find((option) => option.display === selectedPackage) || packageOptions[0]
+  const firstAvailablePackage = useMemo(
+    () => packageOptions.find((option) => option.inStock) || null,
+    [packageOptions]
+  )
+
+  const resolvedSelectedPackage =
+    packageOptions.find((option) => option.display === selectedPackage) || firstAvailablePackage || packageOptions[0]
   const isPackageProduct = packageOptions.length > 0
   const isCountProduct = !isPackageProduct && Boolean(countField)
+  const hasAvailablePackageOptions = !isPackageProduct || packageOptions.some((option) => option.inStock)
+  const selectedPackageInStock = !isPackageProduct || Boolean(resolvedSelectedPackage?.inStock)
 
   const countMin = countField?.validation?.min ?? 1
   const countMax = countField?.validation?.max
@@ -116,6 +135,32 @@ export default function ProductDetails({ product, compact = false }: ProductDeta
     setSuccess(false)
     setSuccessMessage('')
   }, [safeProduct.slug])
+
+  useEffect(() => {
+    if (!isPackageProduct) return
+
+    if (resolvedSelectedPackage?.inStock && selectedPackage === resolvedSelectedPackage.display) {
+      return
+    }
+
+    setSelectedPackage(firstAvailablePackage?.display || '')
+  }, [
+    firstAvailablePackage,
+    isPackageProduct,
+    resolvedSelectedPackage?.display,
+    resolvedSelectedPackage?.inStock,
+    selectedPackage,
+  ])
+
+  useEffect(() => {
+    if (!shareNotice) return
+
+    const timeout = window.setTimeout(() => {
+      setShareNotice('')
+    }, 2400)
+
+    return () => window.clearTimeout(timeout)
+  }, [shareNotice])
 
   const parsedInputQuantity = Number(quantityInput)
   const effectiveDisplayQuantity =
@@ -180,6 +225,18 @@ export default function ProductDetails({ product, compact = false }: ProductDeta
     if (quantity < 1) {
       setError('Quantity must be at least 1')
       return
+    }
+
+    if (isPackageProduct) {
+      if (!hasAvailablePackageOptions) {
+        setError('This product is currently out of stock.')
+        return
+      }
+
+      if (!resolvedSelectedPackage || !resolvedSelectedPackage.inStock) {
+        setError('Please choose an available package.')
+        return
+      }
     }
 
     if (isCountProduct) {
@@ -276,7 +333,7 @@ export default function ProductDetails({ product, compact = false }: ProductDeta
         })
       } else {
         await navigator.clipboard.writeText(window.location.href)
-        alert('Link copied')
+        setShareNotice('Link copied successfully.')
       }
     } catch (shareError) {
       console.error(shareError)
@@ -305,7 +362,7 @@ export default function ProductDetails({ product, compact = false }: ProductDeta
                   )}
                   <div className="flex items-center gap-3">
                     <span className="h-8 w-1 rounded-full bg-amber-400" />
-                    <h1 className="text-xl font-bold leading-tight text-white sm:text-2xl">{product.name}</h1>
+                    <h1 className="text-xl font-bold leading-tight text-white sm:text-2xl">{safeProduct.name}</h1>
                   </div>
                 </div>
               </div>
@@ -362,21 +419,39 @@ export default function ProductDetails({ product, compact = false }: ProductDeta
                           <button
                             key={option.display}
                             type="button"
-                            onClick={() => setSelectedPackage(option.display)}
+                            onClick={() => {
+                              if (!option.inStock) return
+                              setSelectedPackage(option.display)
+                            }}
+                            disabled={!option.inStock}
                             className={`rounded-2xl border px-3 py-3 text-left transition ${
                               active
                                 ? 'border-cyan-400/50 bg-[linear-gradient(135deg,rgba(14,165,233,0.96),rgba(37,99,235,0.96))] text-white shadow-[0_12px_30px_rgba(37,99,235,0.2)]'
-                                : 'border-white/10 bg-white/[0.08] text-slate-200 hover:border-white/15'
+                                : option.inStock
+                                  ? 'border-white/10 bg-white/[0.08] text-slate-200 hover:border-white/15'
+                                  : 'cursor-not-allowed border-red-400/20 bg-red-500/[0.08] text-slate-500 opacity-70'
                             }`}
                           >
-                            <div className="line-clamp-2 text-sm font-semibold">{option.label}</div>
-                            <div className={`mt-1 text-xs ${active ? 'text-amber-50/85' : 'text-slate-400'}`}>
+                            <div className="flex items-start justify-between gap-3">
+                              <div className="line-clamp-2 text-sm font-semibold">{option.label}</div>
+                              {!option.inStock && (
+                                <span className="rounded-full border border-red-400/30 bg-red-500/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-red-200">
+                                  Closed
+                                </span>
+                              )}
+                            </div>
+                            <div className={`mt-1 text-xs ${active ? 'text-amber-50/85' : option.inStock ? 'text-slate-400' : 'text-red-200/70'}`}>
                               ${option.price.toFixed(2)}
                             </div>
                           </button>
                         )
                       })}
                     </div>
+                    {!hasAvailablePackageOptions && (
+                      <p className="text-sm text-red-300">
+                        All packages for this product are currently out of stock.
+                      </p>
+                    )}
                   </div>
                 )}
 
@@ -458,6 +533,12 @@ export default function ProductDetails({ product, compact = false }: ProductDeta
                 </div>
               )}
 
+              {shareNotice && (
+                <div className="mt-4 rounded-2xl border border-cyan-400/20 bg-cyan-500/10 px-4 py-3 text-sm text-cyan-200">
+                  {shareNotice}
+                </div>
+              )}
+
               <div className="mt-5 flex gap-3">
                 <button
                   onClick={handleShare}
@@ -469,7 +550,7 @@ export default function ProductDetails({ product, compact = false }: ProductDeta
 
                 <button
                   onClick={handleBuyNow}
-                  disabled={loading}
+                  disabled={loading || !hasAvailablePackageOptions}
                   className="flex-1 rounded-2xl px-6 py-3.5 font-semibold text-white shadow-[0_16px_34px_rgba(37,99,235,0.24)] transition-all hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
                   style={{ background: 'linear-gradient(135deg, rgba(14,165,233,0.98), rgba(37,99,235,0.98))' }}
                 >
@@ -481,9 +562,16 @@ export default function ProductDetails({ product, compact = false }: ProductDeta
         </div>
 
         {showConfirm && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4">
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="compact-confirm-order-title"
+          >
             <div className="w-full max-w-md rounded-2xl border border-white/10 bg-slate-900 p-8">
-              <h2 className="mb-6 text-center text-2xl font-bold">Confirm Order</h2>
+              <h2 id="compact-confirm-order-title" className="mb-6 text-center text-2xl font-bold">
+                Confirm Order
+              </h2>
 
               <div className="mb-6 space-y-4">
                 <div className="space-y-2 rounded-lg bg-slate-800/50 p-4">
@@ -521,7 +609,7 @@ export default function ProductDetails({ product, compact = false }: ProductDeta
                 </button>
                 <button
                   onClick={handleConfirm}
-                  disabled={loading}
+                  disabled={loading || !hasAvailablePackageOptions || !selectedPackageInStock}
                   className="flex-1 rounded-lg bg-cyan-500 px-4 py-2 font-semibold text-black transition-colors hover:bg-cyan-400 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   {loading ? 'Processing...' : (
@@ -557,7 +645,7 @@ export default function ProductDetails({ product, compact = false }: ProductDeta
             </p>
           )}
 
-          <h1 className="mb-3 text-2xl font-bold sm:text-3xl md:text-[2.4rem]">{product.name}</h1>
+          <h1 className="mb-3 text-2xl font-bold sm:text-3xl md:text-[2.4rem]">{safeProduct.name}</h1>
 
           <p className="mb-5 max-w-3xl text-sm leading-7 text-slate-300 sm:text-base">
             {safeProduct.fullDescription || product.fullDescription || productDescription}
@@ -641,20 +729,38 @@ export default function ProductDetails({ product, compact = false }: ProductDeta
                       <button
                         key={option.display}
                         type="button"
-                        onClick={() => setSelectedPackage(option.display)}
+                        onClick={() => {
+                          if (!option.inStock) return
+                          setSelectedPackage(option.display)
+                        }}
+                        disabled={!option.inStock}
                         className={`rounded-2xl border px-3 py-2.5 text-left transition ${
                           active
                             ? 'border-cyan-400/60 bg-cyan-500/12 text-cyan-100 shadow-[0_10px_30px_rgba(6,182,212,0.12)]'
-                            : 'border-white/10 bg-white/[0.03] text-slate-300 hover:border-cyan-500/40'
+                            : option.inStock
+                              ? 'border-white/10 bg-white/[0.03] text-slate-300 hover:border-cyan-500/40'
+                              : 'cursor-not-allowed border-red-400/20 bg-red-500/[0.08] text-slate-500 opacity-70'
                         }`}
                       >
-                        <div className="text-xs text-slate-400">Package</div>
+                        <div className={`text-xs ${option.inStock ? 'text-slate-400' : 'text-red-200/70'}`}>Package</div>
                         <div className="truncate text-sm font-semibold">{option.label}</div>
-                        <div className="mt-1 text-sm text-cyan-300">${option.price.toFixed(2)}</div>
+                        <div className={`mt-1 text-sm ${option.inStock ? 'text-cyan-300' : 'text-red-200/80'}`}>
+                          ${option.price.toFixed(2)}
+                        </div>
+                        {!option.inStock && (
+                          <div className="mt-1 text-[11px] font-medium uppercase tracking-[0.16em] text-red-200">
+                            Out of stock
+                          </div>
+                        )}
                       </button>
                     )
                   })}
                 </div>
+                {!hasAvailablePackageOptions && (
+                  <p className="mt-2 text-sm text-red-300">
+                    All packages for this product are currently out of stock.
+                  </p>
+                )}
               </div>
             )}
 
@@ -717,13 +823,19 @@ export default function ProductDetails({ product, compact = false }: ProductDeta
             </div>
           )}
 
+          {shareNotice && (
+            <div className="mt-4 rounded-2xl border border-cyan-400/20 bg-cyan-500/10 px-4 py-3 text-sm text-cyan-200">
+              {shareNotice}
+            </div>
+          )}
+
           <div className="mt-5 flex gap-3">
             <button
               onClick={handleBuyNow}
-              disabled={loading}
+              disabled={loading || !hasAvailablePackageOptions}
               className="flex-1 rounded-2xl bg-cyan-500 px-6 py-3 font-semibold text-black transition-colors hover:bg-cyan-400 disabled:cursor-not-allowed disabled:opacity-50"
             >
-              {loading ? 'Processing...' : 'Buy Now'}
+              {loading ? 'Processing...' : hasAvailablePackageOptions ? 'Buy Now' : 'Out of Stock'}
             </button>
             <button
               onClick={handleShare}
@@ -737,9 +849,16 @@ export default function ProductDetails({ product, compact = false }: ProductDeta
       </div>
 
       {showConfirm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4">
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="confirm-order-title"
+        >
           <div className="w-full max-w-md rounded-2xl border border-white/10 bg-slate-900 p-8">
-            <h2 className="mb-6 text-center text-2xl font-bold">Confirm Order</h2>
+            <h2 id="confirm-order-title" className="mb-6 text-center text-2xl font-bold">
+              Confirm Order
+            </h2>
 
             <div className="mb-6 space-y-4">
               <div className="space-y-2 rounded-lg bg-slate-800/50 p-4">
@@ -777,7 +896,7 @@ export default function ProductDetails({ product, compact = false }: ProductDeta
               </button>
               <button
                 onClick={handleConfirm}
-                disabled={loading}
+                disabled={loading || !hasAvailablePackageOptions || !selectedPackageInStock}
                 className="flex-1 rounded-lg bg-cyan-500 px-4 py-2 font-semibold text-black transition-colors hover:bg-cyan-400 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {loading ? 'Processing...' : (

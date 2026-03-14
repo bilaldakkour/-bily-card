@@ -1,6 +1,7 @@
+import { enrichProductDescriptions } from './productDescriptions'
 import type { Product } from './products'
 
-export const bilycardProducts: Product[] = [
+const rawBilycardProducts: Product[] = [
   {
     "id": "pkg-93",
     "slug": "meyo-live",
@@ -14207,6 +14208,10 @@ export const bilycardProducts: Product[] = [
     ]
   }
 ]
+
+export const bilycardProducts: Product[] = rawBilycardProducts.map((product) =>
+  enrichProductDescriptions(product)
+)
 
 export const getBilycardProductBySlug = (slug: string): Product | undefined => bilycardProducts.find((product) => product.slug === slug)
 

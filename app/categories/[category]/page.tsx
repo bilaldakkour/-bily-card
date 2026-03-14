@@ -1,6 +1,7 @@
 import { notFound } from 'next/navigation'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { ProductGrid } from '@/components/ui/ProductGrid'
+import MobileUserShell from '@/components/shared/MobileUserShell'
 import { categories, getCategoryBySlug } from '@/lib/data'
 import { getCatalogDisplayProducts } from '@/lib/data/catalogProducts'
 import { normalizeCategory } from '@/lib/data/catalogNormalization'
@@ -57,15 +58,23 @@ export default async function CategoryPage({ params, searchParams }: CategoryPag
 
   return (
     <div className="min-h-screen">
-      <PageHeader
-        title={category.name}
-        subtitle={category.description}
-        breadcrumbs={[
-          { label: 'Home', href: '/' },
-          { label: 'Products', href: '/products' },
-          { label: category.name, href: `/categories/${category.slug}` }
-        ]}
-      />
+      <div className="md:hidden">
+        <div className="mx-auto max-w-[1480px] px-4 pb-0 pt-3 sm:px-5">
+          <MobileUserShell title={category.name} />
+        </div>
+      </div>
+
+      <div className="hidden md:block">
+        <PageHeader
+          title={category.name}
+          subtitle={category.description}
+          breadcrumbs={[
+            { label: 'Home', href: '/' },
+            { label: 'Products', href: '/products' },
+            { label: category.name, href: `/categories/${category.slug}` }
+          ]}
+        />
+      </div>
 
       <div className="mx-auto max-w-7xl px-6 py-8">
         <ProductGrid

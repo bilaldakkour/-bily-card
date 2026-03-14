@@ -1,3 +1,5 @@
+import { enrichProductDescriptions } from './productDescriptions';
+
 export interface Product {
   id: string;
   slug: string;
@@ -37,7 +39,7 @@ export interface InputField {
   };
 }
 
-export const products: Product[] = [
+const rawProducts: Product[] = [
   {
     id: 'pubg-uc-60',
     slug: 'pubg-uc-60',
@@ -359,6 +361,8 @@ export const products: Product[] = [
     tags: ['mobile', 'apps', 'gift-card']
   }
 ];
+
+export const products: Product[] = rawProducts.map((product) => enrichProductDescriptions(product));
 
 export const getProductBySlug = (slug: string): Product | undefined => {
   return products.find(product => product.slug === slug);

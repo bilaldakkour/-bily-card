@@ -55,7 +55,7 @@ export default function MyFavoritesPage() {
   return (
     <UserPageLayout
       title="My Favorites"
-      mobileTitle="Favorite"
+      mobileTitle="المفضلة"
       subtitle="Your saved products in one place."
       breadcrumbs={[
         { label: 'Home', href: '/' },
@@ -101,32 +101,32 @@ export default function MyFavoritesPage() {
         />
       </div>
 
-      <div className="space-y-4 md:hidden">
+      <div className="space-y-3 md:hidden">
         {!loading && favoriteProducts.length === 0 ? (
-          <div className="rounded-[26px] border border-white/10 bg-[#2b2b2b] px-4 py-8 text-center text-slate-400">
+          <div className="rounded-[22px] border border-cyan-400/12 bg-[linear-gradient(180deg,rgba(9,18,33,0.98),rgba(17,20,35,0.96))] px-4 py-7 text-center text-sm text-slate-400">
             No favorites yet.
           </div>
         ) : null}
         {favoriteProducts.map((product) => (
           <div
             key={`mobile-${product.id}`}
-            className="flex items-center justify-between gap-4 rounded-[26px] border border-white/10 bg-[#2b2b2b] px-4 py-4"
+            className="flex items-center justify-between gap-3 rounded-[22px] border border-cyan-400/12 bg-[linear-gradient(180deg,rgba(9,18,33,0.98),rgba(17,20,35,0.96))] px-3.5 py-3.5"
           >
             <div className="min-w-0 flex-1 text-right">
-              <div className="mb-3 inline-flex rounded-full bg-emerald-500/20 px-4 py-2 text-sm font-semibold text-emerald-300">
+              <div className="mb-2.5 inline-flex rounded-full bg-emerald-500/20 px-3 py-1.5 text-xs font-semibold text-emerald-300">
                 متوفر
               </div>
-              <p className="truncate text-2xl text-white">{product.name}</p>
-              <p className="mt-1 text-lg text-slate-400">{product.platform || 'quantity'}</p>
+              <p className="truncate text-lg text-white">{product.name}</p>
+              <p className="mt-1 text-sm text-slate-400">{product.platform || 'quantity'}</p>
               <Link
                 href={`/products/${product.slug}`}
-                className="mt-4 inline-flex items-center gap-2 text-xl font-medium text-blue-400"
+                className="mt-3 inline-flex items-center gap-2 text-sm font-medium text-cyan-300"
               >
-                <ArrowLeft className="h-5 w-5" />
+                <ArrowLeft className="h-4 w-4" />
                 شراء الآن
               </Link>
             </div>
-            <div className="flex h-24 w-24 shrink-0 items-center justify-center overflow-hidden rounded-[22px] bg-white">
+            <div className="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-[18px] bg-white">
               <img src={product.image} alt={product.name} className="h-full w-full object-cover" />
             </div>
           </div>

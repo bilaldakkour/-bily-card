@@ -163,7 +163,7 @@ export function ProductsPageClient({
     if (sortBy !== 'name') params.set('sort', sortBy)
 
     const queryString = params.toString()
-    router.push(`/products${queryString ? `?${queryString}` : ''}`, { scroll: false })
+    router.replace(`/products${queryString ? `?${queryString}` : ''}`, { scroll: false })
   }, [searchQuery, selectedCategory, sortBy, router])
 
   // Handle search
@@ -190,7 +190,11 @@ export function ProductsPageClient({
 
   // Update URL effect
   useEffect(() => {
-    updateUrl()
+    const timeout = window.setTimeout(() => {
+      updateUrl()
+    }, 180)
+
+    return () => window.clearTimeout(timeout)
   }, [searchQuery, selectedCategory, sortBy, updateUrl])
 
   useEffect(() => {

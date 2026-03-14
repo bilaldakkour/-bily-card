@@ -196,12 +196,12 @@ export default function MobileUserShell({ title }: MobileUserShellProps) {
   return (
     <>
       <div className="md:hidden">
-        <div className="mb-4 rounded-[28px] border border-cyan-400/18 bg-[linear-gradient(180deg,rgba(7,15,29,0.98),rgba(5,10,22,1))] px-3 py-3 shadow-[0_20px_60px_rgba(2,6,23,0.42)] ring-1 ring-cyan-400/8">
+        <div className="mb-3 rounded-[24px] border border-cyan-400/18 bg-[linear-gradient(180deg,rgba(7,15,29,0.98),rgba(5,10,22,1))] px-3 py-2.5 shadow-[0_20px_60px_rgba(2,6,23,0.42)] ring-1 ring-cyan-400/8">
           <div className="flex items-center gap-3">
             <button
               type="button"
               onClick={() => setIsMenuOpen(true)}
-              className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-cyan-400/20 bg-cyan-500/8 text-slate-100"
+              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[18px] border border-cyan-400/20 bg-cyan-500/8 text-slate-100"
               aria-label="Open menu"
             >
               <Menu className="h-5 w-5" />
@@ -220,7 +220,7 @@ export default function MobileUserShell({ title }: MobileUserShellProps) {
                   if (e.key === 'Enter') handleSearch()
                 }}
                 placeholder={'\u0627\u0628\u062d\u062b \u0639\u0646 \u0627\u0644\u0645\u0646\u062a\u062c\u0627\u062a...'}
-                className="w-full rounded-[22px] border border-cyan-400/12 bg-white/[0.035] px-5 py-3 text-right text-base text-white placeholder-slate-500 focus:border-cyan-400/50 focus:outline-none"
+                className="w-full rounded-[20px] border border-cyan-400/12 bg-white/[0.035] px-4 py-2.5 text-right text-sm text-white placeholder-slate-500 focus:border-cyan-400/50 focus:outline-none"
                 dir="rtl"
               />
             </label>
@@ -228,8 +228,8 @@ export default function MobileUserShell({ title }: MobileUserShellProps) {
         </div>
 
         {title ? (
-          <div className="mb-5 flex items-center justify-between">
-            <h1 className="text-right text-[2.15rem] font-black leading-none text-white">{title}</h1>
+          <div className="mb-4 flex items-center justify-between">
+            <h1 className="text-right text-[1.75rem] font-black leading-none text-white sm:text-[2rem]">{title}</h1>
           </div>
         ) : null}
       </div>
@@ -243,8 +243,8 @@ export default function MobileUserShell({ title }: MobileUserShellProps) {
             aria-label="Close menu overlay"
           />
 
-          <aside className="fixed inset-y-0 right-0 z-[80] w-[88vw] max-w-[372px] overflow-y-auto border-l border-cyan-400/22 bg-[linear-gradient(180deg,rgba(7,15,29,0.985),rgba(4,9,18,1))] px-4 pb-28 pt-5 shadow-[0_0_0_1px_rgba(56,189,248,0.08),0_26px_80px_rgba(2,6,23,0.56)] md:hidden">
-            <div className="mb-5 flex items-center justify-between">
+          <aside className="fixed inset-y-0 right-0 z-[80] w-[86vw] max-w-[360px] overflow-y-auto border-l border-cyan-400/22 bg-[linear-gradient(180deg,rgba(7,15,29,0.985),rgba(4,9,18,1))] px-3.5 pb-24 pt-4 shadow-[0_0_0_1px_rgba(56,189,248,0.08),0_26px_80px_rgba(2,6,23,0.56)] md:hidden">
+            <div className="mb-4 flex items-center justify-between">
               <button
                 type="button"
                 onClick={() => setIsMenuOpen(false)}
@@ -255,11 +255,11 @@ export default function MobileUserShell({ title }: MobileUserShellProps) {
               </button>
 
               <div className="text-right">
-                <p className="text-lg font-bold text-white">{userDisplayName}</p>
-                <p className="text-sm text-slate-400">{t('sidebar.account')}</p>
+                <p className="text-base font-bold text-white">{userDisplayName}</p>
+                <p className="text-xs text-slate-400">{t('sidebar.account')}</p>
               </div>
 
-              <div className="flex h-14 w-14 items-center justify-center overflow-hidden rounded-full border border-cyan-400/20 bg-cyan-500/10">
+              <div className="flex h-12 w-12 items-center justify-center overflow-hidden rounded-full border border-cyan-400/20 bg-cyan-500/10">
                 {user?.avatar ? (
                   <img src={user.avatar} alt="User avatar" className="h-full w-full object-cover" />
                 ) : (
@@ -268,9 +268,9 @@ export default function MobileUserShell({ title }: MobileUserShellProps) {
               </div>
             </div>
 
-            <div className="mb-4 rounded-[26px] border border-cyan-400/14 bg-white/[0.035] p-4 text-right">
+            <div className="mb-4 rounded-[22px] border border-cyan-400/14 bg-white/[0.035] p-3.5 text-right">
               <div className="mb-3 flex items-center justify-between">
-                <span className="text-sm text-slate-400">{t('sidebar.level')}</span>
+                <span className="text-xs text-slate-400">{t('sidebar.level')}</span>
                 <span className="rounded-full border border-cyan-400/20 bg-cyan-400/10 px-2.5 py-1 text-xs font-semibold text-cyan-200">
                   LVL 3
                 </span>
@@ -282,20 +282,20 @@ export default function MobileUserShell({ title }: MobileUserShellProps) {
 
               <p className="mt-1.5 text-xs text-slate-400">{t('sidebar.progress')}</p>
 
-              <div className="mt-4 rounded-[22px] border border-cyan-400/18 bg-[linear-gradient(180deg,rgba(7,32,54,0.95),rgba(6,24,40,0.92))] p-4">
+              <div className="mt-3.5 rounded-[20px] border border-cyan-400/18 bg-[linear-gradient(180deg,rgba(7,32,54,0.95),rgba(6,24,40,0.92))] p-3.5">
                 <div className="flex items-center justify-between">
-                  <span className="text-2xl font-bold text-cyan-300">
+                  <span className="text-xl font-bold text-cyan-300">
                     ${Number(user?.walletBalance?.usd || 0).toFixed(2)}
                   </span>
-                  <span className="text-base text-slate-100">{t('sidebar.availableBalance')}</span>
+                  <span className="text-sm text-slate-100">{t('sidebar.availableBalance')}</span>
                 </div>
-                <p className="mt-1 text-sm text-slate-400">
+                <p className="mt-1 text-xs text-slate-400">
                   {Number(user?.walletBalance?.lbp || 0).toFixed(0)} LBP
                 </p>
                 <Link
                   href="/wallet"
                   onClick={() => setIsMenuOpen(false)}
-                  className="mt-4 flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-cyan-500 to-blue-600 px-4 py-3 text-base font-semibold text-white shadow-[0_14px_30px_rgba(14,165,233,0.22)]"
+                  className="mt-3.5 flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-cyan-500 to-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-[0_14px_30px_rgba(14,165,233,0.22)]"
                 >
                   <Wallet className="h-4 w-4" />
                   {t('sidebar.addBalance')}
@@ -304,7 +304,7 @@ export default function MobileUserShell({ title }: MobileUserShellProps) {
             </div>
 
             <div className="space-y-2 border-t border-white/10 pt-4 text-right">
-              <p className="mb-3 text-base text-slate-400">{'\u0627\u0644\u0648\u0635\u0648\u0644 \u0627\u0644\u0633\u0631\u064a\u0639'}</p>
+              <p className="mb-2.5 text-sm text-slate-400">{'\u0627\u0644\u0648\u0635\u0648\u0644 \u0627\u0644\u0633\u0631\u064a\u0639'}</p>
               {navigationItems.map((item) => {
                 const Icon = item.icon
                 const active = pathname === item.href
@@ -314,7 +314,7 @@ export default function MobileUserShell({ title }: MobileUserShellProps) {
                     key={item.href}
                     href={item.href}
                     onClick={() => setIsMenuOpen(false)}
-                    className={`flex items-center justify-between rounded-[20px] px-4 py-4 text-base transition ${
+                    className={`flex items-center justify-between rounded-[18px] px-3.5 py-3 text-sm transition ${
                       active
                         ? 'border border-cyan-400/30 bg-gradient-to-r from-cyan-500 to-blue-600 text-white shadow-[0_12px_24px_rgba(14,165,233,0.22)]'
                         : 'border border-transparent text-slate-300 hover:border-white/10 hover:bg-white/[0.04]'
@@ -330,13 +330,13 @@ export default function MobileUserShell({ title }: MobileUserShellProps) {
               })}
             </div>
 
-            <div className="mt-4 rounded-[26px] border border-cyan-400/16 bg-[linear-gradient(180deg,rgba(8,18,33,0.98),rgba(15,23,42,0.96))] p-4 text-right shadow-[0_18px_36px_rgba(2,6,23,0.2)]">
+            <div className="mt-4 rounded-[22px] border border-cyan-400/16 bg-[linear-gradient(180deg,rgba(8,18,33,0.98),rgba(15,23,42,0.96))] p-3.5 text-right shadow-[0_18px_36px_rgba(2,6,23,0.2)]">
               <div className="mb-4 flex items-center justify-between">
                 <div>
-                  <p className="text-lg font-bold text-white">{'\u0625\u0639\u062f\u0627\u062f\u0627\u062a \u0627\u0644\u062d\u0633\u0627\u0628'}</p>
-                  <p className="mt-1 text-sm text-slate-400">{'\u062b\u0627\u0628\u062a\u0629 \u0639\u0644\u0649 \u0646\u0633\u062e\u0629 \u0627\u0644\u062a\u0644\u0641\u0648\u0646'}</p>
+                  <p className="text-base font-bold text-white">{'\u0625\u0639\u062f\u0627\u062f\u0627\u062a \u0627\u0644\u062d\u0633\u0627\u0628'}</p>
+                  <p className="mt-1 text-xs text-slate-400">{'\u062b\u0627\u0628\u062a\u0629 \u0639\u0644\u0649 \u0646\u0633\u062e\u0629 \u0627\u0644\u062a\u0644\u0641\u0648\u0646'}</p>
                 </div>
-                <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-cyan-400/16 bg-cyan-500/10 text-cyan-300">
+                <div className="flex h-10 w-10 items-center justify-center rounded-2xl border border-cyan-400/16 bg-cyan-500/10 text-cyan-300">
                   <Settings className="h-5 w-5" />
                 </div>
               </div>
@@ -412,7 +412,7 @@ export default function MobileUserShell({ title }: MobileUserShellProps) {
             </div>
 
             <div className="mt-4 space-y-2 border-t border-white/10 pt-4 text-right">
-              <p className="mb-3 text-base text-slate-400">{t('sidebar.accountReport')}</p>
+              <p className="mb-2.5 text-sm text-slate-400">{t('sidebar.accountReport')}</p>
 
               <div className="flex items-center justify-between rounded-2xl bg-white/[0.04] px-4 py-3 text-sm">
                 <span className="text-slate-300">{t('sidebar.currentBalance')}</span>
@@ -449,7 +449,7 @@ export default function MobileUserShell({ title }: MobileUserShellProps) {
             </div>
 
             <div className="mt-4 space-y-2 border-t border-white/10 pt-4 text-right">
-              <p className="mb-3 text-base text-slate-400">{t('sidebar.purchaseSummary')}</p>
+              <p className="mb-2.5 text-sm text-slate-400">{t('sidebar.purchaseSummary')}</p>
 
               <div className="flex items-center justify-between rounded-2xl bg-white/[0.04] px-4 py-3 text-sm">
                 <span className="inline-flex items-center gap-2 text-slate-300">
@@ -481,13 +481,13 @@ export default function MobileUserShell({ title }: MobileUserShellProps) {
               </div>
             </div>
 
-            <div className="mt-4 rounded-[24px] border border-cyan-400/16 bg-gradient-to-br from-cyan-500/10 to-blue-600/10 p-4 text-right shadow-[0_18px_36px_rgba(14,165,233,0.08)]">
+            <div className="mt-4 rounded-[22px] border border-cyan-400/16 bg-gradient-to-br from-cyan-500/10 to-blue-600/10 p-3.5 text-right shadow-[0_18px_36px_rgba(14,165,233,0.08)]">
               <h3 className="mb-2 font-semibold text-cyan-300">{t('sidebar.needHelp')}</h3>
               <Link
                 href={supportContact.whatsappUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-cyan-500 to-blue-600 px-4 py-3 text-sm font-semibold text-white"
+                className="flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-cyan-500 to-blue-600 px-4 py-2.5 text-sm font-semibold text-white"
               >
                 <Phone className="h-4 w-4" />
                 <span>{t('sidebar.contactSupport')}</span>
@@ -497,7 +497,7 @@ export default function MobileUserShell({ title }: MobileUserShellProps) {
             <button
               type="button"
               onClick={handleLogout}
-              className="mt-5 flex w-full items-center justify-center gap-2 rounded-[20px] border border-red-400/20 bg-red-500/85 px-4 py-4 text-base font-semibold text-white"
+              className="mt-5 flex w-full items-center justify-center gap-2 rounded-[18px] border border-red-400/20 bg-red-500/85 px-4 py-3 text-sm font-semibold text-white"
             >
               <LogOut className="h-4 w-4" />
               {'\u062a\u0633\u062c\u064a\u0644 \u0627\u0644\u062e\u0631\u0648\u062c'}
@@ -507,7 +507,7 @@ export default function MobileUserShell({ title }: MobileUserShellProps) {
       )}
 
       <nav className="fixed inset-x-0 bottom-3 z-[60] px-4 md:hidden">
-        <div className="mx-auto flex max-w-md items-center justify-between rounded-[28px] border border-cyan-400/55 bg-[rgba(10,17,30,0.96)] px-4 py-3 shadow-[0_0_0_1px_rgba(56,189,248,0.12),0_18px_50px_rgba(2,6,23,0.45)] backdrop-blur">
+        <div className="mx-auto flex max-w-md items-center justify-between rounded-[24px] border border-cyan-400/55 bg-[rgba(10,17,30,0.96)] px-3 py-2.5 shadow-[0_0_0_1px_rgba(56,189,248,0.12),0_18px_50px_rgba(2,6,23,0.45)] backdrop-blur">
           <Link
             href="/account"
             className={`flex min-w-[62px] flex-col items-center gap-1 rounded-2xl px-2 py-1 text-xs ${

@@ -1,6 +1,7 @@
 import { Suspense } from 'react'
 import { ProductsPageClient } from '@/components/products/ProductsPageClient'
 import UserSidebar from '@/components/shared/UserSidebar'
+import MobileUserShell from '@/components/shared/MobileUserShell'
 import { getCatalogDisplayProducts } from '@/lib/data/catalogProducts'
 import { getCategoryLabel, normalizeCategory } from '@/lib/data/catalogNormalization'
 
@@ -55,6 +56,12 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
 
   return (
     <div className="min-h-screen">
+      <div className="md:hidden">
+        <div className="mx-auto max-w-[1480px] px-4 pb-0 pt-3 sm:px-5">
+          <MobileUserShell title="Products" />
+        </div>
+      </div>
+
       <div className="relative mx-auto max-w-[1480px] px-3 pb-12 pt-3 sm:px-5 lg:px-6">
         <div className="absolute inset-x-4 top-0 -z-10 h-40 rounded-[32px] bg-[radial-gradient(circle_at_top,rgba(56,189,248,0.14),transparent_70%)] blur-3xl sm:inset-x-5 lg:inset-x-6" />
         <div className="relative lg:pr-[372px]">

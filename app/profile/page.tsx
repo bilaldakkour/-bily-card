@@ -63,7 +63,7 @@ export default function ProfilePage() {
 
   if (loading) {
     return (
-      <main className="min-h-screen bg-slate-950 flex items-center justify-center p-4">
+      <main className="flex min-h-screen items-center justify-center bg-slate-950 p-4">
         <div className="text-white">Loading profile...</div>
       </main>
     )
@@ -117,7 +117,9 @@ export default function ProfilePage() {
               <div className="min-w-0">
                 <p className="text-lg text-slate-400">البريد الإلكتروني</p>
                 <p className="mt-1 break-all text-2xl text-white">{user.email || '-'}</p>
-                <p className="mt-1 text-lg text-emerald-400">{user.isVerified ? 'تم التحقق' : 'غير محقق'}</p>
+                <p className="mt-1 text-lg text-emerald-400">
+                  {user.isVerified ? 'تم التحقق' : 'غير محقق'}
+                </p>
               </div>
             </div>
 
@@ -148,7 +150,7 @@ export default function ProfilePage() {
         </div>
       </div>
 
-      <div className="hidden md:grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+      <div className="hidden gap-3 md:grid md:grid-cols-2 xl:grid-cols-3">
         {profileCards.map((card) => (
           <div
             key={card.label}

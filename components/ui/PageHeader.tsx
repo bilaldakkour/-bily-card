@@ -1,3 +1,5 @@
+import Link from 'next/link'
+
 interface PageHeaderProps {
   title: string;
   subtitle?: string;
@@ -27,9 +29,9 @@ export function PageHeader({ title, subtitle, breadcrumbs, action }: PageHeaderP
                   {index === breadcrumbs.length - 1 ? (
                     <span className="font-medium text-white">{crumb.label}</span>
                   ) : (
-                    <a href={crumb.href} className="font-medium transition-colors duration-300 hover:text-blue-400">
+                    <Link href={crumb.href} className="font-medium transition-colors duration-300 hover:text-blue-400">
                       {crumb.label}
-                    </a>
+                    </Link>
                   )}
                 </li>
               ))}

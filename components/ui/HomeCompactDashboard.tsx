@@ -427,7 +427,7 @@ export default function HomeCompactDashboard() {
 
           <div className="grid grid-cols-3 gap-3 rounded-[30px] border border-rose-300/10 bg-[linear-gradient(180deg,rgba(11,19,34,0.98),rgba(21,23,38,0.94))] p-4 shadow-[0_18px_50px_rgba(2,6,23,0.22)]">
             {[
-              { label: '\u0627\u0644\u0631\u0635\u064a\u062f', icon: BadgeDollarSign, href: '/wallet', active: false },
+              { label: '\u0627\u0644\u0631\u0635\u064a\u062f', icon: BadgeDollarSign, href: '/products?category=balance', active: false },
               { label: '\u0627\u0644\u0645\u062d\u0627\u0641\u0638', icon: WalletCards, href: '/products?category=wallets', active: false },
               { label: '\u0627\u0644\u0623\u0644\u0639\u0627\u0628', icon: Gamepad2, href: '/products?category=games', active: false },
               { label: '\u0627\u0644\u062a\u0637\u0628\u064a\u0642\u0627\u062a', icon: AppWindow, href: '/products?category=applications', active: false },

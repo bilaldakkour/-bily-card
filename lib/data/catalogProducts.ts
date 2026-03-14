@@ -5,6 +5,7 @@ import {
   type CatalogDisplayProduct,
 } from '@/lib/data/catalogGrouping';
 import { isCatalogHiddenFromListings } from '@/lib/data/catalogCuration';
+import { enrichProductDescriptions } from '@/lib/data/productDescriptions';
 import type { Product } from '@/lib/data/products';
 import { connectDB } from '@/lib/db/mongodb';
 import CustomProduct from '@/lib/models/CustomProduct';
@@ -182,7 +183,9 @@ function applyOverride(
 export async function getCatalogProducts(): Promise<CatalogProduct[]> {
   if (isTestModeEnabled()) {
     logTestMode('catalog/products using bundled catalog only')
-    return bilycardProducts.filter((product) => !isCatalogHiddenFromListings(product))
+    return bilycardProducts
+      .filter((product) => !isCatalogHiddenFromListings(product))
+      .map((product) => enrichProductDescriptions(product))
   }
 
   await connectDB();
@@ -212,13 +215,16 @@ export async function getCatalogProducts(): Promise<CatalogProduct[]> {
   for (const product of bilycardProducts) {
     const slug = String(product.slug).toLowerCase();
     if (hiddenSlugs.has(slug)) continue;
-    map.set(slug, applyOverride(product, overrideMap.get(slug)));
+    map.set(slug, enrichProductDescriptions(applyOverride(product, overrideMap.get(slug))));
   }
 
   for (const product of customProducts) {
     const slug = String(product.slug).toLowerCase();
     if (hiddenSlugs.has(slug)) continue;
-    map.set(slug, applyOverride(toCatalogProduct(product), overrideMap.get(slug)));
+    map.set(
+      slug,
+      enrichProductDescriptions(applyOverride(toCatalogProduct(product), overrideMap.get(slug)))
+    );
   }
 
   return Array.from(map.values());
@@ -229,7 +235,8 @@ export async function getCatalogProductBySlug(slug: string): Promise<CatalogProd
   if (!normalized) return undefined;
 
   if (isTestModeEnabled()) {
-    return bilycardProducts.find((product) => String(product.slug).toLowerCase() === normalized);
+    const product = bilycardProducts.find((item) => String(item.slug).toLowerCase() === normalized);
+    return product ? enrichProductDescriptions(product) : undefined;
   }
 
   await connectDB();
@@ -248,13 +255,13 @@ export async function getCatalogProductBySlug(slug: string): Promise<CatalogProd
   }).lean()) as LeanCustomProduct | null;
 
   if (custom) {
-    return applyOverride(toCatalogProduct(custom), override);
+    return enrichProductDescriptions(applyOverride(toCatalogProduct(custom), override));
   }
 
   const base = bilycardProducts.find((product) => String(product.slug).toLowerCase() === normalized);
   if (!base) return undefined;
 
-  return applyOverride(base, override);
+  return enrichProductDescriptions(applyOverride(base, override));
 }
 
 export async function getCatalogBestSellingProducts(): Promise<CatalogProduct[]> {

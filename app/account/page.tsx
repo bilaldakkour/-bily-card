@@ -124,43 +124,43 @@ export default function AccountPage() {
           { label: t('account.title'), href: '/account' },
         ]}
       >
-        <div className="grid gap-3 md:grid-cols-3">
+        <div className="grid gap-2.5 md:grid-cols-3">
           {accountCards.map((card) => (
             <div
               key={card.label}
-              className="rounded-[24px] border border-white/10 bg-[linear-gradient(180deg,rgba(8,15,29,0.94),rgba(5,10,22,0.98))] p-4 shadow-[0_20px_56px_rgba(2,6,23,0.2)]"
+              className="rounded-[20px] border border-white/10 bg-[linear-gradient(180deg,rgba(8,15,29,0.94),rgba(5,10,22,0.98))] p-3 shadow-[0_16px_40px_rgba(2,6,23,0.18)] sm:rounded-[24px] sm:p-4 sm:shadow-[0_20px_56px_rgba(2,6,23,0.2)]"
             >
               <p className="text-xs uppercase tracking-[0.16em] text-slate-500">{card.label}</p>
-              <p className={`mt-2 text-xl font-bold text-white ${card.accent || ''}`}>{card.value}</p>
+              <p className={`mt-1.5 text-lg font-bold text-white sm:mt-2 sm:text-xl ${card.accent || ''}`}>{card.value}</p>
               {card.sublabel && (
-                <p className="mt-3 text-xs uppercase tracking-[0.16em] text-slate-500">{card.sublabel}</p>
+                <p className="mt-2.5 text-[11px] uppercase tracking-[0.16em] text-slate-500 sm:mt-3 sm:text-xs">{card.sublabel}</p>
               )}
               {card.subvalue && (
-                <p className="mt-1 break-all text-sm text-slate-300">{card.subvalue}</p>
+                <p className="mt-1 break-all text-xs text-slate-300 sm:text-sm">{card.subvalue}</p>
               )}
               {card.action && <div className="mt-4">{card.action}</div>}
             </div>
           ))}
         </div>
 
-        <div className="rounded-[28px] border border-white/10 bg-[linear-gradient(180deg,rgba(8,15,29,0.94),rgba(5,10,22,0.98))] p-4 shadow-[0_24px_70px_rgba(2,6,23,0.22)] sm:p-5">
-          <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+        <div className="rounded-[22px] border border-white/10 bg-[linear-gradient(180deg,rgba(8,15,29,0.94),rgba(5,10,22,0.98))] p-3.5 shadow-[0_18px_50px_rgba(2,6,23,0.2)] sm:rounded-[28px] sm:p-5 sm:shadow-[0_24px_70px_rgba(2,6,23,0.22)]">
+          <div className="mb-3 flex flex-wrap items-center justify-between gap-2 sm:mb-4 sm:gap-3">
             <div>
               <p className="text-xs font-black uppercase tracking-[0.22em] text-cyan-300">
                 Recent Activity
               </p>
-              <h2 className="mt-1 text-xl font-semibold text-white">{t('account.recentOrders')}</h2>
+              <h2 className="mt-1 text-lg font-semibold text-white sm:text-xl">{t('account.recentOrders')}</h2>
             </div>
             <Link
               href="/orders"
-              className="rounded-2xl border border-white/15 bg-white/5 px-4 py-2 text-sm font-semibold text-white transition hover:bg-white/10"
+              className="rounded-[18px] border border-white/15 bg-white/5 px-3 py-2 text-xs font-semibold text-white transition hover:bg-white/10 sm:rounded-2xl sm:px-4 sm:text-sm"
             >
               {t('account.viewAll')}
             </Link>
           </div>
 
           {recentOrders.length === 0 ? (
-            <div className="rounded-[24px] border border-white/10 bg-white/[0.035] p-8 text-center">
+            <div className="rounded-[20px] border border-white/10 bg-white/[0.035] p-6 text-center sm:rounded-[24px] sm:p-8">
               <p className="text-slate-400">{t('account.noOrders')}</p>
               <Link
                 href="/products"
@@ -174,18 +174,18 @@ export default function AccountPage() {
               {recentOrders.map((order) => (
                 <div
                   key={order._id}
-                  className="grid gap-3 rounded-[22px] border border-white/8 bg-white/[0.035] p-4 md:grid-cols-[minmax(0,1.5fr)_repeat(3,minmax(0,1fr))]"
+                  className="grid gap-2.5 rounded-[18px] border border-white/8 bg-white/[0.035] p-3 md:grid-cols-[minmax(0,1.5fr)_repeat(3,minmax(0,1fr))] sm:rounded-[22px] sm:p-4"
                 >
                   <div className="min-w-0">
                     <p className="text-xs uppercase tracking-[0.16em] text-slate-500">{t('orders.product')}</p>
                     <p className="mt-1 truncate text-sm font-semibold text-white">{order.productName}</p>
-                    <p className="mt-2 inline-flex rounded-xl border border-cyan-400/25 bg-cyan-500/10 px-2.5 py-1 font-mono text-[11px] text-cyan-300">
+                    <p className="mt-2 inline-flex rounded-xl border border-cyan-400/25 bg-cyan-500/10 px-2 py-1 font-mono text-[10px] text-cyan-300 sm:px-2.5 sm:text-[11px]">
                       {order.orderId}
                     </p>
                   </div>
                   <div>
                     <p className="text-xs uppercase tracking-[0.16em] text-slate-500">{t('orders.playerId')}</p>
-                    <p className="mt-1 truncate font-mono text-sm text-slate-300">{order.playerId}</p>
+                    <p className="mt-1 truncate font-mono text-xs text-slate-300 sm:text-sm">{order.playerId}</p>
                   </div>
                   <div>
                     <p className="text-xs uppercase tracking-[0.16em] text-slate-500">{t('orders.price')}</p>
@@ -201,10 +201,10 @@ export default function AccountPage() {
           )}
         </div>
 
-        <div className="grid gap-3 sm:grid-cols-2">
+        <div className="grid gap-2.5 sm:grid-cols-2">
           <Link
             href="/products"
-            className="rounded-[24px] border border-cyan-400/15 bg-cyan-500/10 px-5 py-4 text-center text-sm font-semibold text-cyan-100 transition hover:bg-cyan-500/15"
+            className="rounded-[20px] border border-cyan-400/15 bg-cyan-500/10 px-4 py-3 text-center text-sm font-semibold text-cyan-100 transition hover:bg-cyan-500/15 sm:rounded-[24px] sm:px-5 sm:py-4"
           >
             {t('account.continueShopping')}
           </Link>
