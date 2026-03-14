@@ -28,7 +28,7 @@ export const CreateOrderSchema = z.object({
 
 export const CreateDepositSchema = z.object({
   amount: z.number().min(0.01),
-  currency: z.enum(['USD', 'LBP']),
+  currency: z.literal('USD'),
 });
 
 export const UpdateProductSchema = z.object({

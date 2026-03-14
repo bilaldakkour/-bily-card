@@ -19,7 +19,6 @@ async function handler(
           success: true,
           data: {
             balance_usd: Number(mockUser.walletBalance?.usd || 0),
-            balance_lbp: Number(mockUser.walletBalance?.lbp || 0),
           },
           testMode: true,
         },
@@ -32,7 +31,10 @@ async function handler(
     return NextResponse.json(
       {
         success: true,
-        data: wallet,
+        data: {
+          balance_usd: Number(wallet?.balance_usd || 0),
+          lastUpdated: wallet?.lastUpdated,
+        },
       },
       { status: 200 }
     );

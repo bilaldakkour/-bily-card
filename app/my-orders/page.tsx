@@ -4,8 +4,16 @@ import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { Search } from 'lucide-react'
-import UserPageLayout from '@/components/shared/UserPageLayout'
 import OrderSummaryCard from '@/components/shared/OrderSummaryCard'
+import {
+  MobileEmptyState,
+  MobileMetricTile,
+  MobilePanel,
+  MobileSectionHeading,
+  mobileInputClass,
+  mobilePrimaryButtonClass,
+} from '@/components/shared/MobileDesignSystem'
+import UserPageLayout from '@/components/shared/UserPageLayout'
 
 interface OrderItem {
   _id: string
@@ -61,18 +69,13 @@ export default function MyOrdersPage() {
   }, [router])
 
   const completedOrders = orders.filter((order) => order.status === 'completed').length
+
   const filteredOrders = useMemo(() => {
     const query = searchTerm.trim().toLowerCase()
     if (!query) return orders
 
     return orders.filter((order) =>
-      [
-        order.orderId,
-        order.productName,
-        order.playerId,
-        order.status,
-        String(order.total),
-      ]
+      [order.orderId, order.productName, order.playerId, order.status, String(order.total)]
         .join(' ')
         .toLowerCase()
         .includes(query)
@@ -93,70 +96,53 @@ export default function MyOrdersPage() {
       maxWidthClass="max-w-[1720px]"
       fixedSidebarRightClass="lg:right-6"
     >
-      <div className="rounded-[22px] border border-white/10 bg-[linear-gradient(180deg,rgba(8,15,29,0.94),rgba(5,10,22,0.98))] p-3.5 shadow-[0_24px_70px_rgba(2,6,23,0.22)] sm:rounded-[28px] sm:p-5">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-          <div>
-            <p className="text-xs font-black uppercase tracking-[0.22em] text-cyan-300">
-              Purchase History
-            </p>
-            <h2 className="mt-1 text-lg font-semibold text-white sm:mt-1.5 sm:text-2xl">Recent Orders</h2>
-            <p className="mt-1 text-xs text-slate-400 sm:text-sm">
-              Every order is laid out in a clearer, easier-to-scan card.
-            </p>
-          </div>
+      <MobilePanel>
+        <MobileSectionHeading
+          eyebrow="Purchase History"
+          title="طلباتك الأخيرة"
+          description="كل طلب صار أوضح وأسهل للمراجعة على شاشة الهاتف."
+        />
 
-          <div className="grid grid-cols-2 gap-2.5 sm:min-w-[240px]">
-            <div className="rounded-[18px] border border-cyan-400/15 bg-cyan-500/10 px-3 py-2.5 sm:rounded-2xl">
-              <p className="text-xs uppercase tracking-[0.16em] text-cyan-300">Orders</p>
-              <p className="mt-1 text-xl font-bold text-white">{orders.length}</p>
-            </div>
-            <div className="rounded-[18px] border border-emerald-400/15 bg-emerald-500/10 px-3 py-2.5 sm:rounded-2xl">
-              <p className="text-xs uppercase tracking-[0.16em] text-emerald-300">Completed</p>
-              <p className="mt-1 text-xl font-bold text-white">{completedOrders}</p>
-            </div>
-          </div>
+        <div className="mt-4 grid grid-cols-2 gap-2.5">
+          <MobileMetricTile label="Orders" value={orders.length} />
+          <MobileMetricTile
+            label="Completed"
+            value={<span className="text-emerald-200">{completedOrders}</span>}
+            className="border-emerald-400/15 bg-emerald-500/10"
+          />
         </div>
 
-        <div className="mt-4">
-          <label className="relative block">
-            <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" />
-            <input
-              type="text"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Search orders, product, player ID..."
-              className="w-full rounded-[18px] border border-white/10 bg-white/[0.035] py-2.5 pl-10 pr-3 text-sm text-white placeholder-slate-500 focus:border-cyan-500 focus:outline-none sm:rounded-2xl sm:py-3 sm:pl-11 sm:pr-4"
-            />
-          </label>
-        </div>
-      </div>
+        <label className="relative mt-4 block">
+          <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" />
+          <input
+            type="text"
+            value={searchTerm}
+            onChange={(event) => setSearchTerm(event.target.value)}
+            placeholder="ابحث بالطلب أو المنتج أو رقم الحساب..."
+            className={`${mobileInputClass} pl-10`}
+          />
+        </label>
+      </MobilePanel>
 
       {loading ? (
-        <div className="rounded-[22px] border border-white/10 bg-[linear-gradient(180deg,rgba(8,15,29,0.94),rgba(5,10,22,0.98))] p-7 text-center shadow-[0_24px_70px_rgba(2,6,23,0.22)] sm:rounded-[28px] sm:p-10">
+        <MobilePanel className="px-5 py-8 text-center" tone="soft">
           <p className="text-slate-300">Loading your orders...</p>
-        </div>
+        </MobilePanel>
       ) : orders.length === 0 ? (
-        <div className="rounded-[22px] border border-white/10 bg-[linear-gradient(180deg,rgba(8,15,29,0.94),rgba(5,10,22,0.98))] p-7 text-center shadow-[0_24px_70px_rgba(2,6,23,0.22)] sm:rounded-[28px] sm:p-10">
-          <h2 className="mb-4 text-2xl font-semibold text-white">
-            No orders found yet
-          </h2>
-
-          <p className="mb-6 text-slate-400">
-            When you purchase a product, your orders will appear here.
-          </p>
-
-          <Link
-            href="/products"
-            className="inline-block rounded-xl bg-cyan-500 px-6 py-3 font-semibold text-black transition-colors hover:bg-cyan-400"
-          >
-            Browse Products
-          </Link>
-        </div>
+        <MobileEmptyState
+          title="لا يوجد طلبات بعد"
+          description="عندما تشتري أي منتج ستظهر الطلبات هنا بشكل منظم وواضح."
+          action={
+            <Link href="/products" className={mobilePrimaryButtonClass}>
+              تصفح المنتجات
+            </Link>
+          }
+        />
       ) : filteredOrders.length === 0 ? (
-        <div className="rounded-[22px] border border-white/10 bg-[linear-gradient(180deg,rgba(8,15,29,0.94),rgba(5,10,22,0.98))] p-7 text-center shadow-[0_24px_70px_rgba(2,6,23,0.22)] sm:rounded-[28px] sm:p-10">
-          <h2 className="mb-3 text-xl font-semibold text-white">No matching orders</h2>
-          <p className="text-slate-400">Try a different search term.</p>
-        </div>
+        <MobileEmptyState
+          title="لا يوجد نتائج"
+          description="جرّب كلمة بحث مختلفة أو امسح الفلتر الحالي."
+        />
       ) : (
         <div className="space-y-3">
           {filteredOrders.map((order) => (

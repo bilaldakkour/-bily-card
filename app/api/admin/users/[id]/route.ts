@@ -36,7 +36,7 @@ async function handler(
         );
       }
 
-      const currency = body.currency === 'LBP' ? 'LBP' : 'USD';
+      const currency = 'USD';
       const notes = String(body.walletNotes || 'Admin adjustment').slice(0, 500);
 
       await walletService.addBalance(

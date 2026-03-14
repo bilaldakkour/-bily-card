@@ -56,8 +56,8 @@ async function handler(
           role: currentUser.role,
           isVerified: currentUser.isVerified,
           walletBalance: wallet
-            ? { usd: wallet.balance_usd, lbp: wallet.balance_lbp }
-            : { usd: 0, lbp: 0 },
+            ? { usd: wallet.balance_usd }
+            : { usd: 0 },
         },
       },
       { status: 200 }

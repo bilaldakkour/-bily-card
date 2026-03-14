@@ -95,7 +95,6 @@ type TranslationKey =
   | 'wallet.title'
   | 'wallet.subtitle'
   | 'wallet.balanceUsd'
-  | 'wallet.balanceLbp'
   | 'wallet.addBalance'
   | 'wallet.amount'
   | 'wallet.currency'
@@ -127,7 +126,6 @@ type TranslationKey =
   | 'account.name'
   | 'account.email'
   | 'account.walletUsd'
-  | 'account.walletLbp'
   | 'account.topUpWallet'
   | 'account.secondaryCurrency'
   | 'account.recentOrders'
@@ -228,7 +226,6 @@ const dictionary: Record<LanguageCode, Record<TranslationKey, string>> = {
     'wallet.title': 'محفظتي',
     'wallet.subtitle': 'إدارة رصيد محفظة Bily Card',
     'wallet.balanceUsd': 'الرصيد (USD)',
-    'wallet.balanceLbp': 'الرصيد (LBP)',
     'wallet.addBalance': 'إضافة رصيد',
     'wallet.amount': 'المبلغ',
     'wallet.currency': 'العملة',
@@ -260,7 +257,6 @@ const dictionary: Record<LanguageCode, Record<TranslationKey, string>> = {
     'account.name': 'الاسم',
     'account.email': 'البريد الإلكتروني',
     'account.walletUsd': 'رصيد المحفظة (USD)',
-    'account.walletLbp': 'رصيد المحفظة (LBP)',
     'account.topUpWallet': 'تعبئة المحفظة',
     'account.secondaryCurrency': 'عملة ثانوية',
     'account.recentOrders': 'آخر الطلبات',
@@ -360,7 +356,6 @@ const dictionary: Record<LanguageCode, Record<TranslationKey, string>> = {
     'wallet.title': 'My Wallet',
     'wallet.subtitle': 'Manage your Bily Card wallet balance',
     'wallet.balanceUsd': 'Balance (USD)',
-    'wallet.balanceLbp': 'Balance (LBP)',
     'wallet.addBalance': 'Add Balance',
     'wallet.amount': 'Amount',
     'wallet.currency': 'Currency',
@@ -392,7 +387,6 @@ const dictionary: Record<LanguageCode, Record<TranslationKey, string>> = {
     'account.name': 'Name',
     'account.email': 'Email',
     'account.walletUsd': 'Wallet Balance (USD)',
-    'account.walletLbp': 'Wallet Balance (LBP)',
     'account.topUpWallet': 'Top Up Wallet',
     'account.secondaryCurrency': 'Secondary currency',
     'account.recentOrders': 'Recent Orders',
@@ -492,7 +486,6 @@ const dictionary: Record<LanguageCode, Record<TranslationKey, string>> = {
     'wallet.title': 'Mon Portefeuille',
     'wallet.subtitle': 'Gerez le solde de votre portefeuille Bily Card',
     'wallet.balanceUsd': 'Solde (USD)',
-    'wallet.balanceLbp': 'Solde (LBP)',
     'wallet.addBalance': 'Ajouter du solde',
     'wallet.amount': 'Montant',
     'wallet.currency': 'Devise',
@@ -524,7 +517,6 @@ const dictionary: Record<LanguageCode, Record<TranslationKey, string>> = {
     'account.name': 'Nom',
     'account.email': 'Email',
     'account.walletUsd': 'Solde portefeuille (USD)',
-    'account.walletLbp': 'Solde portefeuille (LBP)',
     'account.topUpWallet': 'Recharger le portefeuille',
     'account.secondaryCurrency': 'Devise secondaire',
     'account.recentOrders': 'Commandes recentes',

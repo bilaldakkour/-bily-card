@@ -14,7 +14,6 @@ interface User {
   pricingPercent?: number
   walletBalance?: {
     usd?: number
-    lbp?: number
   }
   createdAt: string
 }
@@ -32,7 +31,6 @@ export default function AdminUsersPage() {
   const [message, setMessage] = useState('')
   const [pricingInputs, setPricingInputs] = useState<Record<string, string>>({})
   const [walletAmountInputs, setWalletAmountInputs] = useState<Record<string, string>>({})
-  const [walletCurrencyInputs, setWalletCurrencyInputs] = useState<Record<string, 'USD' | 'LBP'>>({})
   const [walletDirectionInputs, setWalletDirectionInputs] = useState<Record<string, 'add' | 'deduct'>>({})
   const [walletNoteInputs, setWalletNoteInputs] = useState<Record<string, string>>({})
 
@@ -70,13 +68,6 @@ export default function AdminUsersPage() {
           const next = { ...prev }
           for (const u of data.data as User[]) {
             if (!next[u._id]) next[u._id] = ''
-          }
-          return next
-        })
-        setWalletCurrencyInputs((prev) => {
-          const next = { ...prev }
-          for (const u of data.data as User[]) {
-            if (!next[u._id]) next[u._id] = 'USD'
           }
           return next
         })
@@ -222,7 +213,6 @@ export default function AdminUsersPage() {
       }
 
       const direction = walletDirectionInputs[userId] || 'add'
-      const currency = walletCurrencyInputs[userId] || 'USD'
       const signedAmount = direction === 'deduct' ? -amount : amount
       const walletNotes = (walletNoteInputs[userId] || '').trim() || 'Admin adjustment'
 
@@ -234,7 +224,7 @@ export default function AdminUsersPage() {
         },
         body: JSON.stringify({
           walletAdjustment: signedAmount,
-          currency,
+          currency: 'USD',
           walletNotes,
         }),
       })
@@ -355,10 +345,6 @@ export default function AdminUsersPage() {
                     <p className="text-xs text-slate-400">USD Wallet</p>
                     <p className="mt-1 font-semibold text-emerald-300">${Number(user.walletBalance?.usd || 0).toFixed(2)}</p>
                   </div>
-                  <div className="rounded-xl bg-slate-800/70 p-3">
-                    <p className="text-xs text-slate-400">LBP Wallet</p>
-                    <p className="mt-1 text-slate-200">{Number(user.walletBalance?.lbp || 0).toLocaleString('en-US')}</p>
-                  </div>
                 </div>
 
                 <div className="mt-4 rounded-xl border border-white/10 bg-slate-800/40 p-3">
@@ -384,7 +370,7 @@ export default function AdminUsersPage() {
 
                 <div className="mt-4 rounded-xl border border-white/10 bg-slate-800/40 p-3">
                   <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-400">Wallet Adjustment</p>
-                  <div className="grid grid-cols-3 gap-2">
+                  <div className="grid grid-cols-2 gap-2">
                     <select
                       value={walletDirectionInputs[user._id] || 'add'}
                       onChange={(e) =>
@@ -409,19 +395,9 @@ export default function AdminUsersPage() {
                       }
                       className="rounded-xl border border-white/10 bg-slate-900 px-3 py-2 text-xs text-white"
                     />
-                    <select
-                      value={walletCurrencyInputs[user._id] || 'USD'}
-                      onChange={(e) =>
-                        setWalletCurrencyInputs((prev) => ({
-                          ...prev,
-                          [user._id]: e.target.value as 'USD' | 'LBP',
-                        }))
-                      }
-                      className="rounded-xl border border-white/10 bg-slate-900 px-2 py-2 text-xs text-white"
-                    >
-                      <option value="USD">USD</option>
-                      <option value="LBP">LBP</option>
-                    </select>
+                    <div className="flex items-center justify-center rounded-xl border border-white/10 bg-slate-900 px-2 py-2 text-xs font-semibold text-cyan-200">
+                      USD
+                    </div>
                   </div>
                   <div className="mt-2 flex gap-2">
                     <input
@@ -501,7 +477,6 @@ export default function AdminUsersPage() {
                     <td className="px-6 py-4 text-slate-300">
                       <div className="space-y-1">
                         <div>USD: ${Number(user.walletBalance?.usd || 0).toFixed(2)}</div>
-                        <div>LBP: {Number(user.walletBalance?.lbp || 0).toLocaleString('en-US')}</div>
                       </div>
                     </td>
                     <td className="px-6 py-4">
@@ -569,19 +544,9 @@ export default function AdminUsersPage() {
                             }
                             className="w-24 rounded border border-white/10 bg-slate-800 px-2 py-1 text-xs text-white"
                           />
-                          <select
-                            value={walletCurrencyInputs[user._id] || 'USD'}
-                            onChange={(e) =>
-                              setWalletCurrencyInputs((prev) => ({
-                                ...prev,
-                                [user._id]: e.target.value as 'USD' | 'LBP',
-                              }))
-                            }
-                            className="rounded border border-white/10 bg-slate-800 px-2 py-1 text-xs text-white"
-                          >
-                            <option value="USD">USD</option>
-                            <option value="LBP">LBP</option>
-                          </select>
+                          <div className="rounded border border-white/10 bg-slate-800 px-2 py-1 text-xs font-semibold text-cyan-200">
+                            USD
+                          </div>
                         </div>
 
                         <div className="flex items-center gap-2">

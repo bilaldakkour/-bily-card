@@ -6,6 +6,11 @@ import Image from 'next/image'
 import Link from 'next/link'
 import UserSidebar from '@/components/shared/UserSidebar'
 import MobileUserShell from '@/components/shared/MobileUserShell'
+import {
+  MobileMetricTile,
+  MobilePanel,
+  MobileSectionHeading,
+} from '@/components/shared/MobileDesignSystem'
 import FavoriteButton from '@/components/ui/FavoriteButton'
 import Footer from '@/components/ui/Footer'
 import HeroSection from '@/components/ui/HeroSection'
@@ -40,7 +45,6 @@ type MeResponse = {
   data?: {
     walletBalance?: {
       usd?: number
-      lbp?: number
     }
   }
 }
@@ -54,7 +58,6 @@ type TopSellingItem = {
 export default function HomeCompactDashboard() {
   const { t, isRTL } = useLanguage()
   const [walletUsd, setWalletUsd] = useState(0)
-  const [walletLbp, setWalletLbp] = useState(0)
   const [topSellingSlugs, setTopSellingSlugs] = useState<string[]>([])
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null)
   const [isModalVisible, setIsModalVisible] = useState(false)
@@ -241,7 +244,6 @@ export default function HomeCompactDashboard() {
           localStorage.removeItem('adminToken')
           notifySessionExpired('انتهت الجلسة، سجل دخولك من جديد')
           setWalletUsd(0)
-          setWalletLbp(0)
           return
         }
 
@@ -249,11 +251,9 @@ export default function HomeCompactDashboard() {
 
         if (res.ok && data?.success) {
           setWalletUsd(Number(data?.data?.walletBalance?.usd || 0))
-          setWalletLbp(Number(data?.data?.walletBalance?.lbp || 0))
         }
       } catch {
         setWalletUsd(0)
-        setWalletLbp(0)
       }
     }
 
@@ -394,110 +394,134 @@ export default function HomeCompactDashboard() {
 
       <main className="mx-auto max-w-[1480px] px-4 pb-12 pt-0 sm:px-5 lg:px-6">
         <section className="space-y-4 md:hidden">
-          <div className="overflow-hidden rounded-[30px] border border-rose-300/12 bg-[linear-gradient(145deg,#091323,#161420)] p-3 shadow-[0_24px_70px_rgba(2,6,23,0.32)] ring-1 ring-cyan-400/10">
-            <div className="relative h-[148px] overflow-hidden rounded-[24px]">
+          <MobilePanel className="overflow-hidden p-3" tone="accent">
+            <div className="relative h-[172px] overflow-hidden rounded-[22px]">
               <Image
                 src={mobileBannerSlides[mobileBannerIndex]}
                 alt="Featured banner"
                 fill
                 className="object-cover transition-transform duration-700"
               />
-              <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(5,10,24,0.6),rgba(5,10,24,0.14))]" />
-              <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(125,211,252,0.18),transparent_34%),radial-gradient(circle_at_bottom_right,rgba(251,113,133,0.16),transparent_34%)]" />
-              <div className="absolute inset-x-0 bottom-0 flex items-center justify-between px-4 pb-4">
-                <div className="flex items-center gap-2">
-                  {mobileBannerSlides.map((slide, index) => (
-                    <button
-                      key={slide}
-                      type="button"
-                      onClick={() => setMobileBannerIndex(index)}
-                      className={`h-2.5 rounded-full transition-all ${
-                        mobileBannerIndex === index ? 'w-6 bg-cyan-300' : 'w-2.5 bg-white/45'
-                      }`}
-                      aria-label={`Go to banner ${index + 1}`}
-                    />
-                  ))}
+              <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(7,16,30,0.16),rgba(7,16,30,0.82))]" />
+              <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(34,211,238,0.18),transparent_34%),radial-gradient(circle_at_bottom_right,rgba(59,130,246,0.18),transparent_34%)]" />
+
+              <div className="absolute inset-x-0 bottom-0 p-4 text-right">
+                <div className="inline-flex rounded-full border border-white/12 bg-slate-950/45 px-3 py-1 text-[11px] font-semibold text-slate-100 backdrop-blur">
+                  Bily Card Mobile
                 </div>
-                <div className="rounded-full border border-white/10 bg-slate-950/45 px-3 py-1 text-xs font-semibold text-slate-100 backdrop-blur">
-                  {'\u0645\u0645\u064a\u0632'}
+                <h2 className="mt-3 text-[1.8rem] font-black leading-none text-white">واجهة أسرع</h2>
+                <p className="mt-2 max-w-[16rem] text-sm leading-6 text-slate-200/90">
+                  بطاقات، ألعاب، تطبيقات ومحافظ رقمية ضمن تجربة مرتبة ومريحة على الهاتف.
+                </p>
+
+                <div className="mt-3 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    {mobileBannerSlides.map((slide, index) => (
+                      <button
+                        key={slide}
+                        type="button"
+                        onClick={() => setMobileBannerIndex(index)}
+                        className={`h-2.5 rounded-full transition-all ${
+                          mobileBannerIndex === index ? 'w-6 bg-cyan-300' : 'w-2.5 bg-white/45'
+                        }`}
+                        aria-label={`Go to banner ${index + 1}`}
+                      />
+                    ))}
+                  </div>
+                  <span className="rounded-full border border-cyan-300/18 bg-cyan-500/10 px-3 py-1 text-[11px] font-semibold text-cyan-100">
+                    Instant Digital Store
+                  </span>
                 </div>
               </div>
             </div>
-          </div>
 
-          <div className="grid grid-cols-3 gap-3 rounded-[30px] border border-rose-300/10 bg-[linear-gradient(180deg,rgba(11,19,34,0.98),rgba(21,23,38,0.94))] p-4 shadow-[0_18px_50px_rgba(2,6,23,0.22)]">
-            {[
-              { label: '\u0627\u0644\u0631\u0635\u064a\u062f', icon: BadgeDollarSign, href: '/products?category=balance', active: false },
-              { label: '\u0627\u0644\u0645\u062d\u0627\u0641\u0638', icon: WalletCards, href: '/products?category=wallets', active: false },
-              { label: '\u0627\u0644\u0623\u0644\u0639\u0627\u0628', icon: Gamepad2, href: '/products?category=games', active: false },
-              { label: '\u0627\u0644\u062a\u0637\u0628\u064a\u0642\u0627\u062a', icon: AppWindow, href: '/products?category=applications', active: false },
-              { label: '\u0627\u0644\u0628\u0637\u0627\u0642\u0627\u062a', icon: CreditCard, href: '/products?category=cards', active: false },
-              { label: '\u0627\u0644\u0623\u0643\u062b\u0631 \u0645\u0628\u064a\u0639\u0627\u064b', icon: Flame, href: '/products?sort=popular', active: true },
-            ].map((item) => {
-              const Icon = item.icon
-              return (
-                <Link key={item.label} href={item.href} className="flex flex-col items-center gap-2 text-center">
-                  <span
-                    className={`flex h-16 w-16 items-center justify-center rounded-full border ${
+            <div className="mt-3 grid grid-cols-1 gap-2.5">
+              <MobileMetricTile label="USD Wallet" value={`$${walletUsd.toFixed(2)}`} />
+            </div>
+          </MobilePanel>
+
+          <MobilePanel tone="soft">
+            <MobileSectionHeading
+              eyebrow="Quick Access"
+              title="الأقسام السريعة"
+              description="ادخل مباشرة إلى أهم أقسام المتجر من نفس الواجهة."
+            />
+
+            <div className="mt-4 grid grid-cols-3 gap-2.5">
+              {[
+                { label: 'الرصيد', icon: BadgeDollarSign, href: '/products?category=balance', active: false },
+                { label: 'المحافظ', icon: WalletCards, href: '/products?category=wallets', active: false },
+                { label: 'الألعاب', icon: Gamepad2, href: '/products?category=games', active: false },
+                { label: 'التطبيقات', icon: AppWindow, href: '/products?category=applications', active: false },
+                { label: 'البطاقات', icon: CreditCard, href: '/products?category=cards', active: false },
+                { label: 'الأكثر مبيعاً', icon: Flame, href: '/products?sort=popular', active: true },
+              ].map((item) => {
+                const Icon = item.icon
+
+                return (
+                  <Link
+                    key={item.label}
+                    href={item.href}
+                    className={`flex flex-col items-center gap-2 rounded-[20px] border px-2.5 py-3 text-center transition ${
                       item.active
-                        ? 'border-rose-300/60 bg-[linear-gradient(145deg,rgba(125,211,252,0.12),rgba(251,113,133,0.12))] text-rose-200 shadow-[0_0_0_1px_rgba(251,113,133,0.12)]'
-                        : 'border-slate-600/70 bg-white/[0.015] text-slate-200'
+                        ? 'border-cyan-300/24 bg-[linear-gradient(135deg,rgba(34,211,238,0.14),rgba(37,99,235,0.18))] text-cyan-100'
+                        : 'border-white/10 bg-white/[0.04] text-slate-200'
                     }`}
                   >
-                    <Icon className="h-7 w-7" />
-                  </span>
-                  <span className={`text-base ${item.active ? 'text-rose-200' : 'text-slate-200'}`}>{item.label}</span>
-                </Link>
-              )
-            })}
-          </div>
-
-          <div className="space-y-1 px-1 text-right">
-            <h2 className="text-[2.2rem] font-black leading-none text-rose-300">{'\u0627\u0644\u0623\u0643\u062b\u0631 \u0645\u0628\u064a\u0639\u0627\u064b'}</h2>
-            <p className="text-[1.6rem] font-bold text-sky-200">{'\u0627\u0644\u0645\u0646\u062a\u062c\u0627\u062a \u0627\u0644\u0623\u0639\u0644\u0649 \u0637\u0644\u0628\u0627\u064b'}</p>
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            {mobileFeaturedProducts.map((product) => (
-              <button
-                key={`mobile-home-${product.id}`}
-                type="button"
-                onClick={() => handleProductSelect(product)}
-                className="group overflow-hidden rounded-[28px] border border-rose-300/10 bg-[linear-gradient(180deg,rgba(11,19,34,0.96),rgba(24,24,36,0.92))] text-right shadow-[0_20px_40px_rgba(2,6,23,0.3)]"
-              >
-                <div className="relative h-[188px] overflow-hidden bg-[radial-gradient(circle_at_top,rgba(125,211,252,0.18),transparent_44%),radial-gradient(circle_at_bottom_right,rgba(251,113,133,0.18),transparent_35%),linear-gradient(180deg,#102033,#171523)]">
-                  <Image
-                    src={product.image}
-                    alt={product.name}
-                    fill
-                    className="object-cover transition duration-500 group-hover:scale-105"
-                  />
-                  <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(5,10,24,0.12),rgba(5,10,24,0.84))]" />
-                  <div className="absolute left-2 top-2 rounded-full bg-gradient-to-r from-sky-400 to-rose-400 px-3 py-1 text-xs font-bold text-slate-950">
-                    {'\u0641\u0648\u0631\u064a'}
-                  </div>
-                  <div className="absolute inset-x-0 bottom-0 space-y-2 p-3.5 text-right">
-                    <div className="flex items-center justify-between text-rose-200">
-                      <ArrowLeft className="h-4 w-4" />
-                      <span className="rounded-full border border-white/10 bg-black/25 px-2.5 py-1 text-xs font-semibold text-sky-100">
-                        ${Number(product.price || 0).toFixed(2)}
-                      </span>
-                    </div>
-                    <h3 className="line-clamp-1 text-[1.05rem] font-bold text-white">
-                      {product.name}
-                    </h3>
-                    <p className="line-clamp-3 text-xs leading-5 text-slate-200/90">
-                      {product.shortDescription || '\u0627\u0634\u062d\u0646 \u0645\u0646\u062a\u062c\u0643 \u0627\u0644\u0645\u0641\u0636\u0644 \u0628\u0633\u0631\u0639\u0629 \u0648\u0628\u0623\u0645\u0627\u0646.'}
-                    </p>
-                    <span className="inline-flex items-center gap-2 text-xs font-semibold text-cyan-200">
-                      {'\u0627\u0636\u063a\u0637 \u0644\u0644\u0639\u0631\u0636'}
-                      <ArrowLeft className="h-3.5 w-3.5" />
+                    <span className="flex h-12 w-12 items-center justify-center rounded-full border border-white/10 bg-slate-950/35">
+                      <Icon className="h-5.5 w-5.5" />
                     </span>
+                    <span className="text-[12px] font-semibold leading-5">{item.label}</span>
+                  </Link>
+                )
+              })}
+            </div>
+          </MobilePanel>
+
+          <MobilePanel tone="soft">
+            <MobileSectionHeading
+              eyebrow="Popular Now"
+              title="الأكثر طلباً"
+              description="منتجات مختارة بسرعة، بتصميم أخف ومظهر أوضح على الهاتف."
+            />
+
+            <div className="mt-4 grid grid-cols-2 gap-3">
+              {mobileFeaturedProducts.map((product) => (
+                <button
+                  key={`mobile-home-${product.id}`}
+                  type="button"
+                  onClick={() => handleProductSelect(product)}
+                  className="group overflow-hidden rounded-[24px] border border-white/10 bg-[linear-gradient(180deg,rgba(10,19,35,0.96),rgba(7,13,26,0.98))] text-right shadow-[0_18px_36px_rgba(2,6,23,0.22)]"
+                >
+                  <div className="relative h-[176px] overflow-hidden">
+                    <Image
+                      src={product.image}
+                      alt={product.name}
+                      fill
+                      className="object-cover transition duration-500 group-hover:scale-105"
+                    />
+                    <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(7,16,30,0.08),rgba(7,16,30,0.86))]" />
+                    <div className="absolute left-2 top-2 rounded-full border border-cyan-300/18 bg-cyan-500/12 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.14em] text-cyan-100">
+                      Fast
+                    </div>
+
+                    <div className="absolute inset-x-0 bottom-0 p-3.5">
+                      <div className="mb-2 flex items-center justify-between">
+                        <ArrowLeft className="h-4 w-4 text-cyan-100" />
+                        <span className="rounded-full border border-white/10 bg-black/25 px-2.5 py-1 text-xs font-semibold text-sky-100">
+                          ${Number(product.price || 0).toFixed(2)}
+                        </span>
+                      </div>
+                      <h3 className="line-clamp-1 text-[1rem] font-bold text-white">{product.name}</h3>
+                      <p className="mt-1.5 line-clamp-2 text-[11px] leading-5 text-slate-200/90">
+                        {product.shortDescription || 'منتجات رقمية سريعة وآمنة ضمن تجربة شراء مرتبة.'}
+                      </p>
+                    </div>
                   </div>
-                </div>
-              </button>
-            ))}
-          </div>
+                </button>
+              ))}
+            </div>
+          </MobilePanel>
         </section>
 
         <div className="relative lg:pr-[372px]">

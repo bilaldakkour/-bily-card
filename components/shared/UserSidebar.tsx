@@ -33,7 +33,6 @@ interface UserData {
   avatar?: string
   walletBalance?: {
     usd?: number
-    lbp?: number
   }
   role?: string
 }
@@ -351,9 +350,6 @@ export default function UserSidebar({
           <div className={`${isRTL ? 'text-right' : 'text-left'}`}>
             <p className="text-xl font-bold text-green-400">
               ${Number(user?.walletBalance?.usd || 0).toFixed(2)}
-            </p>
-            <p className="text-sm text-slate-400">
-              {Number(user?.walletBalance?.lbp || 0).toFixed(0)} LBP
             </p>
           </div>
 

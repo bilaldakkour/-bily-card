@@ -2,7 +2,6 @@ import { useState, useCallback, useEffect } from 'react';
 
 export interface Wallet {
   balance_usd: number;
-  balance_lbp: number;
   lastUpdated: string;
 }
 
@@ -11,7 +10,7 @@ export interface WalletTransaction {
   userId: string;
   type: 'deposit' | 'purchase' | 'refund' | 'manual_adjustment';
   amount: number;
-  currency: 'USD' | 'LBP';
+  currency: 'USD';
   balanceBefore: number;
   balanceAfter: number;
   description: string;
@@ -43,7 +42,7 @@ export function useWallet() {
       }
 
       const data = await response.json();
-      setWallet(data.wallet);
+      setWallet(data.data || null);
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -77,7 +76,7 @@ export function useWallet() {
   );
 
   const requestDeposit = useCallback(
-    async (amount: number, currency: 'USD' | 'LBP') => {
+    async (amount: number) => {
       if (!token) throw new Error('Not authenticated');
 
       try {
@@ -87,7 +86,7 @@ export function useWallet() {
             'Content-Type': 'application/json',
             Authorization: `Bearer ${token}`,
           },
-          body: JSON.stringify({ amount, currency }),
+          body: JSON.stringify({ amount, currency: 'USD' }),
         });
 
         if (!response.ok) {

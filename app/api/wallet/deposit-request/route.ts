@@ -31,7 +31,7 @@ async function handler(
       );
     }
 
-    const currency = body?.currency === 'LBP' ? 'LBP' : 'USD';
+    const currency = 'USD';
 
     const paymentMethods = isTestModeEnabled()
       ? getTestModePaymentMethods()

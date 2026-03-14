@@ -5,11 +5,17 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { LogoutButton } from '@/components/shared'
 import UserPageLayout from '@/components/shared/UserPageLayout'
+import {
+  MobileMetricTile,
+  MobilePanel,
+  MobileSectionHeading,
+  mobilePrimaryButtonClass,
+} from '@/components/shared/MobileDesignSystem'
+import { CopyButton } from '@/components/ui/CopyButton'
 import { useLanguage } from '@/hooks/useLanguage'
 
 interface WalletBalance {
   usd: number
-  lbp: number
 }
 
 interface Order {
@@ -64,6 +70,7 @@ export default function AccountPage() {
         } else {
           router.push('/login')
         }
+
         if (ordersData.success && ordersData.data) {
           setRecentOrders(ordersData.data.slice(0, 5))
         }
@@ -84,35 +91,6 @@ export default function AccountPage() {
 
   if (!user) return null
 
-  const accountCards = [
-    {
-      label: t('account.name'),
-      value: user.displayName,
-      sublabel: t('account.email'),
-      subvalue: user.email,
-    },
-    {
-      label: t('account.walletUsd'),
-      value: `$${user.walletBalance.usd.toFixed(2)}`,
-      accent: 'text-emerald-300',
-      action: (
-        <Link
-          href="/wallet"
-          className="inline-flex rounded-2xl bg-cyan-500 px-4 py-2 text-sm font-semibold text-black transition hover:bg-cyan-400"
-        >
-          {t('account.topUpWallet')}
-        </Link>
-      ),
-    },
-    {
-      label: t('account.walletLbp'),
-      value: `LBP ${user.walletBalance.lbp.toFixed(0)}`,
-      accent: 'text-sky-300',
-      sublabel: t('account.secondaryCurrency'),
-      subvalue: user.role,
-    },
-  ]
-
   return (
     <div dir={isRTL ? 'rtl' : 'ltr'}>
       <UserPageLayout
@@ -124,87 +102,100 @@ export default function AccountPage() {
           { label: t('account.title'), href: '/account' },
         ]}
       >
-        <div className="grid gap-2.5 md:grid-cols-3">
-          {accountCards.map((card) => (
-            <div
-              key={card.label}
-              className="rounded-[20px] border border-white/10 bg-[linear-gradient(180deg,rgba(8,15,29,0.94),rgba(5,10,22,0.98))] p-3 shadow-[0_16px_40px_rgba(2,6,23,0.18)] sm:rounded-[24px] sm:p-4 sm:shadow-[0_20px_56px_rgba(2,6,23,0.2)]"
-            >
-              <p className="text-xs uppercase tracking-[0.16em] text-slate-500">{card.label}</p>
-              <p className={`mt-1.5 text-lg font-bold text-white sm:mt-2 sm:text-xl ${card.accent || ''}`}>{card.value}</p>
-              {card.sublabel && (
-                <p className="mt-2.5 text-[11px] uppercase tracking-[0.16em] text-slate-500 sm:mt-3 sm:text-xs">{card.sublabel}</p>
-              )}
-              {card.subvalue && (
-                <p className="mt-1 break-all text-xs text-slate-300 sm:text-sm">{card.subvalue}</p>
-              )}
-              {card.action && <div className="mt-4">{card.action}</div>}
-            </div>
-          ))}
-        </div>
+        <MobilePanel>
+          <MobileSectionHeading
+            eyebrow="Account Overview"
+            title="لوحة الحساب"
+            description="ملخص سريع لحسابك ورصيدك وآخر نشاطاتك."
+            action={
+              <Link href="/wallet" className={mobilePrimaryButtonClass}>
+                {t('account.topUpWallet')}
+              </Link>
+            }
+          />
 
-        <div className="rounded-[22px] border border-white/10 bg-[linear-gradient(180deg,rgba(8,15,29,0.94),rgba(5,10,22,0.98))] p-3.5 shadow-[0_18px_50px_rgba(2,6,23,0.2)] sm:rounded-[28px] sm:p-5 sm:shadow-[0_24px_70px_rgba(2,6,23,0.22)]">
-          <div className="mb-3 flex flex-wrap items-center justify-between gap-2 sm:mb-4 sm:gap-3">
-            <div>
-              <p className="text-xs font-black uppercase tracking-[0.22em] text-cyan-300">
-                Recent Activity
-              </p>
-              <h2 className="mt-1 text-lg font-semibold text-white sm:text-xl">{t('account.recentOrders')}</h2>
-            </div>
-            <Link
-              href="/orders"
-              className="rounded-[18px] border border-white/15 bg-white/5 px-3 py-2 text-xs font-semibold text-white transition hover:bg-white/10 sm:rounded-2xl sm:px-4 sm:text-sm"
-            >
-              {t('account.viewAll')}
-            </Link>
+          <div className="mt-4 grid gap-2.5 md:grid-cols-3">
+            <MobileMetricTile label={t('account.name')} value={user.displayName} hint={user.email} />
+            <MobileMetricTile label={t('account.walletUsd')} value={`$${user.walletBalance.usd.toFixed(2)}`} />
+            <MobileMetricTile label="Role" value={user.role} hint="USD only wallet" />
           </div>
+        </MobilePanel>
+
+        <MobilePanel tone="soft">
+          <MobileSectionHeading
+            eyebrow="Recent Activity"
+            title={t('account.recentOrders')}
+            description="طلباتك الأحدث ضمن عرض مختصر ومناسب للتلفون."
+            action={
+              <Link
+                href="/orders"
+                className="rounded-[18px] border border-white/12 bg-white/[0.05] px-3 py-2 text-xs font-semibold text-white transition hover:bg-white/[0.08] sm:px-4 sm:text-sm"
+              >
+                {t('account.viewAll')}
+              </Link>
+            }
+          />
 
           {recentOrders.length === 0 ? (
-            <div className="rounded-[20px] border border-white/10 bg-white/[0.035] p-6 text-center sm:rounded-[24px] sm:p-8">
+            <div className="mt-4 rounded-[20px] border border-white/10 bg-white/[0.04] p-6 text-center">
               <p className="text-slate-400">{t('account.noOrders')}</p>
-              <Link
-                href="/products"
-                className="mt-4 inline-block rounded-xl bg-cyan-500 px-6 py-2.5 font-medium text-black transition hover:bg-cyan-400"
-              >
+              <Link href="/products" className={`mt-4 ${mobilePrimaryButtonClass}`}>
                 {t('account.browseProducts')}
               </Link>
             </div>
           ) : (
-            <div className="space-y-2.5">
+            <div className="mt-4 space-y-2.5">
               {recentOrders.map((order) => (
                 <div
                   key={order._id}
-                  className="grid gap-2.5 rounded-[18px] border border-white/8 bg-white/[0.035] p-3 md:grid-cols-[minmax(0,1.5fr)_repeat(3,minmax(0,1fr))] sm:rounded-[22px] sm:p-4"
+                  className="grid gap-2.5 rounded-[20px] border border-white/10 bg-white/[0.04] p-3.5 md:grid-cols-[minmax(0,1.5fr)_repeat(3,minmax(0,1fr))]"
                 >
-                  <div className="min-w-0">
-                    <p className="text-xs uppercase tracking-[0.16em] text-slate-500">{t('orders.product')}</p>
+                  <div className="min-w-0 text-right">
+                    <p className="text-[11px] uppercase tracking-[0.16em] text-slate-500">{t('orders.product')}</p>
                     <p className="mt-1 truncate text-sm font-semibold text-white">{order.productName}</p>
-                    <p className="mt-2 inline-flex rounded-xl border border-cyan-400/25 bg-cyan-500/10 px-2 py-1 font-mono text-[10px] text-cyan-300 sm:px-2.5 sm:text-[11px]">
+                    <span className="mt-2 inline-flex items-center gap-1 rounded-full border border-cyan-400/18 bg-cyan-500/10 px-2 py-1 font-mono text-[10px] text-cyan-200">
                       {order.orderId}
-                    </p>
+                      <CopyButton
+                        value={order.orderId}
+                        label="Copy order ID"
+                        className="h-5 w-5 border-transparent bg-transparent text-cyan-200 hover:border-cyan-400/20 hover:bg-cyan-500/10"
+                      />
+                    </span>
                   </div>
-                  <div>
-                    <p className="text-xs uppercase tracking-[0.16em] text-slate-500">{t('orders.playerId')}</p>
-                    <p className="mt-1 truncate font-mono text-xs text-slate-300 sm:text-sm">{order.playerId}</p>
+
+                  <div className="text-right">
+                    <p className="text-[11px] uppercase tracking-[0.16em] text-slate-500">{t('orders.playerId')}</p>
+                    <div className="mt-1 flex items-center justify-end gap-1">
+                      {order.playerId ? (
+                        <CopyButton
+                          value={order.playerId}
+                          label="Copy player ID"
+                          className="h-5 w-5 border-transparent bg-transparent text-slate-300 hover:border-cyan-400/20 hover:bg-cyan-500/10 hover:text-cyan-200"
+                        />
+                      ) : null}
+                      <p className="truncate font-mono text-xs text-slate-300">{order.playerId}</p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-xs uppercase tracking-[0.16em] text-slate-500">{t('orders.price')}</p>
+
+                  <div className="text-right">
+                    <p className="text-[11px] uppercase tracking-[0.16em] text-slate-500">{t('orders.price')}</p>
                     <p className="mt-1 text-sm font-semibold text-emerald-300">${Number(order.total ?? order.price).toFixed(2)}</p>
                   </div>
-                  <div>
-                    <p className="text-xs uppercase tracking-[0.16em] text-slate-500">{t('orders.date')}</p>
+
+                  <div className="text-right">
+                    <p className="text-[11px] uppercase tracking-[0.16em] text-slate-500">{t('orders.date')}</p>
                     <p className="mt-1 text-sm text-slate-300">{new Date(order.createdAt).toLocaleDateString()}</p>
                   </div>
                 </div>
               ))}
             </div>
           )}
-        </div>
+        </MobilePanel>
 
         <div className="grid gap-2.5 sm:grid-cols-2">
           <Link
             href="/products"
-            className="rounded-[20px] border border-cyan-400/15 bg-cyan-500/10 px-4 py-3 text-center text-sm font-semibold text-cyan-100 transition hover:bg-cyan-500/15 sm:rounded-[24px] sm:px-5 sm:py-4"
+            className="inline-flex items-center justify-center rounded-[18px] border border-cyan-400/16 bg-cyan-500/10 px-4 py-3 text-sm font-semibold text-cyan-100 transition hover:bg-cyan-500/16"
           >
             {t('account.continueShopping')}
           </Link>

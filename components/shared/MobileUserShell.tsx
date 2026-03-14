@@ -36,7 +36,6 @@ type UserData = {
   role?: string
   walletBalance?: {
     usd?: number
-    lbp?: number
   }
 }
 
@@ -196,12 +195,12 @@ export default function MobileUserShell({ title }: MobileUserShellProps) {
   return (
     <>
       <div className="md:hidden">
-        <div className="mb-3 rounded-[24px] border border-cyan-400/18 bg-[linear-gradient(180deg,rgba(7,15,29,0.98),rgba(5,10,22,1))] px-3 py-2.5 shadow-[0_20px_60px_rgba(2,6,23,0.42)] ring-1 ring-cyan-400/8">
+        <div className="mb-3 rounded-[28px] border border-cyan-300/14 bg-[linear-gradient(180deg,rgba(7,16,30,0.98),rgba(9,19,35,0.99))] px-3 py-2.5 shadow-[0_24px_70px_rgba(2,6,23,0.42)] ring-1 ring-white/[0.03]">
           <div className="flex items-center gap-3">
             <button
               type="button"
               onClick={() => setIsMenuOpen(true)}
-              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[18px] border border-cyan-400/20 bg-cyan-500/8 text-slate-100"
+              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[18px] border border-cyan-300/16 bg-[linear-gradient(180deg,rgba(16,32,56,0.96),rgba(12,22,40,0.96))] text-slate-100 shadow-[0_12px_24px_rgba(2,6,23,0.18)]"
               aria-label="Open menu"
             >
               <Menu className="h-5 w-5" />
@@ -220,7 +219,7 @@ export default function MobileUserShell({ title }: MobileUserShellProps) {
                   if (e.key === 'Enter') handleSearch()
                 }}
                 placeholder={'\u0627\u0628\u062d\u062b \u0639\u0646 \u0627\u0644\u0645\u0646\u062a\u062c\u0627\u062a...'}
-                className="w-full rounded-[20px] border border-cyan-400/12 bg-white/[0.035] px-4 py-2.5 text-right text-sm text-white placeholder-slate-500 focus:border-cyan-400/50 focus:outline-none"
+                className="w-full rounded-[20px] border border-white/10 bg-white/[0.045] px-4 py-2.5 text-right text-sm text-white placeholder-slate-500 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)] focus:border-cyan-400/45 focus:bg-white/[0.055] focus:outline-none"
                 dir="rtl"
               />
             </label>
@@ -243,12 +242,12 @@ export default function MobileUserShell({ title }: MobileUserShellProps) {
             aria-label="Close menu overlay"
           />
 
-          <aside className="fixed inset-y-0 right-0 z-[80] w-[86vw] max-w-[360px] overflow-y-auto border-l border-cyan-400/22 bg-[linear-gradient(180deg,rgba(7,15,29,0.985),rgba(4,9,18,1))] px-3.5 pb-24 pt-4 shadow-[0_0_0_1px_rgba(56,189,248,0.08),0_26px_80px_rgba(2,6,23,0.56)] md:hidden">
+          <aside className="fixed inset-y-0 right-0 z-[80] w-[86vw] max-w-[360px] overflow-y-auto border-l border-cyan-300/18 bg-[linear-gradient(180deg,rgba(7,16,30,0.99),rgba(9,20,36,1))] px-3.5 pb-24 pt-4 shadow-[0_0_0_1px_rgba(255,255,255,0.03),0_30px_90px_rgba(2,6,23,0.6)] md:hidden">
             <div className="mb-4 flex items-center justify-between">
               <button
                 type="button"
                 onClick={() => setIsMenuOpen(false)}
-                className="flex h-10 w-10 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.04] text-white"
+                className="flex h-10 w-10 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.04] text-white shadow-[0_12px_22px_rgba(2,6,23,0.18)]"
                 aria-label="Close menu"
               >
                 <X className="h-4 w-4" />
@@ -289,9 +288,6 @@ export default function MobileUserShell({ title }: MobileUserShellProps) {
                   </span>
                   <span className="text-sm text-slate-100">{t('sidebar.availableBalance')}</span>
                 </div>
-                <p className="mt-1 text-xs text-slate-400">
-                  {Number(user?.walletBalance?.lbp || 0).toFixed(0)} LBP
-                </p>
                 <Link
                   href="/wallet"
                   onClick={() => setIsMenuOpen(false)}
@@ -364,7 +360,7 @@ export default function MobileUserShell({ title }: MobileUserShellProps) {
                     <p className="mt-1 text-sm font-semibold text-cyan-200">
                       ${Number(user?.walletBalance?.usd || 0).toFixed(2)}
                     </p>
-                    <p className="mt-1 text-xs text-slate-500">{Number(user?.walletBalance?.lbp || 0).toFixed(0)} LBP</p>
+                    <p className="mt-1 text-xs text-slate-500">USD only</p>
                   </div>
                   <div className="rounded-2xl border border-cyan-400/14 bg-cyan-500/8 px-4 py-3">
                     <p className="text-xs text-slate-500">{'\u0645\u0633\u062a\u0648\u0649 \u0627\u0644\u0645\u0633\u062a\u062e\u062f\u0645'}</p>
@@ -507,11 +503,11 @@ export default function MobileUserShell({ title }: MobileUserShellProps) {
       )}
 
       <nav className="fixed inset-x-0 bottom-3 z-[60] px-4 md:hidden">
-        <div className="mx-auto flex max-w-md items-center justify-between rounded-[24px] border border-cyan-400/55 bg-[rgba(10,17,30,0.96)] px-3 py-2.5 shadow-[0_0_0_1px_rgba(56,189,248,0.12),0_18px_50px_rgba(2,6,23,0.45)] backdrop-blur">
+        <div className="mx-auto flex max-w-md items-center justify-between rounded-[26px] border border-cyan-300/20 bg-[linear-gradient(180deg,rgba(8,17,31,0.96),rgba(11,22,39,0.98))] px-3 py-2.5 shadow-[0_0_0_1px_rgba(255,255,255,0.03),0_20px_60px_rgba(2,6,23,0.48)] backdrop-blur">
           <Link
             href="/account"
             className={`flex min-w-[62px] flex-col items-center gap-1 rounded-2xl px-2 py-1 text-xs ${
-              pathname === '/account' || pathname === '/profile' ? 'text-cyan-300' : 'text-slate-300'
+              pathname === '/account' || pathname === '/profile' ? 'bg-cyan-500/10 text-cyan-300' : 'text-slate-300'
             }`}
           >
             <User className="h-5 w-5" />
@@ -521,7 +517,7 @@ export default function MobileUserShell({ title }: MobileUserShellProps) {
           <Link
             href="/notifications"
             className={`relative flex min-w-[62px] flex-col items-center gap-1 rounded-2xl px-2 py-1 text-xs ${
-              pathname === '/notifications' ? 'text-cyan-300' : 'text-slate-300'
+              pathname === '/notifications' ? 'bg-cyan-500/10 text-cyan-300' : 'text-slate-300'
             }`}
           >
             <Bell className="h-5 w-5" />
@@ -532,7 +528,7 @@ export default function MobileUserShell({ title }: MobileUserShellProps) {
           <Link
             href="/"
             className={`flex min-w-[62px] flex-col items-center gap-1 rounded-2xl px-2 py-1 text-xs ${
-              pathname === '/' ? 'text-cyan-300' : 'text-slate-300'
+              pathname === '/' ? 'bg-cyan-500/10 text-cyan-300' : 'text-slate-300'
             }`}
           >
             <Home className="h-5 w-5" />
@@ -543,7 +539,7 @@ export default function MobileUserShell({ title }: MobileUserShellProps) {
             type="button"
             onClick={() => setIsMenuOpen(true)}
             className={`flex min-w-[62px] flex-col items-center gap-1 rounded-2xl px-2 py-1 text-xs ${
-              isMenuOpen ? 'bg-white/[0.06] text-cyan-300' : 'text-slate-300'
+              isMenuOpen ? 'bg-cyan-500/10 text-cyan-300' : 'text-slate-300'
             }`}
           >
             <Menu className="h-5 w-5" />

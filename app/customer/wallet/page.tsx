@@ -5,7 +5,6 @@ import Link from 'next/link';
 
 interface Wallet {
   balance_usd: number;
-  balance_lbp: number;
 }
 
 export default function WalletPage() {
@@ -67,9 +66,8 @@ export default function WalletPage() {
 
   return (
     <main className="min-h-screen bg-slate-950">
-      {/* Header */}
       <header className="border-b border-slate-700 bg-slate-900/50 backdrop-blur">
-        <div className="mx-auto max-w-7xl px-6 py-4 flex items-center justify-between">
+        <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
           <Link href="/" className="text-2xl font-bold text-white">
             Bily Card
           </Link>
@@ -93,22 +91,14 @@ export default function WalletPage() {
         </div>
       </header>
 
-      {/* Content */}
       <div className="mx-auto max-w-7xl px-6 py-12">
-        <h1 className="text-4xl font-bold text-white mb-8">My Wallet</h1>
+        <h1 className="mb-8 text-4xl font-bold text-white">My Wallet</h1>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-          <div className="p-6 rounded-lg bg-gradient-to-br from-blue-900 to-slate-900 border border-blue-700">
-            <p className="text-slate-400 text-sm mb-2">USD Balance</p>
+        <div className="mb-8 grid grid-cols-1 gap-6">
+          <div className="rounded-lg border border-blue-700 bg-gradient-to-br from-blue-900 to-slate-900 p-6">
+            <p className="mb-2 text-sm text-slate-400">USD Balance</p>
             <h2 className="text-4xl font-bold text-white">
               ${wallet?.balance_usd.toFixed(2)}
-            </h2>
-          </div>
-
-          <div className="p-6 rounded-lg bg-gradient-to-br from-purple-900 to-slate-900 border border-purple-700">
-            <p className="text-slate-400 text-sm mb-2">LBP Balance</p>
-            <h2 className="text-4xl font-bold text-white">
-              ل.ل {wallet?.balance_lbp.toLocaleString()}
             </h2>
           </div>
         </div>
@@ -116,20 +106,20 @@ export default function WalletPage() {
         {!showDepositForm ? (
           <button
             onClick={() => setShowDepositForm(true)}
-            className="px-6 py-3 rounded-lg bg-green-600 text-white font-semibold hover:bg-green-700 transition"
+            className="rounded-lg bg-green-600 px-6 py-3 font-semibold text-white transition hover:bg-green-700"
           >
             Add Funds
           </button>
         ) : (
-          <div className="max-w-md p-6 rounded-lg bg-slate-800 border border-slate-700">
-            <h3 className="text-xl font-semibold text-white mb-4">Add Funds</h3>
+          <div className="max-w-md rounded-lg border border-slate-700 bg-slate-800 p-6">
+            <h3 className="mb-4 text-xl font-semibold text-white">Add Funds</h3>
 
             <input
               type="number"
               placeholder="Amount (USD)"
               value={depositAmount}
               onChange={(e) => setDepositAmount(e.target.value)}
-              className="w-full px-4 py-2 rounded-lg bg-slate-700 border border-slate-600 text-white mb-4"
+              className="mb-4 w-full rounded-lg border border-slate-600 bg-slate-700 px-4 py-2 text-white"
               step="0.01"
               min="0"
             />
@@ -137,13 +127,13 @@ export default function WalletPage() {
             <div className="flex gap-2">
               <button
                 onClick={handleDeposit}
-                className="flex-1 px-4 py-2 rounded-lg bg-green-600 text-white hover:bg-green-700 transition"
+                className="flex-1 rounded-lg bg-green-600 px-4 py-2 text-white transition hover:bg-green-700"
               >
                 Request Deposit
               </button>
               <button
                 onClick={() => setShowDepositForm(false)}
-                className="flex-1 px-4 py-2 rounded-lg bg-slate-700 text-white hover:bg-slate-600 transition"
+                className="flex-1 rounded-lg bg-slate-700 px-4 py-2 text-white transition hover:bg-slate-600"
               >
                 Cancel
               </button>
@@ -151,10 +141,9 @@ export default function WalletPage() {
           </div>
         )}
 
-        {/* Transaction History */}
         <div className="mt-12">
-          <h2 className="text-2xl font-bold text-white mb-4">Recent Transactions</h2>
-          <div className="bg-slate-800 rounded-lg border border-slate-700 overflow-hidden">
+          <h2 className="mb-4 text-2xl font-bold text-white">Recent Transactions</h2>
+          <div className="overflow-hidden rounded-lg border border-slate-700 bg-slate-800">
             <table className="w-full">
               <thead className="bg-slate-900">
                 <tr>

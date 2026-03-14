@@ -2,13 +2,20 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Search } from 'lucide-react'
+import { Clock3, Search, Shield, Sparkles, WalletCards, X } from 'lucide-react'
+import {
+  MobileMetricTile,
+  MobilePanel,
+  MobileSectionHeading,
+  mobileInputClass,
+  mobilePrimaryButtonClass,
+} from '@/components/shared/MobileDesignSystem'
+import { CopyButton } from '@/components/ui/CopyButton'
 import UserPageLayout from '@/components/shared/UserPageLayout'
 import { useLanguage } from '@/hooks/useLanguage'
 
 interface WalletBalance {
   usd: number
-  lbp: number
 }
 
 interface Transaction {
@@ -33,7 +40,7 @@ interface PaymentMethod {
 export default function WalletPage() {
   const { t, isRTL } = useLanguage()
   const router = useRouter()
-  const [balance, setBalance] = useState<WalletBalance>({ usd: 0, lbp: 0 })
+  const [balance, setBalance] = useState<WalletBalance>({ usd: 0 })
   const [txns, setTxns] = useState<Transaction[]>([])
   const [loading, setLoading] = useState(true)
   const [topUpAmount, setTopUpAmount] = useState('')
@@ -45,6 +52,7 @@ export default function WalletPage() {
   const [proofImage, setProofImage] = useState('')
   const [proofName, setProofName] = useState('')
   const [searchTerm, setSearchTerm] = useState('')
+  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false)
 
   const fallbackLogos: Record<string, string> = {
     'whish-money': '/payment-methods/whish-money.png',
@@ -85,6 +93,17 @@ export default function WalletPage() {
   useEffect(() => {
     void fetchWalletData()
   }, [])
+
+  useEffect(() => {
+    if (!isPaymentModalOpen) return
+
+    const previousOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+
+    return () => {
+      document.body.style.overflow = previousOverflow
+    }
+  }, [isPaymentModalOpen])
 
   const fetchWalletData = async () => {
     const token = localStorage.getItem('bilycard_token')
@@ -188,6 +207,7 @@ export default function WalletPage() {
         setTopUpAmount('')
         setProofImage('')
         setProofName('')
+        setIsPaymentModalOpen(false)
         await fetchWalletData()
       } else {
         setMessage(data.message || t('wallet.depositFailed'))
@@ -202,11 +222,13 @@ export default function WalletPage() {
   }
 
   const selectedMethod = paymentMethods.find((method) => method.key === selectedMethodKey) || null
+  const paymentAddress = String(selectedMethod?.address || '').trim()
   const parsedAmount = Number(topUpAmount || 0)
   const feePercent = Number(selectedMethod?.feePercent || 0)
   const amountAfterFee = Number.isFinite(parsedAmount)
     ? Math.max(0, parsedAmount - parsedAmount * (feePercent / 100))
     : 0
+  const activePaymentMethodsCount = paymentMethods.filter((method) => method.active).length || paymentMethods.length
   const filteredTxns = useMemo(() => {
     const query = searchTerm.trim().toLowerCase()
     if (!query) return txns
@@ -237,6 +259,16 @@ export default function WalletPage() {
     reader.readAsDataURL(file)
   }
 
+  const handleMethodClick = (methodKey: string) => {
+    setSelectedMethodKey(methodKey)
+    setTopUpAmount('')
+    setProofImage('')
+    setProofName('')
+    setMessage('')
+    setMessageTone('')
+    setIsPaymentModalOpen(true)
+  }
+
   if (loading) {
     return (
       <main className="min-h-screen bg-slate-950 flex items-center justify-center p-4">
@@ -261,44 +293,99 @@ export default function WalletPage() {
         maxWidthClass="max-w-[1720px]"
         fixedSidebarRightClass="lg:right-6"
       >
-        <div className="grid gap-2.5 md:grid-cols-2">
-          <div className="rounded-[20px] border border-emerald-400/15 bg-emerald-500/10 p-3 shadow-[0_16px_40px_rgba(2,6,23,0.18)] sm:rounded-[24px] sm:p-4 sm:shadow-[0_20px_56px_rgba(2,6,23,0.2)]">
-            <p className="text-xs uppercase tracking-[0.16em] text-emerald-300">{t('wallet.balanceUsd')}</p>
-            <p className="mt-1.5 text-xl font-bold text-white sm:mt-2 sm:text-2xl">${balance.usd.toFixed(2)}</p>
+        <div className="grid gap-3 xl:grid-cols-[minmax(0,1.18fr)_minmax(320px,0.82fr)]">
+          <div className="relative overflow-hidden rounded-[28px] border border-emerald-400/16 bg-[linear-gradient(135deg,rgba(7,38,42,0.96),rgba(5,18,28,0.99))] p-4 shadow-[0_24px_70px_rgba(2,6,23,0.24)] sm:p-5 lg:p-6">
+            <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(52,211,153,0.2),transparent_34%),radial-gradient(circle_at_bottom_left,rgba(34,211,238,0.14),transparent_38%)]" />
+            <div className="relative z-10">
+              <p className="text-[11px] font-black uppercase tracking-[0.22em] text-emerald-200/90">
+                {t('wallet.balanceUsd')}
+              </p>
+              <div className="mt-4 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+                <div className="text-right">
+                  <div className="text-[2rem] font-black leading-none text-white sm:text-[2.4rem]">
+                    ${balance.usd.toFixed(2)}
+                  </div>
+                  <p className="mt-2 max-w-2xl text-sm leading-6 text-emerald-50/80">
+                    رصيدك جاهز للإيداع والشراء من نفس الواجهة، مع تجربة أوضح ومظهر موحّد على الديسكتوب.
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2 lg:min-w-[280px]">
+                  <div className="rounded-[20px] border border-white/10 bg-white/[0.08] px-3.5 py-3 text-right">
+                    <div className="flex items-center justify-end gap-2 text-emerald-100">
+                      <WalletCards className="h-4.5 w-4.5" />
+                      <span className="text-[11px] uppercase tracking-[0.18em] text-emerald-100/80">Payment Rails</span>
+                    </div>
+                    <p className="mt-2 text-2xl font-black text-white">{activePaymentMethodsCount}</p>
+                  </div>
+
+                  <div className="rounded-[20px] border border-white/10 bg-white/[0.08] px-3.5 py-3 text-right">
+                    <div className="flex items-center justify-end gap-2 text-cyan-100">
+                      <Clock3 className="h-4.5 w-4.5" />
+                      <span className="text-[11px] uppercase tracking-[0.18em] text-cyan-100/80">Recent Activity</span>
+                    </div>
+                    <p className="mt-2 text-2xl font-black text-white">{txns.length}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
-          <div className="rounded-[20px] border border-sky-400/15 bg-sky-500/10 p-3 shadow-[0_16px_40px_rgba(2,6,23,0.18)] sm:rounded-[24px] sm:p-4 sm:shadow-[0_20px_56px_rgba(2,6,23,0.2)]">
-            <p className="text-xs uppercase tracking-[0.16em] text-sky-300">{t('wallet.balanceLbp')}</p>
-            <p className="mt-1.5 text-xl font-bold text-white sm:mt-2 sm:text-2xl">LBP {balance.lbp.toFixed(0)}</p>
-          </div>
+
+          <MobilePanel tone="accent" className="hidden xl:block">
+            <div className="flex h-full flex-col justify-between">
+              <div className="text-right">
+                <p className="text-[11px] font-black uppercase tracking-[0.22em] text-cyan-300">Desktop Deposit Flow</p>
+                <h2 className="mt-1 text-2xl font-black text-white">واجهة محفظة أنظف</h2>
+                <p className="mt-2 text-sm leading-6 text-slate-300">
+                  اختر وسيلة الدفع المناسبة، وستظهر نفس نافذة الإيداع المرتبة مباشرة مع العنوان والرسوم ورفع الإيصال.
+                </p>
+              </div>
+
+              <div className="mt-5 space-y-2.5 text-right">
+                <div className="rounded-[18px] border border-white/10 bg-white/[0.05] px-3.5 py-3">
+                  <p className="text-[11px] uppercase tracking-[0.18em] text-slate-400">Selected Method</p>
+                  <p className="mt-1 text-base font-bold text-white">{selectedMethod?.name || 'Choose a method'}</p>
+                </div>
+                <div className="rounded-[18px] border border-white/10 bg-white/[0.05] px-3.5 py-3">
+                  <p className="text-[11px] uppercase tracking-[0.18em] text-slate-400">Minimum</p>
+                  <p className="mt-1 text-base font-bold text-white">${Number(selectedMethod?.minAmount || 0).toFixed(2)}</p>
+                </div>
+                <div className="rounded-[18px] border border-white/10 bg-white/[0.05] px-3.5 py-3">
+                  <p className="text-[11px] uppercase tracking-[0.18em] text-slate-400">Fee</p>
+                  <p className="mt-1 text-base font-bold text-white">{Number(selectedMethod?.feePercent || 0).toFixed(2)}%</p>
+                </div>
+              </div>
+            </div>
+          </MobilePanel>
         </div>
 
-        <div className="rounded-[22px] border border-white/10 bg-[linear-gradient(180deg,rgba(8,15,29,0.94),rgba(5,10,22,0.98))] p-3.5 shadow-[0_18px_50px_rgba(2,6,23,0.2)] sm:rounded-[28px] sm:p-5 sm:shadow-[0_24px_70px_rgba(2,6,23,0.22)]">
-          <div className="mb-3 sm:mb-4">
-            <p className="text-xs font-black uppercase tracking-[0.22em] text-cyan-300">
-              Deposit
-            </p>
-            <h2 className="mt-1 text-lg font-semibold text-white sm:text-xl">{t('wallet.addBalance')}</h2>
-          </div>
+        <MobilePanel>
+          <MobileSectionHeading
+            eyebrow="Deposit"
+            title={t('wallet.addBalance')}
+            description="أضف رصيدك من نفس الصفحة مع اختيار الطريقة المناسبة لك."
+          />
 
-          <div className="mb-5">
+          <div className="mt-4 grid gap-4 xl:grid-cols-[minmax(0,1fr)_280px]">
+            <div>
             <p className="mb-3 text-sm font-medium text-slate-300">طريقة الدفع</p>
-            <div className="grid gap-2.5 md:grid-cols-2 xl:grid-cols-4">
+            <div className="grid grid-cols-3 gap-2.5 xl:grid-cols-4">
               {paymentMethods.map((method) => {
                 const active = method.key === selectedMethodKey
                 return (
                   <button
                     key={method.key}
                     type="button"
-                    onClick={() => setSelectedMethodKey(method.key)}
-                    className={`rounded-[18px] border p-2.5 text-left transition sm:rounded-[22px] sm:p-3.5 ${
+                    onClick={() => handleMethodClick(method.key)}
+                    className={`flex h-full flex-col rounded-[20px] border p-2.5 text-center transition sm:rounded-[22px] sm:p-3.5 lg:min-h-[190px] lg:rounded-[24px] lg:p-4 md:text-left ${
                       active
-                        ? 'border-cyan-400/50 bg-cyan-500/10'
-                        : 'border-white/10 bg-white/[0.035] hover:border-white/25'
+                        ? 'border-cyan-400/40 bg-cyan-500/10 shadow-[0_16px_34px_rgba(14,165,233,0.12)]'
+                        : 'border-white/10 bg-white/[0.04] hover:border-white/25 hover:bg-white/[0.055]'
                     }`}
                   >
-                    <div className="mb-2 flex items-start justify-between gap-2 sm:mb-3 sm:gap-3">
-                      <div className="space-y-1.5 sm:space-y-2">
-                        <div className="flex h-12 w-12 items-center justify-center overflow-hidden rounded-2xl border border-white/10 bg-white shadow-[0_10px_24px_rgba(2,6,23,0.22)] sm:h-16 sm:w-16">
+                    <div className="mb-2 flex flex-col items-center gap-2 sm:mb-3 md:flex-row md:items-start md:justify-between md:gap-3">
+                      <div className="flex flex-col items-center gap-1.5 sm:gap-2 md:items-start">
+                        <div className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-xl border border-white/10 bg-white shadow-[0_10px_24px_rgba(2,6,23,0.22)] sm:h-16 sm:w-16 sm:rounded-2xl lg:h-[4.6rem] lg:w-[4.6rem]">
                           <img
                             src={resolvePaymentMethodImage(method)}
                             alt={method.name}
@@ -313,18 +400,20 @@ export default function WalletPage() {
                         </div>
                         {networkBadgeMap[method.key] && (
                           <span
-                            className={`inline-flex rounded-full border px-2 py-0.5 text-[10px] font-semibold sm:px-2.5 sm:py-1 sm:text-[11px] ${networkBadgeMap[method.key].className}`}
+                            className={`inline-flex rounded-full border px-1.5 py-0.5 text-[9px] font-semibold sm:px-2.5 sm:py-1 sm:text-[11px] ${networkBadgeMap[method.key].className}`}
                           >
                             {networkBadgeMap[method.key].label}
                           </span>
                         )}
                       </div>
-                      <span className="text-[10px] text-slate-400 sm:text-[11px]">
+                      <span className="rounded-full border border-white/10 bg-white/[0.04] px-1.5 py-0.5 text-[9px] text-slate-400 sm:text-[11px]">
                         ${Number(method.minAmount || 0).toFixed(2)} min
                       </span>
                     </div>
-                    <p className="text-xs font-semibold text-white sm:text-sm">{method.name}</p>
-                    <p className="mt-0.5 text-[10px] text-slate-400 sm:mt-1 sm:text-[11px]">
+                    <p className="line-clamp-2 min-h-[2rem] text-[11px] font-semibold leading-4 text-white sm:min-h-0 sm:text-sm lg:text-[0.95rem]">
+                      {method.name}
+                    </p>
+                    <p className="mt-0.5 text-[9px] text-slate-400 sm:mt-1 sm:text-[11px]">
                       Fee: {Number(method.feePercent || 0).toFixed(2)}%
                     </p>
                   </button>
@@ -333,12 +422,60 @@ export default function WalletPage() {
             </div>
           </div>
 
-          <form onSubmit={handleTopUp} className="space-y-3">
+            <div className="hidden xl:flex xl:flex-col xl:justify-between xl:rounded-[24px] xl:border xl:border-white/10 xl:bg-white/[0.04] xl:p-4">
+              <div className="text-right">
+                <div className="inline-flex items-center gap-2 rounded-full border border-cyan-400/18 bg-cyan-500/10 px-2.5 py-1 text-[11px] font-semibold text-cyan-200">
+                  <Sparkles className="h-3.5 w-3.5" />
+                  Quick Deposit
+                </div>
+                <h3 className="mt-3 text-lg font-black text-white">إرشادات سريعة</h3>
+                <p className="mt-2 text-sm leading-6 text-slate-400">
+                  كل الطرق تفتح نفس النافذة المرتبة، مع نسخ العنوان واحتساب الرسوم ورفع الإيصال من نفس المكان.
+                </p>
+              </div>
+
+              <div className="mt-4 space-y-2.5">
+                <div className="rounded-[18px] border border-white/10 bg-white/[0.04] px-3.5 py-3 text-right">
+                  <div className="flex items-center justify-end gap-2 text-cyan-200">
+                    <Sparkles className="h-4 w-4" />
+                    <span className="text-sm font-semibold">اختر الطريقة</span>
+                  </div>
+                </div>
+                <div className="rounded-[18px] border border-white/10 bg-white/[0.04] px-3.5 py-3 text-right">
+                  <div className="flex items-center justify-end gap-2 text-slate-200">
+                    <WalletCards className="h-4 w-4" />
+                    <span className="text-sm font-semibold">انسخ عنوان الدفع</span>
+                  </div>
+                </div>
+                <div className="rounded-[18px] border border-white/10 bg-white/[0.04] px-3.5 py-3 text-right">
+                  <div className="flex items-center justify-end gap-2 text-emerald-200">
+                    <Shield className="h-4 w-4" />
+                    <span className="text-sm font-semibold">أرسل الطلب بأمان</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-4 rounded-[20px] border border-dashed border-white/12 bg-white/[0.03] px-4 py-4 text-center text-sm text-slate-300 lg:text-right">
+            اضغط على أي طريقة دفع لفتح نافذة الإيداع الخاصة بها وإظهار العنوان والمبلغ والإيصال.
+          </div>
+
+          <form onSubmit={handleTopUp} className="hidden">
             <div className="grid gap-2.5 md:grid-cols-2">
               <div>
                 <label className="mb-1.5 block text-xs font-medium text-slate-400 sm:mb-2 sm:text-sm">عنوان الدفع</label>
-                <div className="break-all rounded-[18px] border border-white/10 bg-white/[0.035] px-3 py-2.5 text-xs text-slate-200 sm:rounded-2xl sm:px-4 sm:py-3 sm:text-sm">
-                  {selectedMethod?.address || 'No payment address configured yet'}
+                <div className="flex items-start gap-2 rounded-[18px] border border-white/10 bg-white/[0.035] px-3 py-2.5 text-xs text-slate-200 sm:rounded-2xl sm:px-4 sm:py-3 sm:text-sm">
+                  <div className="min-w-0 flex-1 break-all">
+                    {paymentAddress || 'No payment address configured yet'}
+                  </div>
+                  {paymentAddress ? (
+                    <CopyButton
+                      value={paymentAddress}
+                      label={`Copy ${selectedMethod?.name || 'payment'} address`}
+                      className="h-7 w-7 border-white/10 bg-white/[0.04] text-slate-300 hover:border-cyan-400/25 hover:bg-cyan-500/10 hover:text-cyan-200"
+                    />
+                  ) : null}
                 </div>
               </div>
 
@@ -352,7 +489,7 @@ export default function WalletPage() {
                   min="0"
                   value={topUpAmount}
                   onChange={(e) => setTopUpAmount(e.target.value)}
-                  className="w-full rounded-[18px] border border-white/10 bg-white/[0.035] px-3 py-2.5 text-sm text-white placeholder-slate-400 focus:border-cyan-500 focus:outline-none sm:rounded-2xl sm:px-4 sm:py-3"
+                  className={mobileInputClass}
                   placeholder={t('wallet.enterAmount')}
                   required
                 />
@@ -362,7 +499,7 @@ export default function WalletPage() {
             <div className="grid gap-2.5 md:grid-cols-2">
               <div>
                 <label className="mb-1.5 block text-xs font-medium text-slate-400 sm:mb-2 sm:text-sm">المبلغ بعد الرسوم</label>
-                <div className="rounded-[18px] border border-white/10 bg-white/[0.035] px-3 py-2.5 text-sm text-slate-200 sm:rounded-2xl sm:px-4 sm:py-3">
+                <div className="rounded-[18px] border border-white/10 bg-white/[0.045] px-3 py-2.5 text-sm text-slate-200 sm:rounded-2xl sm:px-4 sm:py-3">
                   ${amountAfterFee.toFixed(2)}
                   <span className="ml-2 text-[10px] text-slate-400 sm:text-[11px]">Fee: {feePercent.toFixed(2)}%</span>
                 </div>
@@ -370,7 +507,7 @@ export default function WalletPage() {
 
               <div>
                 <label className="mb-1.5 block text-xs font-medium text-slate-400 sm:mb-2 sm:text-sm">إيصال المعاملة (اختياري)</label>
-                <label className="flex cursor-pointer items-center justify-center rounded-[18px] border border-dashed border-white/20 bg-white/[0.035] px-3 py-3 text-xs text-slate-300 hover:border-cyan-400/40 sm:rounded-2xl sm:px-4 sm:py-3.5 sm:text-sm">
+                <label className="flex cursor-pointer items-center justify-center rounded-[18px] border border-dashed border-white/20 bg-white/[0.045] px-3 py-3 text-xs text-slate-300 hover:border-cyan-400/40 sm:rounded-2xl sm:px-4 sm:py-3.5 sm:text-sm">
                   <input
                     type="file"
                     accept="image/*"
@@ -385,61 +522,59 @@ export default function WalletPage() {
             <button
               type="submit"
               disabled={topUpLoading}
-              className="w-full rounded-[18px] bg-gradient-to-r from-emerald-500 to-green-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:from-emerald-400 hover:to-green-500 disabled:opacity-50 sm:rounded-2xl sm:px-6 sm:py-3"
+              className={`w-full ${mobilePrimaryButtonClass} disabled:opacity-50`}
             >
               {topUpLoading ? t('wallet.submitting') : t('wallet.requestDeposit')}
             </button>
           </form>
 
-          {message && (
+          {message && !isPaymentModalOpen && (
             <p className={`mt-4 text-sm ${messageTone === 'success' ? 'text-green-400' : 'text-red-400'}`}>
               {message}
             </p>
           )}
-        </div>
+        </MobilePanel>
 
-        <div className="rounded-[22px] border border-white/10 bg-[linear-gradient(180deg,rgba(8,15,29,0.94),rgba(5,10,22,0.98))] p-3.5 shadow-[0_18px_50px_rgba(2,6,23,0.2)] sm:rounded-[28px] sm:p-5 sm:shadow-[0_24px_70px_rgba(2,6,23,0.22)]">
-          <div className="mb-3 sm:mb-4">
-            <p className="text-xs font-black uppercase tracking-[0.22em] text-cyan-300">
-              Search
-            </p>
-            <h2 className="mt-1 text-lg font-semibold text-white sm:text-xl">Find Activity</h2>
-          </div>
+        <MobilePanel tone="soft">
+          <MobileSectionHeading
+            eyebrow="Search"
+            title="Find Activity"
+            description="Search transactions by type, amount, or date."
+          />
 
-          <label className="relative block">
+          <label className="relative mt-4 block">
             <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" />
             <input
               type="text"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               placeholder="Search transactions, amount, date..."
-              className="w-full rounded-[18px] border border-white/10 bg-white/[0.035] py-2.5 pl-10 pr-3 text-sm text-white placeholder-slate-500 focus:border-cyan-500 focus:outline-none sm:rounded-2xl sm:py-3 sm:pl-11 sm:pr-4"
+              className={`${mobileInputClass} pl-10`}
             />
           </label>
-        </div>
+        </MobilePanel>
 
-        <div className="rounded-[22px] border border-white/10 bg-[linear-gradient(180deg,rgba(8,15,29,0.94),rgba(5,10,22,0.98))] p-3.5 shadow-[0_18px_50px_rgba(2,6,23,0.2)] sm:rounded-[28px] sm:p-5 sm:shadow-[0_24px_70px_rgba(2,6,23,0.22)]">
-          <div className="mb-3 sm:mb-4">
-            <p className="text-xs font-black uppercase tracking-[0.22em] text-cyan-300">
-              Activity
-            </p>
-            <h2 className="mt-1 text-lg font-semibold text-white sm:text-xl">{t('wallet.txHistory')}</h2>
-          </div>
+        <MobilePanel tone="soft">
+          <MobileSectionHeading
+            eyebrow="Activity"
+            title={t('wallet.txHistory')}
+            description="Every movement in your wallet, with the remaining balance after each step."
+          />
 
           {txns.length === 0 ? (
-            <div className="rounded-[20px] border border-white/10 bg-white/[0.035] p-6 text-center sm:rounded-[24px] sm:p-8">
+            <div className="mt-4 rounded-[20px] border border-white/10 bg-white/[0.04] p-6 text-center sm:rounded-[24px] sm:p-8">
               <p className="text-slate-400">{t('wallet.noTx')}</p>
             </div>
           ) : filteredTxns.length === 0 ? (
-            <div className="rounded-[20px] border border-white/10 bg-white/[0.035] p-6 text-center sm:rounded-[24px] sm:p-8">
+            <div className="mt-4 rounded-[20px] border border-white/10 bg-white/[0.04] p-6 text-center sm:rounded-[24px] sm:p-8">
               <p className="text-slate-400">No matching transactions.</p>
             </div>
           ) : (
-            <div className="space-y-2.5">
+            <div className="mt-4 space-y-2.5">
               {filteredTxns.map((txn) => (
                 <div
                   key={txn._id}
-                  className="flex flex-col gap-2.5 rounded-[18px] border border-white/8 bg-white/[0.035] p-3 sm:flex-row sm:items-start sm:justify-between sm:rounded-[22px] sm:p-4"
+                  className="flex flex-col gap-2.5 rounded-[18px] border border-white/8 bg-white/[0.04] p-3 sm:flex-row sm:items-start sm:justify-between sm:rounded-[22px] sm:p-4"
                 >
                   <div>
                     <p className="text-sm font-semibold capitalize text-white">{txn.type}</p>
@@ -460,8 +595,140 @@ export default function WalletPage() {
               ))}
             </div>
           )}
-        </div>
+        </MobilePanel>
       </UserPageLayout>
+
+      {isPaymentModalOpen && selectedMethod ? (
+        <div
+          className="fixed inset-0 z-[80] flex items-end justify-center bg-slate-950/88 p-3 backdrop-blur-sm sm:items-center sm:p-4"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="wallet-deposit-modal-title"
+          onClick={() => setIsPaymentModalOpen(false)}
+        >
+          <div
+            className="w-full max-w-[22.75rem] overflow-hidden rounded-[24px] border border-cyan-400/12 bg-[linear-gradient(180deg,rgba(6,18,34,0.98),rgba(4,10,22,0.99))] shadow-[0_34px_90px_rgba(2,6,23,0.52)] sm:max-w-[24rem]"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="flex items-start justify-between gap-2.5 border-b border-white/8 px-3 py-3 sm:px-3.5 sm:py-3.5">
+              <div className="min-w-0 text-right">
+                <p className="text-[11px] font-black uppercase tracking-[0.22em] text-cyan-300">Deposit Method</p>
+                <h2 id="wallet-deposit-modal-title" className="mt-1 text-[1.02rem] font-black text-white sm:text-lg">
+                  {selectedMethod.name}
+                </h2>
+                <p className="mt-1 text-[12px] leading-5 text-slate-400">
+                  أكمل الإيداع عبر {selectedMethod.name} ثم أرسل الطلب من نفس النافذة.
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setIsPaymentModalOpen(false)}
+                className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-rose-300/20 bg-rose-400/[0.09] text-rose-100 shadow-[0_10px_24px_rgba(15,23,42,0.28)] transition hover:border-rose-300/34 hover:bg-rose-400/[0.16] hover:text-white"
+                aria-label="Close deposit popup"
+              >
+                <X className="h-5 w-5 stroke-[2.7]" />
+              </button>
+            </div>
+
+            <div className="max-h-[80vh] overflow-y-auto px-3 py-3 sm:px-3.5 sm:py-3.5">
+              <div className="mb-3 flex items-center gap-2.5 rounded-[18px] border border-white/10 bg-white/[0.04] p-2.5">
+                <div className="flex h-11 w-11 items-center justify-center overflow-hidden rounded-[16px] border border-white/10 bg-white shadow-[0_12px_28px_rgba(2,6,23,0.24)]">
+                  <img
+                    src={resolvePaymentMethodImage(selectedMethod)}
+                    alt={selectedMethod.name}
+                    className="h-full w-full object-contain"
+                  />
+                </div>
+                <div className="min-w-0 flex-1 text-right">
+                  <div className="flex flex-wrap items-center justify-end gap-2">
+                    {networkBadgeMap[selectedMethod.key] ? (
+                      <span
+                        className={`inline-flex rounded-full border px-2.5 py-1 text-[11px] font-semibold ${networkBadgeMap[selectedMethod.key].className}`}
+                      >
+                        {networkBadgeMap[selectedMethod.key].label}
+                      </span>
+                    ) : null}
+                    <span className="rounded-full border border-white/10 bg-white/[0.05] px-2.5 py-1 text-[11px] text-slate-300">
+                      Min ${Number(selectedMethod.minAmount || 0).toFixed(2)}
+                    </span>
+                  </div>
+                  <p className="mt-1.5 text-[12px] text-slate-400">
+                    Fee: {Number(selectedMethod.feePercent || 0).toFixed(2)}%
+                  </p>
+                </div>
+              </div>
+
+              <form onSubmit={handleTopUp} className="space-y-2.5">
+                <div>
+                  <label className="mb-1.5 block text-[13px] font-medium text-slate-300">عنوان الدفع</label>
+                  <div className="flex items-center gap-2 rounded-[18px] border border-white/10 bg-white/[0.045] px-3 py-2.5 text-sm text-slate-200">
+                    <div className="min-w-0 flex-1 break-all">
+                      {paymentAddress || 'No payment address configured yet'}
+                    </div>
+                    {paymentAddress ? (
+                      <CopyButton
+                        value={paymentAddress}
+                        label={`Copy ${selectedMethod.name} address`}
+                        className="h-8.5 w-8.5 border-white/10 bg-white/[0.04] text-slate-300 hover:border-cyan-400/25 hover:bg-cyan-500/10 hover:text-cyan-200"
+                      />
+                    ) : null}
+                  </div>
+                </div>
+
+                <div>
+                  <label className="mb-1.5 block text-[13px] font-medium text-slate-300">Amount</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={topUpAmount}
+                    onChange={(e) => setTopUpAmount(e.target.value)}
+                    className={mobileInputClass}
+                    placeholder="Enter amount"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="mb-1.5 block text-[13px] font-medium text-slate-300">المبلغ بعد الرسوم</label>
+                  <div className="rounded-[18px] border border-white/10 bg-white/[0.045] px-3 py-2.5 text-sm text-slate-200">
+                    <span className="text-[1.35rem] font-bold text-white">${amountAfterFee.toFixed(2)}</span>
+                    <span className="ml-2 text-xs text-slate-400">Fee: {feePercent.toFixed(2)}%</span>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="mb-1.5 block text-[13px] font-medium text-slate-300">إيصال المعاملة (اختياري)</label>
+                  <label className="flex cursor-pointer items-center justify-center rounded-[18px] border border-dashed border-white/20 bg-white/[0.045] px-3 py-2.5 text-sm text-slate-300 transition hover:border-cyan-400/40">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(e) => handleProofUpload(e.target.files?.[0])}
+                    />
+                    {proofName || 'انقر لرفع الإيصال'}
+                  </label>
+                </div>
+
+                {message ? (
+                  <p className={`text-sm ${messageTone === 'success' ? 'text-green-400' : 'text-red-400'}`}>
+                    {message}
+                  </p>
+                ) : null}
+
+                <button
+                  type="submit"
+                  disabled={topUpLoading}
+                  className={`w-full ${mobilePrimaryButtonClass} disabled:opacity-50`}
+                >
+                  {topUpLoading ? t('wallet.submitting') : t('wallet.requestDeposit')}
+                </button>
+              </form>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   )
 }

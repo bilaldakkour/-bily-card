@@ -32,7 +32,6 @@ type AuthUser = {
   role?: string
   walletBalance?: {
     usd?: number
-    lbp?: number
   }
 }
 

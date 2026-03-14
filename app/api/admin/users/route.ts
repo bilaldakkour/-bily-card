@@ -38,7 +38,7 @@ async function handler(
 
     const userIds = users.map((u: any) => String(u._id))
     const wallets = await Wallet.find({ userId: { $in: userIds } })
-      .select('userId balance_usd balance_lbp')
+      .select('userId balance_usd')
       .lean()
 
     const walletMap = new Map(
@@ -46,14 +46,13 @@ async function handler(
         String(w.userId),
         {
           usd: Number(w.balance_usd || 0),
-          lbp: Number(w.balance_lbp || 0),
         },
       ])
     )
 
     const enrichedUsers = users.map((u: any) => ({
       ...u,
-      walletBalance: walletMap.get(String(u._id)) || { usd: 0, lbp: 0 },
+      walletBalance: walletMap.get(String(u._id)) || { usd: 0 },
     }))
 
     const total = await User.countDocuments(query)

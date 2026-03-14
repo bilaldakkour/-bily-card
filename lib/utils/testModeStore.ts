@@ -53,7 +53,6 @@ type MockUser = {
   avatar: string
   walletBalance: {
     usd: number
-    lbp: number
   }
 }
 
@@ -81,7 +80,6 @@ function createInitialState(): TestModeState {
       avatar: '',
       walletBalance: {
         usd: 250,
-        lbp: 0,
       },
     },
     orders: [
@@ -175,7 +173,7 @@ export function getTestModePaymentMethods() {
 
 export function createTestModeDeposit(params: {
   amount: number
-  currency: 'USD' | 'LBP'
+  currency: 'USD'
   paymentMethodKey: string
   paymentMethodName: string
   paymentAddress: string
@@ -183,7 +181,7 @@ export function createTestModeDeposit(params: {
 }) {
   const state = getTestModeState()
   const previousUsd = Number(state.user.walletBalance.usd || 0)
-  const creditedUsd = params.currency === 'USD' ? params.amount : params.amount / 90000
+  const creditedUsd = params.amount
   const nextUsd = Number((previousUsd + creditedUsd).toFixed(2))
 
   state.user.walletBalance.usd = nextUsd

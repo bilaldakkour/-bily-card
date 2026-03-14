@@ -3,6 +3,12 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Bell, CheckCircle2, RefreshCw } from 'lucide-react'
 import { useRouter } from 'next/navigation'
+import {
+  MobileEmptyState,
+  MobilePanel,
+  MobileSectionHeading,
+  mobileSecondaryButtonClass,
+} from '@/components/shared/MobileDesignSystem'
 import UserPageLayout from '@/components/shared/UserPageLayout'
 
 type OrderItem = {
@@ -54,7 +60,9 @@ export default function NotificationsPage() {
 
       const [ordersData, txData] = await Promise.all([ordersRes.json(), txRes.json()])
       const orders = Array.isArray(ordersData?.data) ? (ordersData.data as OrderItem[]) : []
-      const txs = Array.isArray(txData?.transactions) ? (txData.transactions as TransactionItem[]) : []
+      const transactions = Array.isArray(txData?.transactions)
+        ? (txData.transactions as TransactionItem[])
+        : []
 
       const nextNotifications: NotificationItem[] = [
         ...orders.slice(0, 12).map((order, index) => ({
@@ -62,15 +70,15 @@ export default function NotificationsPage() {
           title:
             String(order.status || '').toLowerCase() === 'completed'
               ? `تم إكمال طلبك ${order.productName || ''} بنجاح`
-              : `تم تحديث طلبك ${order.productName || ''}`,
+              : `تم تحديث حالة طلبك ${order.productName || ''}`,
           time: order.createdAt || new Date().toISOString(),
         })),
-        ...txs
+        ...transactions
           .filter((txn) => String(txn.type || '').toLowerCase() === 'deposit')
           .slice(0, 8)
           .map((txn, index) => ({
             id: txn._id || `txn-${index}`,
-            title: `تم قبول دفعتك ${Number(txn.amount || 0).toFixed(2)} ${txn.currency || 'USD'} بنجاح`,
+            title: `تم تسجيل دفعة ${Number(txn.amount || 0).toFixed(2)} ${txn.currency || 'USD'} في حسابك`,
             time: txn.createdAt || new Date().toISOString(),
           })),
       ]
@@ -89,7 +97,6 @@ export default function NotificationsPage() {
     void loadNotifications()
   }, [])
 
-  const count = notifications.length
   const formattedNotifications = useMemo(
     () =>
       notifications.map((item) => ({
@@ -101,7 +108,8 @@ export default function NotificationsPage() {
 
   return (
     <UserPageLayout
-      title="الإشعارات"
+      title="Notifications"
+      mobileTitle="الإشعارات"
       subtitle="Latest account and order updates."
       breadcrumbs={[
         { label: 'Home', href: '/' },
@@ -112,68 +120,70 @@ export default function NotificationsPage() {
       maxWidthClass="max-w-[1720px]"
       fixedSidebarRightClass="lg:right-6"
     >
-      <div className="rounded-[24px] border border-rose-300/10 bg-[linear-gradient(180deg,rgba(10,17,30,0.98),rgba(23,22,35,0.95))] p-3.5 shadow-[0_24px_70px_rgba(2,6,23,0.22)] sm:rounded-[30px] sm:p-5">
-        <div className="mb-3 flex items-center justify-between sm:mb-4">
-          <div className="flex items-center gap-3">
+      <MobilePanel tone="danger">
+        <MobileSectionHeading
+          eyebrow="Live Updates"
+          title="الإشعارات"
+          description="آخر تحديثات الطلبات والدفعات بحلة أوضح وأنسب للموبايل."
+          action={
             <button
               type="button"
               onClick={() => void loadNotifications()}
-              className="flex h-10 w-10 items-center justify-center rounded-2xl border border-cyan-400/14 bg-cyan-500/10 text-cyan-200"
+              className={mobileSecondaryButtonClass}
             >
-              <RefreshCw className="h-4 w-4" />
+              <RefreshCw className="mr-2 h-4 w-4" />
+              تحديث
             </button>
-            <div className="flex h-7 min-w-7 items-center justify-center rounded-full bg-gradient-to-r from-sky-400 to-rose-400 px-2 text-xs font-bold text-slate-950 sm:h-8 sm:min-w-8 sm:text-sm">
-              {count}
-            </div>
-          </div>
-          <h2 className="text-right text-3xl font-black text-white">الإشعارات</h2>
-        </div>
+          }
+        />
 
-        <div className="mb-4 grid gap-2 sm:grid-cols-3 sm:gap-3">
-          <div className="rounded-[18px] border border-cyan-400/12 bg-cyan-500/10 px-3 py-3 text-center text-sm font-medium text-cyan-100 sm:rounded-2xl sm:px-4 sm:py-4 sm:text-lg">
-            جميع الإشعارات
+        <div className="mt-4 grid grid-cols-3 gap-2.5">
+          <div className="rounded-[18px] border border-cyan-400/16 bg-cyan-500/10 px-3 py-3 text-center text-sm font-semibold text-cyan-100">
+            الجميع
           </div>
-          <div className="rounded-[18px] border border-white/8 bg-white/[0.04] px-3 py-3 text-center text-sm font-medium text-slate-200 sm:rounded-2xl sm:px-4 sm:py-4 sm:text-lg">
-            غير المقروءة فقط
+          <div className="rounded-[18px] border border-white/8 bg-white/[0.04] px-3 py-3 text-center text-sm font-medium text-slate-200">
+            غير المقروءة
           </div>
-          <div className="rounded-[18px] border border-white/8 bg-white/[0.04] px-3 py-3 text-center text-sm font-medium text-slate-200 sm:rounded-2xl sm:px-4 sm:py-4 sm:text-lg">
-            المقروءة فقط
+          <div className="rounded-[18px] border border-white/8 bg-white/[0.04] px-3 py-3 text-center text-sm font-medium text-slate-200">
+            المقروءة
           </div>
         </div>
+      </MobilePanel>
 
-        {loading ? (
-          <div className="rounded-2xl bg-white/[0.04] p-8 text-center text-slate-400">
-            جاري تحميل الإشعارات...
-          </div>
-        ) : formattedNotifications.length === 0 ? (
-          <div className="rounded-2xl bg-white/[0.04] p-8 text-center text-slate-400">
-            لا توجد إشعارات بعد.
-          </div>
-        ) : (
-          <div className="space-y-3">
-            {formattedNotifications.map((item) => (
-              <div
-                key={item.id}
-                className="flex items-center justify-between gap-3 rounded-[20px] border border-rose-300/10 bg-[linear-gradient(180deg,rgba(36,33,42,0.96),rgba(24,25,37,0.96))] px-3.5 py-4 shadow-[0_14px_34px_rgba(2,6,23,0.16)] sm:rounded-[24px] sm:px-4 sm:py-5"
-              >
-                <div className="flex h-10 w-1.5 shrink-0 rounded-full bg-gradient-to-b from-sky-400 to-rose-400 sm:h-12 sm:w-2" />
-                <div className="min-w-0 flex-1 text-right">
-                  <p className="text-sm text-white sm:text-lg">{item.title}</p>
-                  <p className="mt-1.5 text-xs text-slate-400 sm:mt-2 sm:text-sm">{item.timeLabel}</p>
-                </div>
-                <Bell className="h-5 w-5 shrink-0 text-rose-300 sm:h-6 sm:w-6" />
+      {loading ? (
+        <MobilePanel className="px-5 py-8 text-center" tone="soft">
+          <p className="text-slate-300">جارٍ تحميل الإشعارات...</p>
+        </MobilePanel>
+      ) : formattedNotifications.length === 0 ? (
+        <MobileEmptyState
+          title="لا يوجد إشعارات بعد"
+          description="عندما يصدر تحديث جديد على طلباتك أو دفعاتك سيظهر هنا."
+        />
+      ) : (
+        <div className="space-y-3">
+          {formattedNotifications.map((item) => (
+            <MobilePanel
+              key={item.id}
+              tone="soft"
+              className="flex items-center justify-between gap-3 px-3.5 py-4"
+            >
+              <div className="flex h-11 w-1.5 shrink-0 rounded-full bg-gradient-to-b from-cyan-300 to-rose-300" />
+              <div className="min-w-0 flex-1 text-right">
+                <p className="text-sm leading-6 text-white sm:text-base">{item.title}</p>
+                <p className="mt-1.5 text-xs text-slate-400">{item.timeLabel}</p>
               </div>
-            ))}
-          </div>
-        )}
+              <Bell className="h-5 w-5 shrink-0 text-rose-200" />
+            </MobilePanel>
+          ))}
+        </div>
+      )}
 
-        {!loading && formattedNotifications.length > 0 && (
-          <div className="mt-5 flex items-center justify-center gap-2 rounded-2xl border border-cyan-400/18 bg-cyan-500/10 px-4 py-3 text-cyan-200">
-            <CheckCircle2 className="h-4 w-4" />
-            <span>تم تحميل آخر الإشعارات بنجاح</span>
-          </div>
-        )}
-      </div>
+      {!loading && formattedNotifications.length > 0 ? (
+        <MobilePanel className="flex items-center justify-center gap-2 px-4 py-3 text-cyan-200" tone="accent">
+          <CheckCircle2 className="h-4 w-4" />
+          <span>تم تحميل آخر الإشعارات بنجاح</span>
+        </MobilePanel>
+      ) : null}
     </UserPageLayout>
   )
 }

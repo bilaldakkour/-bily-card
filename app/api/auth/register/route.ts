@@ -119,7 +119,6 @@ export async function POST(req: NextRequest) {
     const wallet = new Wallet({
       userId: user._id,
       balance_usd: 0,
-      balance_lbp: 0,
     });
 
     await wallet.save();
