@@ -2,7 +2,7 @@
   "crons": [
     {
       "path": "/api/sync/dailycard-prices",
-      "schedule": "*/10 * * * *"
+      "schedule": "0 0 * * *"
     }
   ]
 }

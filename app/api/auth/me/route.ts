@@ -4,12 +4,26 @@ import { connectDB } from '@/lib/db/mongodb'
 import User from '@/lib/models/User'
 import Wallet from '@/lib/models/Wallet'
 import { JWTPayload } from '@/lib/types'
+import { isTestModeEnabled, logTestMode } from '@/lib/utils/testMode'
+import { getTestModeUser, updateTestModeAvatar } from '@/lib/utils/testModeStore'
 
 async function handler(
   req: NextRequest,
   user: JWTPayload
 ): Promise<NextResponse> {
   try {
+    if (isTestModeEnabled()) {
+      const mockUser = getTestModeUser()
+      logTestMode('auth/me requested', { userId: user.userId })
+      return NextResponse.json(
+        {
+          success: true,
+          data: mockUser,
+        },
+        { status: 200 }
+      )
+    }
+
     await connectDB()
 
     const currentUser = await User.findById(user.userId)
@@ -65,8 +79,6 @@ async function patchHandler(
   user: JWTPayload
 ): Promise<NextResponse> {
   try {
-    await connectDB()
-
     const body = await req.json()
     const avatar = typeof body?.avatar === 'string' ? body.avatar.trim() : ''
 
@@ -83,6 +95,26 @@ async function patchHandler(
         { status: 413 }
       )
     }
+
+    if (isTestModeEnabled()) {
+      const mockUser = updateTestModeAvatar(avatar || '')
+      logTestMode('auth/me avatar updated', {
+        userId: user.userId,
+        avatarLength: avatar.length,
+      })
+
+      return NextResponse.json(
+        {
+          success: true,
+          data: {
+            avatar: mockUser.avatar || '',
+          },
+        },
+        { status: 200 }
+      )
+    }
+
+    await connectDB()
 
     const currentUser = await User.findById(user.userId)
 

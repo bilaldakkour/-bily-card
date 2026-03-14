@@ -6,6 +6,8 @@ import { JWTPayload } from '@/lib/types';
 import { handleError } from '@/lib/utils/errors';
 import SystemSettings from '@/lib/models/SystemSettings';
 import { getActivePaymentMethods } from '@/lib/wallet/paymentMethods';
+import { isTestModeEnabled, logTestMode } from '@/lib/utils/testMode';
+import { createTestModeDeposit, getTestModePaymentMethods } from '@/lib/utils/testModeStore';
 
 async function handler(
   req: NextRequest,
@@ -13,7 +15,6 @@ async function handler(
 ): Promise<NextResponse> {
   try {
     const body = await req.json();
-    await connectDB();
 
     const amount = Number(body?.amount || 0);
     if (!Number.isFinite(amount) || amount <= 0) {
@@ -32,8 +33,9 @@ async function handler(
 
     const currency = body?.currency === 'LBP' ? 'LBP' : 'USD';
 
-    const settings = await SystemSettings.findOne({}).lean();
-    const paymentMethods = getActivePaymentMethods((settings as any)?.paymentMethods);
+    const paymentMethods = isTestModeEnabled()
+      ? getTestModePaymentMethods()
+      : getActivePaymentMethods((await SystemSettings.findOne({}).lean() as any)?.paymentMethods);
     const paymentMethodKey = String(body?.paymentMethodKey || '').trim().toLowerCase();
     const selectedMethod = paymentMethods.find((method) => method.key === paymentMethodKey);
 
@@ -57,14 +59,8 @@ async function handler(
     }
 
     const proofImage = String(body?.proofImage || '').trim();
-    if (!proofImage) {
-      return NextResponse.json(
-        { success: false, message: 'Receipt image is required' },
-        { status: 400 }
-      );
-    }
 
-    if (!proofImage.startsWith('data:image/')) {
+    if (proofImage && !proofImage.startsWith('data:image/')) {
       return NextResponse.json(
         { success: false, message: 'Invalid receipt image format' },
         { status: 400 }
@@ -72,12 +68,43 @@ async function handler(
     }
 
     // Keep payloads manageable when storing base64 data URL proofs.
-    if (proofImage.length > 1_200_000) {
+    if (proofImage && proofImage.length > 1_200_000) {
       return NextResponse.json(
         { success: false, message: 'Receipt image is too large' },
         { status: 400 }
       );
     }
+
+    if (isTestModeEnabled()) {
+      logTestMode('wallet/deposit-request payload', {
+        userId: user.userId,
+        amount,
+        currency,
+        paymentMethodKey: selectedMethod.key,
+        proofProvided: Boolean(proofImage),
+      })
+
+      const result = createTestModeDeposit({
+        amount,
+        currency,
+        paymentMethodKey: selectedMethod.key,
+        paymentMethodName: selectedMethod.name,
+        paymentAddress: selectedMethod.address,
+        proofImage: proofImage || undefined,
+      })
+
+      return NextResponse.json(
+        {
+          success: true,
+          message: 'Test mode deposit applied instantly.',
+          data: result.depositRequest,
+          testMode: true,
+        },
+        { status: 201 }
+      );
+    }
+
+    await connectDB();
 
     const depositRequest = new DepositRequest({
       userId: user.userId,
@@ -87,7 +114,7 @@ async function handler(
       paymentMethodKey: selectedMethod.key,
       paymentMethodName: selectedMethod.name,
       paymentAddress: selectedMethod.address,
-      proofImage,
+      proofImage: proofImage || undefined,
       status: 'pending',
     });
 

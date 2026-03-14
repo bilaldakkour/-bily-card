@@ -2,6 +2,9 @@
 
 import { Suspense, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
+import Link from 'next/link'
+import AuthShell from '@/components/shared/AuthShell'
+import { Input } from '@/components/ui/Input'
 
 export default function VerifyEmailPage() {
   return (
@@ -53,41 +56,42 @@ function VerifyEmailForm() {
   }
 
   return (
-    <main className="min-h-screen bg-slate-950 flex items-center justify-center p-4">
-      <div className="w-full max-w-md bg-slate-900 rounded-lg p-8 shadow-lg">
-        <h1 className="text-3xl font-bold text-center mb-6 text-white">Verify Your Email</h1>
-        <p className="text-center text-gray-300 mb-4">
-          We've sent a verification code to <strong>{email}</strong>
+    <AuthShell
+      title="Verify Your Email"
+      subtitle="Complete your account setup by entering the verification code we sent to your inbox."
+      footer={
+        <p className="text-center text-sm text-slate-400">
+          We sent a verification code to <span className="font-semibold text-white">{email}</span>
         </p>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label htmlFor="code" className="block text-sm font-medium text-gray-300 mb-1">
-              Verification Code
-            </label>
-            <input
-              type="text"
-              id="code"
-              value={code}
-              onChange={(e) => setCode(e.target.value)}
-              required
-              className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="Enter 6-digit code"
-            />
+      }
+    >
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div>
+          <label htmlFor="code" className="mb-2 block text-sm font-medium text-slate-300">
+            Verification Code
+          </label>
+          <Input
+            type="text"
+            id="code"
+            value={code}
+            onChange={(e) => setCode(e.target.value)}
+            required
+            placeholder="Enter 6-digit code"
+          />
+        </div>
+        {error && (
+          <div className="rounded-2xl border border-red-400/20 bg-red-500/10 px-4 py-3 text-sm text-red-300">
+            {error}
           </div>
-          {error && (
-            <div className="text-red-400 text-sm text-center">
-              {error}
-            </div>
-          )}
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white font-medium py-2 px-4 rounded-md transition duration-200"
-          >
-            {loading ? 'Verifying...' : 'Verify Email'}
-          </button>
-        </form>
-      </div>
-    </main>
+        )}
+        <button
+          type="submit"
+          disabled={loading}
+          className="w-full rounded-2xl bg-gradient-to-r from-cyan-500 to-sky-600 px-5 py-3 text-sm font-semibold text-white transition hover:from-cyan-400 hover:to-sky-500 disabled:opacity-50"
+        >
+          {loading ? 'Verifying...' : 'Verify Email'}
+        </button>
+      </form>
+    </AuthShell>
   )
 }

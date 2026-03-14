@@ -680,7 +680,7 @@ export default function AdminProducts() {
         </div>
 
         <div className="mb-6 rounded-lg border border-white/10 bg-slate-900/60 p-4">
-          <h2 className="mb-4 text-xl font-semibold text-white">Add Custom Product (Not in DailyCard)</h2>
+          <h2 className="mb-4 text-xl font-semibold text-white">Add Custom Product (Not in BilyCard)</h2>
           <div className="grid gap-3 md:grid-cols-2">
             <input
               value={customForm.name}

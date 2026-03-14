@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyToken, extractToken } from './jwt';
+import mongoose from 'mongoose';
 import { connectDB } from '@/lib/db/mongodb';
 import User from '@/lib/models/User';
 import { JWTPayload } from '../types';
+import { isTestModeEnabled, logTestMode } from '@/lib/utils/testMode';
 
 export async function withAuth(
   request: NextRequest,
@@ -23,6 +25,18 @@ export async function withAuth(
     const user = verifyToken(token);
 
     if (!user) {
+      return NextResponse.json(
+        { success: false, message: 'Invalid token' },
+        { status: 401 }
+      );
+    }
+
+    if (isTestModeEnabled()) {
+      logTestMode('withAuth bypassed database user check', { userId: user.userId, role: user.role })
+      return handler(request, user)
+    }
+
+    if (!mongoose.Types.ObjectId.isValid(user.userId)) {
       return NextResponse.json(
         { success: false, message: 'Invalid token' },
         { status: 401 }
@@ -72,6 +86,18 @@ export async function withAdminAuth(
       return NextResponse.json(
         { success: false, message: 'Admin access required' },
         { status: 403 }
+      );
+    }
+
+    if (isTestModeEnabled()) {
+      logTestMode('withAdminAuth bypassed database admin check', { userId: user.userId, role: user.role })
+      return handler(request, user)
+    }
+
+    if (!mongoose.Types.ObjectId.isValid(user.userId)) {
+      return NextResponse.json(
+        { success: false, message: 'Invalid token' },
+        { status: 401 }
       );
     }
 

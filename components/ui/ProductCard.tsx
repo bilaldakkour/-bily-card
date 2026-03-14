@@ -1,18 +1,17 @@
-import Link from 'next/link'
 import Image from 'next/image'
-import type { ReactNode } from 'react'
-import { Lock, Star, ShoppingCart, Zap } from 'lucide-react'
+import Link from 'next/link'
+import { Lock, Zap } from 'lucide-react'
 import { Badge } from './Badge'
-import { Button } from './Button'
 import FavoriteButton from './FavoriteButton'
 import type { Product } from '@/lib/data'
 
 interface ProductCardProps {
   product: Product;
   className?: string;
+  onProductSelect?: (product: Product) => void;
 }
 
-export function ProductCard({ product, className = '' }: ProductCardProps) {
+export function ProductCard({ product, className = '', onProductSelect }: ProductCardProps) {
   const isOutOfStock = product.stockStatus === 'out_of_stock'
 
   const accentByCategory: Record<string, string> = {
@@ -31,147 +30,121 @@ export function ProductCard({ product, className = '' }: ProductCardProps) {
   }
 
   const stockColorByStatus: Record<Product['stockStatus'], string> = {
-    in_stock: 'text-emerald-300 bg-emerald-500/20 border-emerald-400/30',
-    limited: 'text-amber-300 bg-amber-500/20 border-amber-400/30',
-    out_of_stock: 'text-red-300 bg-red-500/20 border-red-400/30',
+    in_stock: 'text-emerald-200 bg-emerald-500/20 border-emerald-400/30',
+    limited: 'text-amber-200 bg-amber-500/20 border-amber-400/30',
+    out_of_stock: 'text-red-200 bg-red-500/20 border-red-400/30',
   }
 
   const accentClass =
-    accentByCategory[product.category] || 'text-blue-300 bg-blue-500/15 border-blue-400/30'
+    accentByCategory[product.category] || 'text-blue-200 bg-blue-500/15 border-blue-400/30'
+  const deliveryBadge =
+    String(product.deliveryTime || '').toLowerCase().includes('instant') ||
+    String(product.deliveryTime || '').toLowerCase().includes('auto')
+      ? 'Instant'
+      : product.deliveryTime
 
-  const cardClassName = `group relative rounded-3xl bg-gradient-to-br from-slate-900/90 via-slate-900/80 to-slate-950/90 backdrop-blur-xl border border-white/10 overflow-hidden transition-all duration-500 ${
+  const cardClassName = `group relative overflow-hidden rounded-[26px] border border-white/10 bg-[linear-gradient(180deg,rgba(10,18,34,0.98),rgba(7,13,25,0.98))] shadow-[0_22px_60px_rgba(2,6,23,0.2)] backdrop-blur-xl transition-all duration-500 ${
     isOutOfStock
       ? 'cursor-not-allowed opacity-80'
-      : 'hover:scale-[1.02] hover:border-blue-500/30 hover:shadow-2xl hover:shadow-blue-500/20'
+      : 'hover:-translate-y-1 hover:border-cyan-400/25 hover:shadow-[0_26px_70px_rgba(56,189,248,0.12)]'
   } ${className}`
 
-  const CardWrapper = ({ children }: { children: ReactNode }) => {
-    if (isOutOfStock) {
-      return <article className={cardClassName}>{children}</article>
-    }
-
-    return (
-      <Link href={`/products/${product.slug}`} className={cardClassName}>
-        {children}
-      </Link>
-    )
-  }
-
   return (
-    <CardWrapper>
-      {/* Badge */}
+    <article className={cardClassName}>
+      {!isOutOfStock && (
+        onProductSelect ? (
+          <button
+            type="button"
+            onClick={() => onProductSelect(product)}
+            className="absolute inset-0 z-10 rounded-[26px]"
+            aria-label={`Open ${product.name}`}
+          />
+        ) : (
+          <Link
+            href={`/products/${product.slug}`}
+            className="absolute inset-0 z-10 rounded-[26px]"
+            aria-label={`Open ${product.name}`}
+          />
+        )
+      )}
+
       {(product.featured || product.bestSeller) && (
-        <div className="absolute top-6 left-6 z-20 flex gap-3">
+        <div className="absolute left-4 top-4 z-20 flex gap-2">
           {product.bestSeller && (
-            <Badge variant="primary" className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold shadow-lg">
-              <Zap className="h-3.5 w-3.5" />
+            <Badge
+              variant="primary"
+              className="flex items-center gap-1 px-2.5 py-1 text-[10px] font-bold shadow-lg"
+            >
+              <Zap className="h-3 w-3" />
               Best Seller
             </Badge>
           )}
           {product.featured && (
-            <Badge variant="secondary" className="px-3 py-1.5 text-xs font-bold shadow-lg">
+            <Badge variant="secondary" className="px-2.5 py-1 text-[10px] font-bold shadow-lg">
               Featured
             </Badge>
           )}
         </div>
       )}
 
-      <div className="absolute right-6 top-6 z-20">
+      <div className="absolute right-4 top-4 z-20 flex items-center gap-2">
         <div className="flex items-center gap-2">
-          <span className={`inline-flex rounded-full border px-2.5 py-1 text-[11px] font-semibold ${stockColorByStatus[product.stockStatus]}`}>
+          <span
+            className={`inline-flex rounded-full border px-2.5 py-1 text-[10px] font-semibold ${stockColorByStatus[product.stockStatus]}`}
+          >
             {stockLabelByStatus[product.stockStatus]}
           </span>
-          <FavoriteButton slug={product.slug} />
+          {!isOutOfStock && deliveryBadge ? (
+            <span className="inline-flex rounded-full border border-cyan-400/25 bg-cyan-500/10 px-2.5 py-1 text-[10px] font-semibold text-cyan-100">
+              {deliveryBadge}
+            </span>
+          ) : null}
         </div>
+        <FavoriteButton slug={product.slug} />
       </div>
 
-      {/* Image Container */}
-      <div className="relative h-56 w-full overflow-hidden bg-gradient-to-br from-slate-800 via-slate-900 to-slate-950">
+      <div className="relative h-36 w-full overflow-hidden border-b border-white/6 bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.06),transparent_55%),linear-gradient(180deg,rgba(11,17,31,0.96),rgba(8,14,26,1))] sm:h-40">
         <Image
           src={product.image}
           alt={product.name}
           fill
-          className={`object-cover transition-all duration-700 ${
-            isOutOfStock ? 'grayscale' : 'group-hover:scale-110 group-hover:rotate-1'
+          className={`transition-all duration-700 ${
+            isOutOfStock
+              ? 'object-cover grayscale'
+              : 'object-contain p-4 group-hover:scale-[1.03]'
           }`}
         />
-        {/* Fallback overlay */}
-        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-slate-900/20 to-slate-900/60 flex items-center justify-center">
-          <div className="text-6xl opacity-20 group-hover:opacity-30 transition-opacity duration-300">🎮</div>
-        </div>
 
         {isOutOfStock && (
-          <div className="absolute inset-0 z-10 flex items-center justify-center bg-slate-950/50">
+          <div className="absolute inset-0 z-10 flex items-center justify-center bg-slate-950/55">
             <span className="inline-flex items-center gap-2 rounded-full border border-red-400/30 bg-red-500/20 px-3 py-1 text-sm font-semibold text-red-200">
               <Lock className="h-4 w-4" />
-              Locked - Out of Stock
+              Locked
             </span>
           </div>
         )}
 
-        {/* Image overlay gradient */}
-        <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent opacity-60 group-hover:opacity-40 transition-opacity duration-300"></div>
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-slate-950/40" />
       </div>
 
-      {/* Content */}
-      <div className="relative p-6 space-y-4">
-        <div className="space-y-2">
-          <span className={`inline-block rounded-full border px-2.5 py-1 text-xs font-bold uppercase tracking-widest ${accentClass}`}>
+      <div className="relative space-y-3 p-4">
+        <div className="space-y-1">
+          <span
+            className={`inline-block rounded-full border px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.18em] ${accentClass}`}
+          >
             {product.platform}
           </span>
         </div>
 
-        <div className="space-y-3">
-          <h3 className="text-xl font-bold text-white leading-tight line-clamp-2 group-hover:text-blue-50 transition-colors duration-300">
+        <div className="space-y-1.5">
+          <h3 className="line-clamp-2 min-h-[3rem] text-[1.2rem] font-extrabold leading-tight text-white transition-colors duration-300 group-hover:text-cyan-50">
             {product.name}
           </h3>
-
-          <p className="text-slate-400 text-sm leading-relaxed line-clamp-2">
-            {product.shortDescription}
-          </p>
-
-          <p className="text-xs font-medium text-slate-500">
-            Delivery: {product.deliveryTime}
-          </p>
-        </div>
-
-        {/* Rating */}
-        <div className="flex items-center space-x-2">
-          <div className="flex items-center space-x-0.5">
-            {[...Array(5)].map((_, i) => (
-              <Star
-                key={i}
-                className={`h-4 w-4 transition-colors duration-300 ${
-                  i < 4 ? 'fill-yellow-400 text-yellow-400 group-hover:fill-yellow-300 group-hover:text-yellow-300' : 'text-slate-600'
-                }`}
-              />
-            ))}
-          </div>
-          <span className="text-xs text-slate-400 font-medium">(4.8)</span>
-        </div>
-
-        <div className="flex items-end justify-end gap-4 pt-2">
-          <span className="inline-flex">
-            <Button
-              size="sm"
-              disabled={isOutOfStock}
-              className={isOutOfStock ? 'opacity-60 cursor-not-allowed' : 'shadow-lg hover:shadow-xl hover:shadow-blue-500/30'}
-            >
-              {isOutOfStock ? <Lock className="h-4 w-4" /> : <ShoppingCart className="h-4 w-4" />}
-              {isOutOfStock ? 'Out of Stock' : 'View Product'}
-            </Button>
-          </span>
         </div>
       </div>
 
-      {/* Premium glow effect */}
-      <div className="absolute inset-0 rounded-3xl bg-gradient-to-r from-blue-500/0 via-blue-500/5 to-purple-600/0 opacity-0 transition-opacity duration-500 group-hover:opacity-100 pointer-events-none"></div>
-
-      {/* Corner accent */}
-      <div className="absolute top-0 right-0 h-40 w-40 bg-gradient-to-bl from-blue-500/10 via-purple-500/5 to-transparent rounded-full blur-3xl -z-10 group-hover:from-blue-500/20 group-hover:via-purple-500/10 transition-all duration-500"></div>
-
-      {/* Bottom accent */}
-      <div className="absolute bottom-0 left-0 h-32 w-32 bg-gradient-to-tr from-purple-500/5 to-transparent rounded-full blur-2xl -z-10 group-hover:from-purple-500/10 transition-all duration-500"></div>
-    </CardWrapper>
+      <div className="pointer-events-none absolute inset-0 rounded-[26px] bg-[linear-gradient(180deg,rgba(56,189,248,0.04),transparent_24%,transparent_76%,rgba(96,165,250,0.03))] opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
+      <div className="pointer-events-none absolute right-0 top-0 h-28 w-28 rounded-full bg-cyan-400/6 blur-3xl transition-all duration-500 group-hover:bg-cyan-400/10" />
+    </article>
   )
 }

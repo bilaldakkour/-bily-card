@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { LogoutButton } from '@/components/shared'
-import UserSidebar from '@/components/shared/UserSidebar'
+import UserPageLayout from '@/components/shared/UserPageLayout'
 import { useLanguage } from '@/hooks/useLanguage'
 
 interface WalletBalance {
@@ -84,158 +84,132 @@ export default function AccountPage() {
 
   if (!user) return null
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'completed':
-        return 'text-green-400 bg-green-400/10'
-      case 'pending':
-        return 'text-yellow-400 bg-yellow-400/10'
-      case 'processing':
-        return 'text-blue-400 bg-blue-400/10'
-      case 'failed':
-        return 'text-red-400 bg-red-400/10'
-      default:
-        return 'text-slate-400 bg-slate-400/10'
-    }
-  }
+  const accountCards = [
+    {
+      label: t('account.name'),
+      value: user.displayName,
+      sublabel: t('account.email'),
+      subvalue: user.email,
+    },
+    {
+      label: t('account.walletUsd'),
+      value: `$${user.walletBalance.usd.toFixed(2)}`,
+      accent: 'text-emerald-300',
+      action: (
+        <Link
+          href="/wallet"
+          className="inline-flex rounded-2xl bg-cyan-500 px-4 py-2 text-sm font-semibold text-black transition hover:bg-cyan-400"
+        >
+          {t('account.topUpWallet')}
+        </Link>
+      ),
+    },
+    {
+      label: t('account.walletLbp'),
+      value: `LBP ${user.walletBalance.lbp.toFixed(0)}`,
+      accent: 'text-sky-300',
+      sublabel: t('account.secondaryCurrency'),
+      subvalue: user.role,
+    },
+  ]
 
   return (
-    <main dir={isRTL ? 'rtl' : 'ltr'} className="min-h-screen bg-slate-950 p-4 md:p-8">
-      <div className="mx-auto max-w-7xl flex gap-8">
-        {/* Main Content */}
-        <div className="flex-1">
-          {/* Header */}
-          <div className="mb-8">
-            <h1 className="text-4xl font-bold text-white">{t('account.title')}</h1>
-            <p className="mt-2 text-slate-400">{t('account.subtitle')}</p>
-          </div>
-
-          {/* User Info Cards */}
-          <div className="mb-8 grid gap-4 md:grid-cols-3">
-            {/* User Profile Card */}
-            <div className="rounded-lg border border-white/10 bg-slate-900 p-6">
-              <p className="text-sm text-slate-400">{t('account.name')}</p>
-              <p className="text-xl font-bold text-white">{user.displayName}</p>
-              <p className="mt-4 text-sm text-slate-400">{t('account.email')}</p>
-              <p className="break-all text-sm text-white">{user.email}</p>
-            </div>
-
-            {/* Wallet USD */}
-            <div className="rounded-lg border border-white/10 bg-slate-900 p-6">
-              <p className="text-sm text-slate-400">{t('account.walletUsd')}</p>
-              <p className="text-3xl font-bold text-green-400">
-                ${user.walletBalance.usd.toFixed(2)}
-              </p>
-              <div className="mt-4 space-y-2">
-                <Link
-                  href="/wallet"
-                  className="block rounded-lg bg-blue-600 px-4 py-2 text-center text-sm font-medium text-white transition hover:bg-blue-700"
-                >
-                  {t('account.topUpWallet')}
-                </Link>
-              </div>
-            </div>
-
-            {/* Wallet LBP */}
-            <div className="rounded-lg border border-white/10 bg-slate-900 p-6">
-              <p className="text-sm text-slate-400">{t('account.walletLbp')}</p>
-              <p className="text-3xl font-bold text-blue-400">
-                ₾{user.walletBalance.lbp.toFixed(0)}
-              </p>
-              <div className="mt-4">
-                <p className="text-xs text-slate-500">{t('account.secondaryCurrency')}</p>
-              </div>
-            </div>
-          </div>
-
-          {/* Recent Orders */}
-          <div className="mb-8">
-            <div className="mb-4 flex items-center justify-between">
-              <h2 className="text-2xl font-bold text-white">{t('account.recentOrders')}</h2>
-              <Link
-                href="/orders"
-                className="text-sm text-blue-400 transition hover:text-blue-300"
-              >
-                {t('account.viewAll')} →
-              </Link>
-            </div>
-
-            {recentOrders.length === 0 ? (
-              <div className="rounded-lg border border-white/10 bg-slate-900 p-8 text-center">
-                <p className="text-slate-400">{t('account.noOrders')}</p>
-                <Link
-                  href="/products"
-                  className="mt-4 inline-block rounded-lg bg-blue-600 px-6 py-2 font-medium text-white transition hover:bg-blue-700"
-                >
-                  {t('account.browseProducts')}
-                </Link>
-              </div>
-            ) : (
-              <div className="space-y-2 overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead className="border-b border-white/10">
-                    <tr className="text-left text-slate-400">
-                      <th className="pb-3 font-medium">{t('orders.orderId')}</th>
-                      <th className="pb-3 font-medium">{t('orders.product')}</th>
-                      <th className="pb-3 font-medium">{t('orders.playerId')}</th>
-                      <th className="pb-3 font-medium">{t('orders.price')}</th>
-                      <th className="pb-3 font-medium">Wallet</th>
-                      <th className="pb-3 font-medium">{t('orders.status')}</th>
-                      <th className="pb-3 font-medium text-right">{t('orders.date')}</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {recentOrders.map((order) => (
-                      <tr
-                        key={order._id}
-                        className="border-b border-white/5 hover:bg-slate-800/50"
-                      >
-                        <td className="py-3">
-                          <span className="inline-flex rounded-md border border-cyan-400/30 bg-cyan-500/10 px-2 py-1 font-mono text-xs text-cyan-300">
-                            {order.orderId}
-                          </span>
-                        </td>
-                        <td className="py-3 text-white">{order.productName}</td>
-                        <td className="py-3 font-mono text-slate-300">{order.playerId}</td>
-                        <td className="py-3 font-semibold text-green-400">${Number(order.total ?? order.price).toFixed(2)}</td>
-                        <td className="py-3 text-xs text-slate-300">
-                          ${Number(order.walletBalanceBefore || 0).toFixed(2)} → ${Number(order.walletBalanceAfter || 0).toFixed(2)}
-                        </td>
-                        <td className="py-3">
-                          <span
-                            className={`inline-block rounded px-3 py-1 text-xs font-medium capitalize ${getStatusColor(
-                              order.status
-                            )}`}
-                          >
-                            {order.status}
-                          </span>
-                        </td>
-                        <td className="py-3 text-right text-slate-400">
-                          {new Date(order.createdAt).toLocaleDateString()}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </div>
-
-          {/* Actions */}
-          <div className="space-y-2">
-            <Link
-              href="/products"
-              className="block rounded-lg bg-blue-600 px-6 py-3 text-center font-medium text-white transition hover:bg-blue-700"
+    <div dir={isRTL ? 'rtl' : 'ltr'}>
+      <UserPageLayout
+        title={t('account.title')}
+        subtitle={t('account.subtitle')}
+        breadcrumbs={[
+          { label: 'Home', href: '/' },
+          { label: t('account.title'), href: '/account' },
+        ]}
+      >
+        <div className="grid gap-3 md:grid-cols-3">
+          {accountCards.map((card) => (
+            <div
+              key={card.label}
+              className="rounded-[24px] border border-white/10 bg-[linear-gradient(180deg,rgba(8,15,29,0.94),rgba(5,10,22,0.98))] p-4 shadow-[0_20px_56px_rgba(2,6,23,0.2)]"
             >
-              {t('account.continueShopping')}
-            </Link>
-            <LogoutButton />
-          </div>
+              <p className="text-xs uppercase tracking-[0.16em] text-slate-500">{card.label}</p>
+              <p className={`mt-2 text-xl font-bold text-white ${card.accent || ''}`}>{card.value}</p>
+              {card.sublabel && (
+                <p className="mt-3 text-xs uppercase tracking-[0.16em] text-slate-500">{card.sublabel}</p>
+              )}
+              {card.subvalue && (
+                <p className="mt-1 break-all text-sm text-slate-300">{card.subvalue}</p>
+              )}
+              {card.action && <div className="mt-4">{card.action}</div>}
+            </div>
+          ))}
         </div>
 
-        {/* Sidebar */}
-        <UserSidebar />
-      </div>
-    </main>
+        <div className="rounded-[28px] border border-white/10 bg-[linear-gradient(180deg,rgba(8,15,29,0.94),rgba(5,10,22,0.98))] p-4 shadow-[0_24px_70px_rgba(2,6,23,0.22)] sm:p-5">
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <p className="text-xs font-black uppercase tracking-[0.22em] text-cyan-300">
+                Recent Activity
+              </p>
+              <h2 className="mt-1 text-xl font-semibold text-white">{t('account.recentOrders')}</h2>
+            </div>
+            <Link
+              href="/orders"
+              className="rounded-2xl border border-white/15 bg-white/5 px-4 py-2 text-sm font-semibold text-white transition hover:bg-white/10"
+            >
+              {t('account.viewAll')}
+            </Link>
+          </div>
+
+          {recentOrders.length === 0 ? (
+            <div className="rounded-[24px] border border-white/10 bg-white/[0.035] p-8 text-center">
+              <p className="text-slate-400">{t('account.noOrders')}</p>
+              <Link
+                href="/products"
+                className="mt-4 inline-block rounded-xl bg-cyan-500 px-6 py-2.5 font-medium text-black transition hover:bg-cyan-400"
+              >
+                {t('account.browseProducts')}
+              </Link>
+            </div>
+          ) : (
+            <div className="space-y-2.5">
+              {recentOrders.map((order) => (
+                <div
+                  key={order._id}
+                  className="grid gap-3 rounded-[22px] border border-white/8 bg-white/[0.035] p-4 md:grid-cols-[minmax(0,1.5fr)_repeat(3,minmax(0,1fr))]"
+                >
+                  <div className="min-w-0">
+                    <p className="text-xs uppercase tracking-[0.16em] text-slate-500">{t('orders.product')}</p>
+                    <p className="mt-1 truncate text-sm font-semibold text-white">{order.productName}</p>
+                    <p className="mt-2 inline-flex rounded-xl border border-cyan-400/25 bg-cyan-500/10 px-2.5 py-1 font-mono text-[11px] text-cyan-300">
+                      {order.orderId}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xs uppercase tracking-[0.16em] text-slate-500">{t('orders.playerId')}</p>
+                    <p className="mt-1 truncate font-mono text-sm text-slate-300">{order.playerId}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs uppercase tracking-[0.16em] text-slate-500">{t('orders.price')}</p>
+                    <p className="mt-1 text-sm font-semibold text-emerald-300">${Number(order.total ?? order.price).toFixed(2)}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs uppercase tracking-[0.16em] text-slate-500">{t('orders.date')}</p>
+                    <p className="mt-1 text-sm text-slate-300">{new Date(order.createdAt).toLocaleDateString()}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div className="grid gap-3 sm:grid-cols-2">
+          <Link
+            href="/products"
+            className="rounded-[24px] border border-cyan-400/15 bg-cyan-500/10 px-5 py-4 text-center text-sm font-semibold text-cyan-100 transition hover:bg-cyan-500/15"
+          >
+            {t('account.continueShopping')}
+          </Link>
+          <LogoutButton />
+        </div>
+      </UserPageLayout>
+    </div>
   )
 }

@@ -4,10 +4,12 @@ import {
   groupCatalogProducts,
   type CatalogDisplayProduct,
 } from '@/lib/data/catalogGrouping';
+import { isCatalogHiddenFromListings } from '@/lib/data/catalogCuration';
 import type { Product } from '@/lib/data/products';
 import { connectDB } from '@/lib/db/mongodb';
 import CustomProduct from '@/lib/models/CustomProduct';
 import ProductOverride from '@/lib/models/ProductOverride';
+import { isTestModeEnabled, logTestMode } from '@/lib/utils/testMode';
 
 type CatalogProduct = Product;
 
@@ -178,6 +180,11 @@ function applyOverride(
 }
 
 export async function getCatalogProducts(): Promise<CatalogProduct[]> {
+  if (isTestModeEnabled()) {
+    logTestMode('catalog/products using bundled catalog only')
+    return bilycardProducts.filter((product) => !isCatalogHiddenFromListings(product))
+  }
+
   await connectDB();
 
   const customProducts = (await CustomProduct.find({ active: true })
@@ -221,6 +228,10 @@ export async function getCatalogProductBySlug(slug: string): Promise<CatalogProd
   const normalized = String(slug || '').trim().toLowerCase();
   if (!normalized) return undefined;
 
+  if (isTestModeEnabled()) {
+    return bilycardProducts.find((product) => String(product.slug).toLowerCase() === normalized);
+  }
+
   await connectDB();
 
   const override = (await ProductOverride.findOne({ slug: normalized }).lean()) as
@@ -253,7 +264,7 @@ export async function getCatalogBestSellingProducts(): Promise<CatalogProduct[]>
 
 export async function getCatalogDisplayProducts(): Promise<CatalogDisplayProduct[]> {
   const products = await getCatalogProducts();
-  return groupCatalogProducts(products);
+  return groupCatalogProducts(products.filter((product) => !isCatalogHiddenFromListings(product)));
 }
 
 export async function getCatalogDisplayProductBySlug(

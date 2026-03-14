@@ -44,9 +44,9 @@ export function ProductFilters({
   }
 
   return (
-    <div className="bg-slate-900/50 border border-white/10 rounded-2xl p-6 mb-8">
-      <div className="flex items-center justify-between mb-6">
-        <h3 className="text-lg font-semibold text-white flex items-center">
+    <div className="mb-6 rounded-[28px] border border-white/10 bg-[linear-gradient(180deg,rgba(8,15,29,0.95),rgba(5,10,22,0.98))] p-4 shadow-[0_24px_70px_rgba(2,6,23,0.22)] sm:p-5">
+      <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
+        <h3 className="flex items-center text-lg font-semibold text-white">
           <Filter className="h-5 w-5 mr-2" />
           Filters & Search
         </h3>
@@ -58,7 +58,7 @@ export function ProductFilters({
         )}
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-4">
         {/* Search */}
         <form onSubmit={handleSearch} className="lg:col-span-2">
           <div className="relative">
@@ -105,14 +105,14 @@ export function ProductFilters({
 
       {/* Active Filters */}
       {(searchQuery || selectedCategory) && (
-        <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t border-white/10">
+        <div className="mt-4 flex flex-wrap gap-2 border-t border-white/10 pt-4">
           {searchQuery && (
-            <span className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-blue-500/20 text-blue-400">
+            <span className="inline-flex items-center rounded-full border border-cyan-400/20 bg-cyan-500/10 px-3 py-1 text-sm text-cyan-300">
               Search: "{searchQuery}"
             </span>
           )}
           {selectedCategory && (
-            <span className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-purple-500/20 text-purple-400">
+            <span className="inline-flex items-center rounded-full border border-violet-400/20 bg-violet-500/10 px-3 py-1 text-sm text-violet-300">
               Category: {categories.find(c => c.id === selectedCategory)?.name}
             </span>
           )}

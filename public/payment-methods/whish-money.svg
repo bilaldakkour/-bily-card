@@ -1,0 +1,8 @@
+<svg width="96" height="96" viewBox="0 0 96 96" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="96" height="96" rx="24" fill="#0B2234"/>
+  <rect x="10" y="10" width="76" height="76" rx="20" fill="#11324A" stroke="#1CC8FF" stroke-opacity="0.4"/>
+  <circle cx="30" cy="34" r="10" fill="#D6F7FF"/>
+  <path d="M28 29H32V39H28V29ZM24 33H36V37H24V33Z" fill="#00C2FF"/>
+  <path d="M22 60C22 50.0589 30.0589 42 40 42H56C65.9411 42 74 50.0589 74 60V62H22V60Z" fill="#00C2FF"/>
+  <text x="48" y="78" text-anchor="middle" fill="white" font-family="Arial, sans-serif" font-size="14" font-weight="700">WISH</text>
+</svg>

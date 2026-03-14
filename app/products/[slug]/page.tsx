@@ -53,28 +53,33 @@ export default async function ProductPage({ params }: ProductPageProps) {
         }
       />
 
-      <div className="mx-auto max-w-7xl px-6 py-12">
-        <ProductDetails product={product} />
+      <div className="relative mx-auto max-w-[1480px] px-4 pb-12 sm:px-5 lg:px-6">
+        <div className="absolute inset-x-4 top-0 -z-10 h-40 rounded-[32px] bg-[radial-gradient(circle_at_top,rgba(56,189,248,0.14),transparent_70%)] blur-3xl sm:inset-x-5 lg:inset-x-6" />
+        <div className="rounded-[30px] border border-white/10 bg-[linear-gradient(180deg,rgba(8,15,29,0.86),rgba(4,10,22,0.96))] p-4 shadow-[0_28px_80px_rgba(2,6,23,0.28)] backdrop-blur-xl sm:p-6">
+          <ProductDetails product={product} />
 
-        {relatedProducts.length > 0 && (
-          <div className="mt-16 border-t border-white/10 pt-16">
-            <div className="mb-8 text-center">
-              <h2 className="mb-2 text-2xl font-bold text-white">Related Products</h2>
-              <p className="text-slate-400">More products you might like</p>
+          {relatedProducts.length > 0 && (
+            <div className="mt-10 rounded-[26px] border border-white/10 bg-white/[0.03] p-5 sm:p-6">
+              <div className="mb-6 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+                <div>
+                  <h2 className="text-2xl font-bold text-white">Related Products</h2>
+                  <p className="text-sm text-slate-400">More products you might like</p>
+                </div>
+              </div>
+
+              <ProductGrid products={relatedProducts} />
             </div>
+          )}
 
-            <ProductGrid products={relatedProducts} />
-          </div>
-        )}
-
-        <div className="mt-16 rounded-2xl border border-white/10 bg-slate-900/50 p-8">
-          <h3 className="mb-4 text-xl font-bold text-white">Important Notes</h3>
-          <div className="space-y-3 text-slate-400">
-            <p>• All digital products are delivered instantly after payment confirmation.</p>
-            <p>• Please ensure your account details are entered correctly to avoid delivery issues.</p>
-            <p>• For gaming top-ups, make sure your game account is active and accessible.</p>
-            <p>• Refunds are available within 24 hours if the product hasn't been delivered.</p>
-            <p>• Contact our support team if you encounter any issues with your order.</p>
+          <div className="mt-8 rounded-[26px] border border-white/10 bg-white/[0.03] p-5 sm:p-6">
+            <h3 className="mb-4 text-xl font-bold text-white">Important Notes</h3>
+            <div className="grid gap-3 text-sm text-slate-400 sm:grid-cols-2">
+              <p>• All digital products are delivered instantly after payment confirmation.</p>
+              <p>• Please ensure your account details are entered correctly to avoid delivery issues.</p>
+              <p>• For gaming top-ups, make sure your game account is active and accessible.</p>
+              <p>• Refunds are available within 24 hours if the product hasn&apos;t been delivered.</p>
+              <p>• Contact our support team if you encounter any issues with your order.</p>
+            </div>
           </div>
         </div>
       </div>

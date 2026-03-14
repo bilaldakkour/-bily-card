@@ -4,13 +4,13 @@ import User from '@/lib/models/User';
 import Otp from '@/lib/models/Otp';
 import { enforceRateLimit } from '@/lib/utils/rateLimit';
 import bcrypt from 'bcryptjs';
+import { isTestModeEnabled, logTestMode } from '@/lib/utils/testMode';
 
 export async function POST(req: NextRequest) {
   try {
     const limitResponse = await enforceRateLimit(req, 'auth-verify', 8, 10 * 60 * 1000);
     if (limitResponse) return limitResponse;
 
-    await connectDB();
     const { email, code } = await req.json();
     const normalizedEmail = String(email || '').toLowerCase().trim();
     const normalizedCode = String(code || '').trim();
@@ -18,6 +18,20 @@ export async function POST(req: NextRequest) {
     if (!normalizedEmail || !normalizedCode) {
       return NextResponse.json({ message: 'Email and code are required' }, { status: 400 });
     }
+
+    if (isTestModeEnabled()) {
+      logTestMode('auth/verify payload', {
+        email: normalizedEmail,
+        codeLength: normalizedCode.length,
+      });
+
+      return NextResponse.json({
+        message: 'Test mode verification accepted.',
+        testMode: true,
+      });
+    }
+
+    await connectDB();
 
     const activeOtps = await Otp.find({
       email: normalizedEmail,

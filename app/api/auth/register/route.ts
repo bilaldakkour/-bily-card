@@ -9,6 +9,7 @@ import { enforceRateLimit } from '@/lib/utils/rateLimit';
 import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
 import { ZodError } from 'zod';
+import { isTestModeEnabled, logTestMode } from '@/lib/utils/testMode';
 
 function buildBaseUsername(email: string): string {
   const localPart = String(email.split('@')[0] || '')
@@ -37,7 +38,6 @@ export async function POST(req: NextRequest) {
     const limitResponse = await enforceRateLimit(req, 'auth-register', 5, 15 * 60 * 1000);
     if (limitResponse) return limitResponse;
 
-    await connectDB();
     const body = await req.json();
     const rawName = String(body?.name || body?.displayName || '').trim();
     const rawPhoneNumber = String(body?.phoneNumber || '').trim();
@@ -56,6 +56,22 @@ export async function POST(req: NextRequest) {
     const normalizedPhoneNumber = String(phoneNumber || '')
       .replace(/\D/g, '')
       .trim();
+
+    if (isTestModeEnabled()) {
+      logTestMode('auth/register payload', {
+        email: normalizedEmail,
+        name,
+        phoneNumber: normalizedPhoneNumber,
+        passwordLength: String(password || '').length,
+      });
+
+      return NextResponse.json({
+        message: 'Test mode registration completed. Use the login form immediately with any password.',
+        testMode: true,
+      });
+    }
+
+    await connectDB();
 
     if (normalizedPhoneNumber.length < 7 || normalizedPhoneNumber.length > 20) {
       return NextResponse.json({ message: 'Phone number is invalid' }, { status: 400 });

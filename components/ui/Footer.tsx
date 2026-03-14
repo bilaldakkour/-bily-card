@@ -1,7 +1,11 @@
 import Link from 'next/link'
 import { Truck, Shield, HeadphonesIcon, Clock, Mail, Phone, MapPin, Gamepad2, ChevronRight } from 'lucide-react'
 
-export default function Footer() {
+type FooterProps = {
+  withRightRailOffset?: boolean
+}
+
+export default function Footer({ withRightRailOffset = false }: FooterProps) {
   return (
     <footer className="relative mt-16 overflow-hidden border-t border-white/10 bg-[linear-gradient(180deg,rgba(4,10,20,0.98),rgba(3,8,18,1))] py-12 sm:py-16">
       <div className="absolute inset-0">
@@ -9,7 +13,7 @@ export default function Footer() {
         <div className="absolute bottom-0 right-0 h-52 w-52 rounded-full bg-orange-500/10 blur-3xl" />
       </div>
 
-      <div className="relative mx-auto max-w-7xl px-4 sm:px-6">
+      <div className={`relative mx-auto px-4 sm:px-6 ${withRightRailOffset ? 'max-w-[1480px] lg:pr-[392px]' : 'max-w-7xl'}`}>
         <div className="mb-10 rounded-[30px] border border-white/10 bg-white/[0.03] px-5 py-6 shadow-[0_24px_60px_rgba(2,6,23,0.28)] sm:px-7">
           <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
             <div className="max-w-2xl">

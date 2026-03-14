@@ -36,8 +36,8 @@ export default function PubgPage() {
   const [playerId, setPlayerId] = useState("");
 
   return (
-    <main className="min-h-screen bg-slate-950 px-6 py-16 text-white">
-      <div className="mx-auto max-w-5xl">
+    <main className="min-h-screen bg-slate-950 px-4 py-16 text-white sm:px-5 lg:px-6">
+      <div className="mx-auto max-w-[1480px]">
         <div className="mb-8">
           <p className="mb-2 text-sm font-semibold uppercase tracking-[0.2em] text-blue-400">
             PUBG Mobile

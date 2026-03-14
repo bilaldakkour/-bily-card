@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import UserPageLayout from '@/components/shared/UserPageLayout'
 
 interface ProfileData {
   id?: string
@@ -76,51 +77,35 @@ export default function ProfilePage() {
     (user.email ? user.email.split('@')[0] : '') ||
     'User'
 
+  const profileCards = [
+    { label: 'Display Name', value: displayName },
+    { label: 'Email', value: user.email || '-' },
+    { label: 'Role', value: user.role || 'user' },
+    { label: 'Verification', value: user.isVerified ? 'Verified' : 'Not Verified' },
+    { label: 'Wallet USD', value: `$${Number(user.walletBalance?.usd || 0).toFixed(2)}`, accent: 'text-emerald-300' },
+    { label: 'Wallet LBP', value: `${Number(user.walletBalance?.lbp || 0).toFixed(0)} LBP`, accent: 'text-sky-300' },
+  ]
+
   return (
-    <main className="min-h-screen bg-slate-950 p-4 md:p-8">
-      <div className="mx-auto max-w-4xl">
-        <div className="rounded-2xl border border-white/10 bg-slate-900 p-8">
-          <h1 className="mb-6 text-4xl font-bold text-white">My Profile</h1>
-
-          <div className="grid gap-4 md:grid-cols-2">
-            <div className="rounded-lg border border-white/10 bg-slate-800 p-4">
-              <p className="text-sm text-slate-400">Display Name</p>
-              <p className="mt-1 text-lg font-semibold text-white">{displayName}</p>
-            </div>
-
-            <div className="rounded-lg border border-white/10 bg-slate-800 p-4">
-              <p className="text-sm text-slate-400">Email</p>
-              <p className="mt-1 text-lg font-semibold text-white">{user.email || '-'}</p>
-            </div>
-
-            <div className="rounded-lg border border-white/10 bg-slate-800 p-4">
-              <p className="text-sm text-slate-400">Role</p>
-              <p className="mt-1 text-lg font-semibold text-white">{user.role || 'user'}</p>
-            </div>
-
-            <div className="rounded-lg border border-white/10 bg-slate-800 p-4">
-              <p className="text-sm text-slate-400">Verification</p>
-              <p className="mt-1 text-lg font-semibold text-white">
-                {user.isVerified ? 'Verified' : 'Not Verified'}
-              </p>
-            </div>
-
-            <div className="rounded-lg border border-white/10 bg-slate-800 p-4">
-              <p className="text-sm text-slate-400">Wallet USD</p>
-              <p className="mt-1 text-lg font-semibold text-green-400">
-                ${Number(user.walletBalance?.usd || 0).toFixed(2)}
-              </p>
-            </div>
-
-            <div className="rounded-lg border border-white/10 bg-slate-800 p-4">
-              <p className="text-sm text-slate-400">Wallet LBP</p>
-              <p className="mt-1 text-lg font-semibold text-blue-400">
-                {Number(user.walletBalance?.lbp || 0).toFixed(0)} LBP
-              </p>
-            </div>
+    <UserPageLayout
+      title="My Profile"
+      subtitle="Your account information in a cleaner, unified layout."
+      breadcrumbs={[
+        { label: 'Home', href: '/' },
+        { label: 'Profile', href: '/profile' },
+      ]}
+    >
+      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+        {profileCards.map((card) => (
+          <div
+            key={card.label}
+            className="rounded-[24px] border border-white/10 bg-[linear-gradient(180deg,rgba(8,15,29,0.94),rgba(5,10,22,0.98))] p-4 shadow-[0_20px_56px_rgba(2,6,23,0.2)]"
+          >
+            <p className="text-xs uppercase tracking-[0.16em] text-slate-500">{card.label}</p>
+            <p className={`mt-2 break-words text-lg font-semibold text-white ${card.accent || ''}`}>{card.value}</p>
           </div>
-        </div>
+        ))}
       </div>
-    </main>
+    </UserPageLayout>
   )
 }

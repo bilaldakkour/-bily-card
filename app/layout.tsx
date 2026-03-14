@@ -18,7 +18,7 @@ export default function RootLayout({
       <body className="antialiased bg-[#020617] text-white min-h-screen">
         <Navbar />
         <SessionExpiredToast />
-        <main className="relative">{children}</main>
+        <main className="relative pt-[108px] md:pt-[84px]">{children}</main>
       </body>
     </html>
   );

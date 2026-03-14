@@ -1,5 +1,6 @@
 import type { Product } from './products';
 import { classifyCatalogProduct } from './catalogTaxonomy';
+import { getCatalogCurationRule } from './catalogCuration';
 
 export type CatalogDisplayProduct = Product & {
   groupKey: string;
@@ -171,7 +172,12 @@ function getModeScore(product: Product): number {
   return 1;
 }
 
-function getPrimaryProduct(products: Product[]): Product {
+function getPrimaryProduct(products: Product[], preferredSlug?: string): Product {
+  if (preferredSlug) {
+    const preferred = products.find((product) => String(product.slug).toLowerCase() === preferredSlug.toLowerCase());
+    if (preferred) return preferred;
+  }
+
   return [...products].sort((a, b) => {
     const scoreA =
       (a.bestSeller ? 40 : 0) +
@@ -201,9 +207,10 @@ export function groupCatalogProducts(products: Product[]): CatalogDisplayProduct
 
   for (const product of products) {
     const normalizedCategory = classifyCatalogProduct(product).category;
+    const curated = getCatalogCurationRule(product);
     const groupTokens = deriveGroupTokens(product);
     const fallbackToken = tokenize(product.slug || product.name).slice(0, 3).join('-') || product.slug;
-    const groupBase = groupTokens.join('-') || fallbackToken;
+    const groupBase = curated.group?.key || groupTokens.join('-') || fallbackToken;
     const groupKey = `${normalizedCategory}:${groupBase}`;
     const bucket = groups.get(groupKey) || [];
     bucket.push(product);
@@ -212,14 +219,17 @@ export function groupCatalogProducts(products: Product[]): CatalogDisplayProduct
 
   return Array.from(groups.entries())
     .map(([groupKey, children]) => {
-      const primary = getPrimaryProduct(children);
+      const curatedGroup = children
+        .map((child) => getCatalogCurationRule(child).group)
+        .find(Boolean);
+      const primary = getPrimaryProduct(children, curatedGroup?.preferredSlug);
       const groupTokens = deriveGroupTokens(primary);
       const priceList = children
         .map((child) => Number(child.startingPrice ?? child.price))
         .filter((price) => Number.isFinite(price) && price >= 0);
       const normalizedChildren = [...children].sort((a, b) => a.name.localeCompare(b.name));
       const groupDisplayName =
-        normalizedChildren.length > 1 ? deriveDisplayName(primary, groupTokens) : primary.name;
+        curatedGroup?.name || (normalizedChildren.length > 1 ? deriveDisplayName(primary, groupTokens) : primary.name);
 
       return {
         ...primary,

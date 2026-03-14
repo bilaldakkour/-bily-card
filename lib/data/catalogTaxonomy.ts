@@ -1,4 +1,5 @@
 import type { Product } from './products';
+import { getCatalogCurationRule } from './catalogCuration';
 
 export type CatalogCategoryId =
   | 'cards'
@@ -156,6 +157,14 @@ export function classifyCatalogProduct(product: Product): {
   const hasPackageField = Boolean(
     product.inputFields?.some((field) => field.type === 'select' && field.name === 'package')
   );
+  const curated = getCatalogCurationRule(product);
+
+  if (curated.category) {
+    return {
+      category: curated.category,
+      offerType: curated.category === 'cards' ? 'cards' : hasPackageField ? 'packages' : 'products',
+    };
+  }
 
   const haystack = normalizeText(
     [

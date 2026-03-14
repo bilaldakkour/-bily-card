@@ -5,16 +5,51 @@ import { LoginSchema } from '@/lib/utils/validation';
 import { generateToken } from '@/lib/auth/jwt';
 import { handleError } from '@/lib/utils/errors';
 import { enforceRateLimit } from '@/lib/utils/rateLimit';
+import { isTestModeEnabled, logTestMode } from '@/lib/utils/testMode';
+import { getTestModeUser } from '@/lib/utils/testModeStore';
 
 export async function POST(req: NextRequest) {
   try {
     const limitResponse = await enforceRateLimit(req, 'auth-login', 10, 15 * 60 * 1000);
     if (limitResponse) return limitResponse;
 
-    await connectDB();
     const body = await req.json();
-
     const { email, username, password } = LoginSchema.parse(body);
+
+    if (isTestModeEnabled()) {
+      const mockUser = getTestModeUser()
+      logTestMode('auth/login payload', {
+        email,
+        username,
+        passwordLength: String(password || '').length,
+      })
+
+      const token = generateToken({
+        userId: mockUser.id,
+        username: mockUser.username,
+        role: mockUser.role,
+      })
+
+      return NextResponse.json(
+        {
+          success: true,
+          token,
+          data: {
+            user: {
+              id: mockUser.id,
+              email: mockUser.email,
+              username: mockUser.username,
+              displayName: mockUser.displayName,
+              role: mockUser.role,
+            },
+            testMode: true,
+          },
+        },
+        { status: 200 }
+      );
+    }
+
+    await connectDB();
     const normalizedEmail = String(email || '').trim().toLowerCase();
     const normalizedUsername = String(username || '').trim();
 

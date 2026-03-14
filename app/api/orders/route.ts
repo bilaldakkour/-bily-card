@@ -9,6 +9,8 @@ import { extractToken, verifyToken } from '@/lib/auth/jwt'
 import { getEffectivePriceForProduct } from '@/lib/pricing/engine'
 import { getCatalogProductBySlug, getCatalogProducts } from '@/lib/data/catalogProducts'
 import { generateOrderId } from '@/lib/utils/helpers'
+import { isTestModeEnabled, logTestMode } from '@/lib/utils/testMode'
+import { createTestModeOrder, getTestModeOrders, getTestModeUser } from '@/lib/utils/testModeStore'
 
 interface OrderRequest {
   productId: string
@@ -378,6 +380,31 @@ export async function GET(request: NextRequest) {
       )
     }
 
+    if (isTestModeEnabled()) {
+      logTestMode('orders/list requested', { userId: user.userId })
+
+      const orders = getTestModeOrders().map((order) => ({
+        _id: String(order._id),
+        orderId: order.orderId,
+        productName: order.productName,
+        playerId: order.playerId,
+        quantity: order.quantity,
+        price: order.price,
+        total: order.total,
+        walletBalanceBefore: Number(order.walletBalanceBefore || 0),
+        walletBalanceAfter: Number(order.walletBalanceAfter || 0),
+        status: order.status,
+        providerStatus: order.providerStatus,
+        createdAt: order.createdAt,
+      }))
+
+      return NextResponse.json({
+        success: true,
+        data: orders,
+        testMode: true,
+      })
+    }
+
     await connectDB()
 
     const orderDocs = await Order.find({ userId: user.userId })
@@ -595,10 +622,6 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    await connectDB()
-
-    let resolvedProviderProduct: ProviderProduct | null = null
-
     const pricing = await getEffectivePriceForProduct({
       slug,
       fallbackPrice: price,
@@ -621,6 +644,60 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       )
     }
+
+    if (isTestModeEnabled()) {
+      const mockUser = getTestModeUser()
+
+      if (Number(mockUser.walletBalance?.usd || 0) < effectiveTotal) {
+        return NextResponse.json(
+          { success: false, message: 'Insufficient wallet balance' },
+          { status: 400 }
+        )
+      }
+
+      logTestMode('orders/create payload', {
+        userId: user.userId,
+        productId,
+        slug,
+        name,
+        playerId: cleanPlayerId,
+        quantity,
+        total,
+        effectiveTotal,
+        packageOption,
+      })
+
+      logTestMode('orders/package-mapping', {
+        productId,
+        slug,
+        catalogProductName: catalogProduct?.name || null,
+        packageOption: packageOption || null,
+        mode: packageOption ? 'package' : countRules ? 'count' : 'single',
+        quantity,
+      })
+
+      const result = createTestModeOrder({
+        productId,
+        slug,
+        name,
+        playerId: cleanPlayerId,
+        quantity,
+        total: effectiveTotal,
+        packageOption: packageOption || undefined,
+      })
+
+      return NextResponse.json({
+        success: true,
+        orderId: result.order.orderId,
+        providerStatus: result.order.providerStatus,
+        message: 'Test mode order created successfully',
+        testMode: true,
+      })
+    }
+
+    await connectDB()
+
+    let resolvedProviderProduct: ProviderProduct | null = null
 
     const session = await mongoose.startSession()
     let order: any = null

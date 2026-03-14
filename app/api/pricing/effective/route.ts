@@ -9,6 +9,7 @@ import {
 } from '@/lib/pricing/engine'
 import { getCatalogProductBySlug, getCatalogProducts } from '@/lib/data/catalogProducts'
 import Product from '@/lib/models/Product'
+import { isTestModeEnabled, logTestMode } from '@/lib/utils/testMode'
 
 export const dynamic = 'force-dynamic'
 
@@ -239,6 +240,57 @@ async function getLocalStoredPriceByProviderProductId(
 
 export async function GET(request: NextRequest) {
   try {
+    if (isTestModeEnabled()) {
+      const token = extractToken(request.headers.get('authorization'))
+      const user = token ? verifyToken(token) : null
+      const userId = user?.userId || null
+      const { searchParams } = new URL(request.url)
+      const slug = searchParams.get('slug')
+
+      if (slug) {
+        const catalogProduct = await getCatalogProductBySlug(slug)
+        const fallbackPrice = normalizePrice(catalogProduct?.price) ?? 0
+
+        logTestMode('pricing/effective slug', {
+          userId,
+          slug,
+          fallbackPrice,
+        })
+
+        const data = await getEffectivePriceForProduct({
+          slug,
+          userId,
+          fallbackPrice,
+        })
+
+        return NextResponse.json({
+          success: true,
+          data: {
+            ...data,
+            productPercent: Number(data.productPercent || 0),
+            userPercent: Number(data.userPercent || 0),
+          },
+          testMode: true,
+        })
+      }
+
+      const catalogProducts = await getCatalogProducts()
+      logTestMode('pricing/effective catalog', {
+        userId,
+        products: catalogProducts.length,
+      })
+
+      return NextResponse.json({
+        success: true,
+        data: {
+          userPercent: 0,
+          productMap: {},
+          products: catalogProducts,
+        },
+        testMode: true,
+      })
+    }
+
     await connectDB()
 
     const token = extractToken(request.headers.get('authorization'))

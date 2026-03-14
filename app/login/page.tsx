@@ -1,7 +1,10 @@
 'use client'
 
 import { useState } from 'react'
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+import AuthShell from '@/components/shared/AuthShell'
+import { Input } from '@/components/ui/Input'
 import { useLanguage } from '@/hooks/useLanguage'
 
 export default function LoginPage() {
@@ -60,43 +63,50 @@ export default function LoginPage() {
   }
 
   return (
-    <main dir={isRTL ? 'rtl' : 'ltr'} className="min-h-screen bg-slate-950 flex items-center justify-center p-4">
-      <div className="w-full max-w-md bg-slate-900 rounded-lg p-8 shadow-lg">
-        <h1 className="text-3xl font-bold text-center mb-6 text-white">{t('login.title')}</h1>
-
+    <div dir={isRTL ? 'rtl' : 'ltr'}>
+      <AuthShell
+        title={t('login.title')}
+        subtitle="Access your account to manage wallet, orders, and saved products with the same premium storefront experience."
+        footer={
+          <p className="text-center text-sm text-slate-400">
+            {t('login.noAccount')}{' '}
+            <Link href="/register" className="font-semibold text-cyan-300 transition hover:text-cyan-200">
+              {t('login.register')}
+            </Link>
+          </p>
+        }
+      >
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label htmlFor="email" className="block text-sm font-medium text-gray-300 mb-1">
+            <label htmlFor="email" className="mb-2 block text-sm font-medium text-slate-300">
               {t('login.email')}
             </label>
-            <input
+            <Input
               type="email"
               id="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
-              className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
               placeholder={t('login.emailPlaceholder')}
             />
           </div>
 
           <div>
-            <label htmlFor="password" className="block text-sm font-medium text-gray-300 mb-1">
+            <label htmlFor="password" className="mb-2 block text-sm font-medium text-slate-300">
               {t('login.password')}
             </label>
-            <input
+            <Input
               type="password"
               id="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
-              className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
               placeholder={t('login.passwordPlaceholder')}
             />
           </div>
 
           {error && (
-            <div className="text-red-400 text-sm text-center">
+            <div className="rounded-2xl border border-red-400/20 bg-red-500/10 px-4 py-3 text-sm text-red-300">
               {error}
             </div>
           )}
@@ -104,19 +114,12 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white font-medium py-2 px-4 rounded-md transition duration-200"
+            className="w-full rounded-2xl bg-gradient-to-r from-cyan-500 to-sky-600 px-5 py-3 text-sm font-semibold text-white transition hover:from-cyan-400 hover:to-sky-500 disabled:opacity-50"
           >
             {loading ? t('login.loggingIn') : t('login.login')}
           </button>
         </form>
-
-        <p className="mt-4 text-center text-gray-300">
-          {t('login.noAccount')}{' '}
-          <a href="/register" className="text-blue-400 hover:text-blue-300">
-            {t('login.register')}
-          </a>
-        </p>
-      </div>
-    </main>
+      </AuthShell>
+    </div>
   )
 }

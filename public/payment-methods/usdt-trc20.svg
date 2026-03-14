@@ -1,0 +1,7 @@
+<svg width="96" height="96" viewBox="0 0 96 96" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="96" height="96" rx="24" fill="#08231E"/>
+  <rect x="10" y="10" width="76" height="76" rx="20" fill="#0E312B" stroke="#3CFFC8" stroke-opacity="0.35"/>
+  <circle cx="48" cy="38" r="18" fill="#26A17B"/>
+  <path d="M36 31H60V35H52V38.5C58 39 62 40.8 62 43C62 45.5 55.7 47.5 48 47.5C40.3 47.5 34 45.5 34 43C34 40.8 38 39 44 38.5V35H36V31ZM48 41C52.4 41 56 41.7 56 42.5C56 43.3 52.4 44 48 44C43.6 44 40 43.3 40 42.5C40 41.7 43.6 41 48 41Z" fill="white"/>
+  <text x="48" y="78" text-anchor="middle" fill="white" font-family="Arial, sans-serif" font-size="12" font-weight="700">USDT TRC20</text>
+</svg>

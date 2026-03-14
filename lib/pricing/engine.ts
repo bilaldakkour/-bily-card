@@ -2,6 +2,7 @@ import { bilycardProducts } from '@/lib/data/bilycardProducts';
 import { getCatalogProductBySlug } from '@/lib/data/catalogProducts';
 import ProductPricing from '@/lib/models/ProductPricing';
 import User from '@/lib/models/User';
+import { isTestModeEnabled, logTestMode } from '@/lib/utils/testMode';
 
 export const clampPercent = (value: number): number => {
   if (!Number.isFinite(value)) return 0;
@@ -21,6 +22,11 @@ export const applyPricingPercent = (
 };
 
 export async function getProductPricingMap(): Promise<Record<string, number>> {
+  if (isTestModeEnabled()) {
+    logTestMode('pricing/product-map bypassed')
+    return {};
+  }
+
   const rows = await ProductPricing.find({}).select('productSlug percentage').lean();
   const map: Record<string, number> = {};
 
@@ -33,6 +39,11 @@ export async function getProductPricingMap(): Promise<Record<string, number>> {
 }
 
 export async function getUserPricingPercent(userId?: string | null): Promise<number> {
+  if (isTestModeEnabled()) {
+    logTestMode('pricing/user-percent bypassed', { userId: userId || null })
+    return 0;
+  }
+
   if (!userId) return 0;
 
   const user = (await User.findById(userId)

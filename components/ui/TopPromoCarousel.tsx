@@ -156,7 +156,7 @@ export default function TopPromoCarousel({
 
           <div className={`absolute inset-x-0 bottom-0 ${compact ? 'p-4 md:p-5' : 'p-4 md:p-6 lg:p-7'}`}>
             <span className="inline-flex items-center rounded-full border border-cyan-300/30 bg-cyan-500/15 px-3 py-1 text-xs font-semibold text-cyan-100">
-              DailyCard Style Banner
+              BilyCard Premium Banner
             </span>
             <h2 className={`mt-3 max-w-2xl font-extrabold leading-tight text-white ${compact ? 'text-xl md:text-3xl' : 'text-2xl sm:text-3xl md:text-[2.5rem] lg:text-[2.8rem]'}`}>
               Instant Gaming Top-Ups

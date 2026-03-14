@@ -4,6 +4,8 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { LogoutButton } from '@/components/shared'
+import OrderSummaryCard from '@/components/shared/OrderSummaryCard'
+import UserPageLayout from '@/components/shared/UserPageLayout'
 import { useLanguage } from '@/hooks/useLanguage'
 
 interface Order {
@@ -47,26 +49,7 @@ export default function OrdersPage() {
         console.error(t('orders.failedFetch'))
       })
       .finally(() => setLoading(false))
-  }, [router])
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'completed':
-        return 'text-green-400'
-      case 'pending':
-        return 'text-yellow-400'
-      case 'processing':
-        return 'text-blue-400'
-      case 'failed':
-        return 'text-red-400'
-      case 'refunded':
-        return 'text-slate-400'
-      case 'rejected':
-        return 'text-red-400'
-      default:
-        return 'text-white'
-    }
-  }
+  }, [router, t])
 
   if (loading) {
     return (
@@ -79,93 +62,45 @@ export default function OrdersPage() {
   }
 
   return (
-    <main dir={isRTL ? 'rtl' : 'ltr'} className="min-h-screen bg-slate-950 p-6">
-      <div className="mx-auto max-w-4xl">
-        <div className="mb-8 flex items-center justify-between">
-          <h1 className="text-3xl font-bold text-white">{t('orders.title')}</h1>
+    <div dir={isRTL ? 'rtl' : 'ltr'}>
+      <UserPageLayout
+        title={t('orders.title')}
+        subtitle="Review all your orders in a cleaner, more compact layout."
+        breadcrumbs={[
+          { label: 'Home', href: '/' },
+          { label: t('orders.title'), href: '/orders' },
+        ]}
+        action={
           <Link
             href="/account"
-            className="rounded-lg bg-slate-800 px-6 py-2 text-white transition hover:bg-slate-700"
+            className="rounded-2xl border border-white/15 bg-white/5 px-4 py-2 text-sm font-semibold text-white transition hover:bg-white/10"
           >
             {t('orders.backToAccount')}
           </Link>
-        </div>
-
+        }
+      >
         {orders.length === 0 ? (
-          <div className="rounded-lg border border-white/10 bg-slate-900 p-8 text-center">
+          <div className="rounded-[28px] border border-white/10 bg-[linear-gradient(180deg,rgba(8,15,29,0.94),rgba(5,10,22,0.98))] p-8 text-center shadow-[0_24px_70px_rgba(2,6,23,0.22)]">
             <p className="mb-4 text-slate-400">{t('orders.noOrders')}</p>
             <Link
               href="/products"
-              className="inline-block rounded-lg bg-blue-600 px-6 py-2 font-medium text-white transition hover:bg-blue-700"
+              className="inline-block rounded-xl bg-cyan-500 px-6 py-2.5 font-medium text-black transition hover:bg-cyan-400"
             >
               {t('orders.browseProducts')}
             </Link>
           </div>
         ) : (
-          <div className="space-y-4">
+          <div className="space-y-3">
             {orders.map((order) => (
-              <div
-                key={order._id}
-                className="rounded-lg border border-white/10 bg-slate-900 p-6 text-white transition hover:border-white/20"
-              >
-                <div className="mb-4 grid grid-cols-2 gap-4 md:grid-cols-4">
-                  <div>
-                    <p className="text-sm text-slate-400">{t('orders.orderId')}</p>
-                    <p className="inline-flex rounded-md border border-cyan-400/30 bg-cyan-500/10 px-2 py-1 font-mono text-xs text-cyan-300">
-                      {order.orderId}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-slate-400">{t('orders.product')}</p>
-                    <p className="font-medium">{order.productName}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-slate-400">{t('orders.price')}</p>
-                    <p className="font-semibold text-green-400">${Number(order.total ?? order.price).toFixed(2)}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-slate-400">{t('orders.status')}</p>
-                    <p className={`font-medium capitalize ${getStatusColor(order.status)}`}>
-                      {order.status}
-                    </p>
-                  </div>
-                </div>
-                <div className="border-t border-white/10 pt-4">
-                  <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
-                    <div>
-                      <p className="text-sm text-slate-400">{t('orders.playerId')}</p>
-                      <p className="font-mono">{order.playerId}</p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-slate-400">{t('orders.date')}</p>
-                      <p className="text-sm">
-                        {new Date(order.createdAt).toLocaleDateString('en-US', {
-                          year: 'numeric',
-                          month: 'short',
-                          day: 'numeric',
-                          hour: '2-digit',
-                          minute: '2-digit',
-                        })}
-                      </p>
-                    </div>
-
-                    <div>
-                      <p className="text-sm text-slate-400">Wallet</p>
-                      <p className="text-sm text-slate-300">
-                        ${Number(order.walletBalanceBefore || 0).toFixed(2)} → ${Number(order.walletBalanceAfter || 0).toFixed(2)}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </div>
+              <OrderSummaryCard key={order._id} order={order} />
             ))}
           </div>
         )}
 
-        <div className="mt-8">
+        <div className="pt-2">
           <LogoutButton />
         </div>
-      </div>
-    </main>
+      </UserPageLayout>
+    </div>
   )
 }

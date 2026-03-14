@@ -1,6 +1,7 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import { createPortal } from 'react-dom'
 import Image from 'next/image'
 import Link from 'next/link'
 import UserSidebar from '@/components/shared/UserSidebar'
@@ -8,10 +9,13 @@ import FavoriteButton from '@/components/ui/FavoriteButton'
 import Footer from '@/components/ui/Footer'
 import HeroSection from '@/components/ui/HeroSection'
 import TopPromoCarousel from '@/components/ui/TopPromoCarousel'
+import ProductDetails from '@/components/products/ProductDetails'
 import { useLanguage } from '@/hooks/useLanguage'
 import { notifySessionExpired } from '@/lib/utils/sessionNotice'
 import { bilycardProducts } from '@/lib/data/bilycardProducts'
 import { groupCatalogProducts } from '@/lib/data/catalogGrouping'
+import { classifyCatalogProduct } from '@/lib/data/catalogTaxonomy'
+import type { Product } from '@/lib/data'
 import {
   Flame,
   ChevronRight,
@@ -26,6 +30,7 @@ import {
   UserRoundCog,
   Ticket,
   TrendingUp,
+  X,
 } from 'lucide-react'
 
 type MeResponse = {
@@ -49,13 +54,16 @@ export default function HomeCompactDashboard() {
   const [walletUsd, setWalletUsd] = useState(0)
   const [walletLbp, setWalletLbp] = useState(0)
   const [topSellingSlugs, setTopSellingSlugs] = useState<string[]>([])
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null)
+  const [isModalVisible, setIsModalVisible] = useState(false)
+  const [isClient, setIsClient] = useState(false)
 
-  const popularProducts = useMemo(() => {
+  const rankedProducts = useMemo(() => {
     const available = groupCatalogProducts(
       bilycardProducts.filter((product) => product.stockStatus !== 'out_of_stock')
     )
 
-    if (!topSellingSlugs.length) return available.slice(0, 4)
+    if (!topSellingSlugs.length) return available
 
     const rank = new Map(topSellingSlugs.map((slug, idx) => [slug, idx]))
     const getRank = (slug: string) => (rank.has(slug) ? Number(rank.get(slug)) : Number.MAX_SAFE_INTEGER)
@@ -66,8 +74,29 @@ export default function HomeCompactDashboard() {
         const bRank = Math.min(...[b.slug, ...(b.childSlugs || [])].map((slug) => getRank(String(slug).toLowerCase())))
         return aRank - bRank
       })
-      .slice(0, 4)
   }, [topSellingSlugs])
+
+  const popularProducts = useMemo(() => rankedProducts.slice(0, 4), [rankedProducts])
+
+  const mostSoldPackages = useMemo(
+    () =>
+      rankedProducts
+        .filter((product) =>
+          product.groupChildren.some((child) =>
+            child.inputFields?.some((field) => field.name === 'package' && field.type === 'select')
+          )
+        )
+        .slice(0, 4),
+    [rankedProducts]
+  )
+
+  const mostSoldCards = useMemo(
+    () =>
+      rankedProducts
+        .filter((product) => classifyCatalogProduct(product).category === 'cards')
+        .slice(0, 4),
+    [rankedProducts]
+  )
 
   const quickTabs = [
     {
@@ -169,6 +198,10 @@ export default function HomeCompactDashboard() {
   ]
 
   useEffect(() => {
+    setIsClient(true)
+  }, [])
+
+  useEffect(() => {
     const token = localStorage.getItem('bilycard_token')
     if (!token) return
 
@@ -206,6 +239,59 @@ export default function HomeCompactDashboard() {
     void loadMe()
   }, [])
 
+  const renderPopularSection = (title: string, items: typeof popularProducts) => (
+    <div className="glass-panel rounded-[24px] p-3.5">
+      <div className="mb-3 flex items-center justify-between">
+        <h2 className="flex items-center gap-2 text-xl font-semibold text-white">
+          <Flame className="h-5 w-5 text-red-400" />
+          {title}
+        </h2>
+        <Link href="/products" className="rounded-2xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-slate-200 transition hover:bg-white/10">
+          {t('home.popular.viewAll')}
+        </Link>
+      </div>
+
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        {items.map((card, index) => (
+          <article
+            key={`${title}-${card.id}`}
+            className="group relative overflow-hidden rounded-[24px] border border-white/10 bg-[linear-gradient(180deg,rgba(15,23,42,0.92),rgba(5,10,22,0.96))] shadow-[0_16px_34px_rgba(2,6,23,0.24)] transition duration-300 hover:-translate-y-1 hover:border-cyan-400/30 hover:shadow-[0_22px_44px_rgba(8,47,73,0.28)]"
+          >
+            <button
+              type="button"
+              onClick={() => handleProductSelect(card)}
+              className="absolute inset-0 z-10 rounded-[24px]"
+              aria-label={`Open ${card.name}`}
+            />
+            <div className="absolute right-2 top-2 z-20">
+              <FavoriteButton slug={card.slug} />
+            </div>
+            <div className="relative h-40 w-full overflow-hidden">
+              <Image src={card.image} alt={card.name} fill className="object-cover" />
+              <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/30 to-transparent" />
+              <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black/40 to-transparent opacity-70" />
+              <div className="absolute left-3 top-3 rounded-full border border-white/20 bg-black/35 px-3 py-1 text-[10px] font-bold tracking-[0.2em] text-white">
+                {index === 0 ? 'HOT' : index === 1 ? 'TOP' : index === 2 ? 'FAST' : 'TREND'}
+              </div>
+            </div>
+            <div className="p-3.5">
+              <div className="mb-2.5 flex items-center justify-between gap-2">
+                <span className="rounded-full border border-cyan-400/15 bg-cyan-500/10 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-cyan-300">
+                  Game Store
+                </span>
+                <span className="text-xs font-semibold text-slate-400">Instant</span>
+              </div>
+              <h3 className="line-clamp-2 min-h-[44px] text-sm font-semibold text-white">{card.name}</h3>
+              <div className="mt-3 rounded-2xl bg-gradient-to-r from-cyan-500 to-sky-600 py-2.5 text-center text-sm font-bold text-white shadow-[0_14px_30px_rgba(14,165,233,0.22)]">
+                {t('home.popular.buyNow')}
+              </div>
+            </div>
+          </article>
+        ))}
+      </div>
+    </div>
+  )
+
   useEffect(() => {
     const loadTopSelling = async () => {
       try {
@@ -226,16 +312,59 @@ export default function HomeCompactDashboard() {
     void loadTopSelling()
   }, [])
 
+  useEffect(() => {
+    if (!selectedProduct) return
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setIsModalVisible(false)
+      }
+    }
+
+    const originalOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    window.addEventListener('keydown', onKeyDown)
+
+    const raf = window.requestAnimationFrame(() => {
+      setIsModalVisible(true)
+    })
+
+    return () => {
+      document.body.style.overflow = originalOverflow
+      window.removeEventListener('keydown', onKeyDown)
+      window.cancelAnimationFrame(raf)
+    }
+  }, [selectedProduct])
+
+  useEffect(() => {
+    if (isModalVisible || !selectedProduct) return
+
+    const timeout = window.setTimeout(() => {
+      setSelectedProduct(null)
+    }, 180)
+
+    return () => window.clearTimeout(timeout)
+  }, [isModalVisible, selectedProduct])
+
+  const handleProductSelect = useCallback((product: Product) => {
+    setSelectedProduct(product)
+    setIsModalVisible(false)
+  }, [])
+
+  const handleCloseModal = useCallback(() => {
+    setIsModalVisible(false)
+  }, [])
+
   return (
     <>
       <main className="mx-auto max-w-[1480px] px-4 pb-12 pt-3 sm:px-5 lg:px-6">
-        <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_320px] lg:items-start lg:gap-5">
+        <div className="relative lg:pr-[372px]">
           <section className="space-y-4">
             <TopPromoCarousel showQuickTabs={false} />
 
             <div className="grid gap-4 xl:grid-cols-[260px_minmax(0,1fr)]">
               <aside className="hidden xl:block">
-                <div className="glass-panel rounded-[24px] p-4">
+                <div className="glass-panel w-full rounded-[24px] p-4">
                   <h3 className="mb-3 flex items-center gap-2 text-base font-semibold text-white">
                     <Sparkles className="h-4 w-4 text-cyan-400" />
                     {t('home.left.highlights')}
@@ -315,66 +444,22 @@ export default function HomeCompactDashboard() {
             </div>
                 </div>
 
-                <div className="glass-panel rounded-[24px] p-4">
-                  <div className="mb-3 flex items-center justify-between">
-              <h2 className="flex items-center gap-2 text-xl font-semibold text-white">
-                <Flame className="h-5 w-5 text-red-400" />
-                {t('home.popular.title')}
-              </h2>
-              <Link href="/products" className="rounded-2xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-slate-200 transition hover:bg-white/10">
-                {t('home.popular.viewAll')}
-              </Link>
+              </div>
             </div>
 
-            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-              {popularProducts.map((card, index) => (
-                <Link
-                  key={card.id}
-                  href={`/products/${card.slug}`}
-                  className="group relative overflow-hidden rounded-[24px] border border-white/10 bg-[linear-gradient(180deg,rgba(15,23,42,0.92),rgba(5,10,22,0.96))] shadow-[0_16px_34px_rgba(2,6,23,0.24)] transition duration-300 hover:-translate-y-1 hover:border-cyan-400/30 hover:shadow-[0_22px_44px_rgba(8,47,73,0.28)]"
-                >
-                  <div className="absolute right-2 top-2 z-20">
-                    <FavoriteButton slug={card.slug} />
-                  </div>
-                  <div className="relative h-40 w-full overflow-hidden">
-                    <Image src={card.image} alt={card.name} fill className="object-cover" />
-                    <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/30 to-transparent" />
-                    <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black/40 to-transparent opacity-70" />
-                    <div className="absolute left-3 top-3 rounded-full border border-white/20 bg-black/35 px-3 py-1 text-[10px] font-bold tracking-[0.2em] text-white">
-                      {index === 0 ? 'HOT' : index === 1 ? 'TOP' : index === 2 ? 'FAST' : 'TREND'}
-                    </div>
-                  </div>
-                  <div className="p-3.5">
-                    <div className="mb-2.5 flex items-center justify-between gap-2">
-                      <span className="rounded-full border border-cyan-400/15 bg-cyan-500/10 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-cyan-300">
-                        Game Store
-                      </span>
-                      <span className="text-xs font-semibold text-slate-400">Instant</span>
-                    </div>
-                    <h3 className="line-clamp-2 min-h-[44px] text-sm font-semibold text-white">{card.name}</h3>
-                    <div className="mt-3 rounded-2xl bg-gradient-to-r from-cyan-500 to-sky-600 py-2.5 text-center text-sm font-bold text-white shadow-[0_14px_30px_rgba(14,165,233,0.22)]">
-                      {t('home.popular.buyNow')}
-                    </div>
-                  </div>
-                </Link>
-              ))}
-            </div>
-                </div>
-              </div>
+            <div className="space-y-4">
+              {renderPopularSection(t('home.popular.title'), popularProducts)}
+              {renderPopularSection('الباقات الأكثر مبيعاً', mostSoldPackages)}
+              {renderPopularSection('البطاقات الأكثر مبيعاً', mostSoldCards)}
             </div>
 
             <HeroSection />
         </section>
 
-          <aside className="lg:pt-0">
-            <div className="hidden lg:block lg:sticky lg:top-[90px]">
-              <div className="max-h-[calc(100vh-108px)] overflow-y-auto overscroll-contain pr-1 [scrollbar-gutter:stable]">
-                <div className="space-y-4">
-                  <UserSidebar desktopSticky={false} />
-                </div>
-              </div>
+          <aside className="lg:contents">
+            <div className="hidden lg:block lg:fixed lg:top-[88px] lg:z-30 lg:h-[calc(100vh-108px)] lg:w-[352px] lg:right-[max(1.5rem,calc((100vw-1480px)/2+1.5rem))]">
+              <UserSidebar desktopSticky={false} />
             </div>
- 
           </aside>
         </div>
 
@@ -382,7 +467,39 @@ export default function HomeCompactDashboard() {
         <UserSidebar />
       </div>
       </main>
-      <Footer />
+      {isClient && selectedProduct && createPortal(
+        <div
+          className={`fixed inset-0 z-[80] flex items-center justify-center bg-[radial-gradient(circle_at_top,rgba(15,23,42,0.72),rgba(2,6,23,0.88))] p-3 backdrop-blur-md transition-all duration-200 sm:p-4 ${
+            isModalVisible ? 'opacity-100' : 'opacity-0'
+          }`}
+          onClick={(event) => {
+            if (event.target === event.currentTarget) {
+              handleCloseModal()
+            }
+          }}
+        >
+          <div
+            className={`relative flex max-h-[calc(100vh-1.5rem)] w-full max-w-[760px] items-center justify-center transition-all duration-300 sm:max-h-[calc(100vh-2rem)] ${
+              isModalVisible ? 'translate-y-0 scale-100 opacity-100' : 'translate-y-4 scale-[0.97] opacity-0'
+            }`}
+          >
+            <button
+              type="button"
+              onClick={handleCloseModal}
+              className="absolute right-3 top-3 z-20 rounded-full border border-white/10 bg-slate-950/75 p-2.5 text-slate-300 shadow-[0_12px_30px_rgba(2,6,23,0.35)] transition hover:border-cyan-400/30 hover:bg-slate-900 hover:text-white sm:right-4 sm:top-4"
+              aria-label="Close product popup"
+            >
+              <X className="h-5 w-5" />
+            </button>
+
+            <div className="max-h-[calc(100vh-1.5rem)] w-full overflow-y-auto rounded-[28px] border border-white/12 bg-[linear-gradient(180deg,rgba(8,14,26,0.98),rgba(4,10,20,0.99))] p-3 shadow-[0_30px_90px_rgba(2,6,23,0.45)] ring-1 ring-cyan-400/8 sm:max-h-[calc(100vh-2rem)] sm:rounded-[30px] sm:p-4">
+              <ProductDetails product={selectedProduct} compact />
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+      <Footer withRightRailOffset />
     </>
   )
 }
