@@ -1,3 +1,4 @@
+import type { ProductProviderMode } from '@/lib/products/providerMode';
 import { enrichProductDescriptions } from './productDescriptions';
 
 export interface Product {
@@ -23,6 +24,7 @@ export interface Product {
   childSlugs?: string[];
   groupChildren?: Product[];
   isGroupedParent?: boolean;
+  providerMode?: ProductProviderMode;
 }
 
 export interface InputField {

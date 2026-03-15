@@ -1,4 +1,5 @@
 import mongoose, { Document, Schema } from 'mongoose';
+import type { ProductProviderMode } from '@/lib/products/providerMode';
 
 export interface IProductOverride extends Omit<Document, '_id'> {
   slug: string;
@@ -15,6 +16,7 @@ export interface IProductOverride extends Omit<Document, '_id'> {
   tags?: string[];
   featured?: boolean;
   bestSeller?: boolean;
+  providerMode?: ProductProviderMode;
 }
 
 const ProductOverrideSchema = new Schema<IProductOverride>(
@@ -33,6 +35,7 @@ const ProductOverrideSchema = new Schema<IProductOverride>(
     tags: { type: [String], default: undefined },
     featured: { type: Boolean },
     bestSeller: { type: Boolean },
+    providerMode: { type: String, enum: ['primary', 'manual', 'secondary'] },
   },
   { timestamps: true }
 );

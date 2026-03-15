@@ -8,8 +8,6 @@ const SystemSettingsSchema = new Schema(
     providerApiUrl: String,
     providerApiKey: String,
     providerApiSecret: String,
-    telegramBotToken: String,
-    telegramChatId: String,
     googleSheetsIntegration: {
       enabled: { type: Boolean, default: false },
       spreadsheetId: String,
@@ -37,6 +35,11 @@ const SystemSettingsSchema = new Schema(
       phoneTel: { type: String, default: '' },
       whatsappNumber: { type: String, default: '' },
     },
+    telegramBotToken: { type: String, default: '' },
+    telegramChatId: { type: String, default: '' },
+    whatsappAccessToken: { type: String, default: '' },
+    whatsappPhoneNumberId: { type: String, default: '' },
+    whatsappAdminNumber: { type: String, default: '' },
   },
   { timestamps: true }
 );

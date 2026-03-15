@@ -5,6 +5,7 @@ import { JWTPayload } from '@/lib/types';
 import { getCatalogProducts } from '@/lib/data/catalogProducts';
 import CustomProduct from '@/lib/models/CustomProduct';
 import ProductOverride from '@/lib/models/ProductOverride';
+import { normalizeProductProviderMode } from '@/lib/products/providerMode';
 import { logAdminAction } from '@/lib/services/auditLogService';
 
 function parseStockStatus(value: unknown): 'in_stock' | 'out_of_stock' | 'limited' {
@@ -38,6 +39,7 @@ async function getHandler(_req: NextRequest, _user: JWTPayload): Promise<NextRes
         tags: Array.isArray(product.tags) ? product.tags : [],
         featured: Boolean(product.featured),
         bestSeller: Boolean(product.bestSeller),
+        providerMode: normalizeProductProviderMode(product.providerMode, customSlugSet.has(slug) ? 'manual' : 'primary'),
         source: customSlugSet.has(slug) ? 'custom' : 'provider',
       };
     });
@@ -107,6 +109,7 @@ async function putHandler(req: NextRequest, user: JWTPayload): Promise<NextRespo
     };
 
     const custom = await CustomProduct.findOne({ slug });
+    const providerMode = normalizeProductProviderMode(body?.providerMode, custom ? 'manual' : 'primary');
 
     if (custom) {
       custom.name = patch.name;
@@ -121,6 +124,7 @@ async function putHandler(req: NextRequest, user: JWTPayload): Promise<NextRespo
       custom.tags = patch.tags;
       custom.featured = patch.featured;
       custom.bestSeller = patch.bestSeller;
+      custom.providerMode = normalizeProductProviderMode(providerMode, 'manual');
       custom.active = true;
       await custom.save();
     } else {
@@ -142,6 +146,7 @@ async function putHandler(req: NextRequest, user: JWTPayload): Promise<NextRespo
             tags: patch.tags,
             featured: patch.featured,
             bestSeller: patch.bestSeller,
+            providerMode,
           },
         },
         { upsert: true, new: true, setDefaultsOnInsert: true }
@@ -156,7 +161,7 @@ async function putHandler(req: NextRequest, user: JWTPayload): Promise<NextRespo
       details: {
         slug,
         source: custom ? 'custom' : 'provider',
-        fields: ['name', 'category', 'image', 'shortDescription', 'fullDescription', 'price'],
+        fields: ['name', 'category', 'image', 'shortDescription', 'fullDescription', 'price', 'providerMode'],
       },
     });
 

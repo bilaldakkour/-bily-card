@@ -9,17 +9,11 @@ import {
 } from '@/lib/pricing/engine'
 import { getCatalogProductBySlug, getCatalogProducts } from '@/lib/data/catalogProducts'
 import Product from '@/lib/models/Product'
+import { getProviderApiConfig, providerHeaders, type ProviderApiConfig } from '@/lib/providers/providerConfig'
+import { normalizeProductProviderMode } from '@/lib/products/providerMode'
 import { isTestModeEnabled, logTestMode } from '@/lib/utils/testMode'
 
 export const dynamic = 'force-dynamic'
-
-const PROVIDER_BASE =
-  process.env.DAILYCARD_API_BASE ||
-  process.env.PROVIDER_API_URL ||
-  'https://dailycard.shop/UAPI/api-keys'
-
-const PROVIDER_KEY = process.env.DAILYCARD_API_KEY || process.env.PROVIDER_API_KEY || ''
-const PROVIDER_SECRET = process.env.DAILYCARD_API_SECRET || process.env.PROVIDER_API_SECRET || ''
 
 const globalPricingState = globalThis as typeof globalThis & {
   __effectivePricingWarnedKeys?: Set<string>
@@ -36,18 +30,6 @@ function warnOnce(key: string, message: string, details?: unknown) {
   }
 
   console.warn(message)
-}
-
-function providerEnabled() {
-  return Boolean(PROVIDER_KEY && PROVIDER_SECRET)
-}
-
-function providerHeaders() {
-  return {
-    'Content-Type': 'application/json',
-    'X-API-Key': PROVIDER_KEY,
-    'X-API-Secret': PROVIDER_SECRET,
-  }
 }
 
 function normalizeId(value: unknown) {
@@ -113,9 +95,12 @@ function extractProviderPrice(row: any): number | null {
   return null
 }
 
-async function fetchProviderProducts(params: Record<string, string | number>) {
-  const response = await axios.get(`${PROVIDER_BASE}/products/`, {
-    headers: providerHeaders(),
+async function fetchProviderProducts(
+  config: ProviderApiConfig,
+  params: Record<string, string | number>
+) {
+  const response = await axios.get(`${config.base}/products/`, {
+    headers: providerHeaders(config),
     params,
     timeout: 15000,
   })
@@ -142,15 +127,18 @@ function findPriceByProviderProductId(rows: any[], providerProductId: string): n
   return null
 }
 
-async function getLiveProviderPriceByProductId(providerProductId: string): Promise<number | null> {
-  if (!providerEnabled()) return null
+async function getLiveProviderPriceByProductId(
+  providerProductId: string,
+  config: ProviderApiConfig
+): Promise<number | null> {
+  if (!config.enabled) return null
 
   const cleanProductId = normalizeId(providerProductId)
   if (!cleanProductId) return null
 
   try {
     try {
-      const rows = await fetchProviderProducts({
+      const rows = await fetchProviderProducts(config, {
         page: 1,
         page_size: 100,
         search: cleanProductId,
@@ -172,7 +160,7 @@ async function getLiveProviderPriceByProductId(providerProductId: string): Promi
     }
 
     try {
-      const rows = await fetchProviderProducts({
+      const rows = await fetchProviderProducts(config, {
         page: 1,
         page_size: 100,
       })
@@ -305,9 +293,25 @@ export async function GET(request: NextRequest) {
       let fallbackPrice: number | undefined = undefined
       const catalogPrice = normalizePrice(catalogProduct?.price)
       const catalogProviderId = String(catalogProduct?.id || '')
+      const productProviderMode = normalizeProductProviderMode(
+        catalogProduct?.providerMode,
+        catalogProduct
+          ? String(catalogProduct.id || '').startsWith('manual-')
+            ? 'manual'
+            : 'primary'
+          : isLikelyProviderBackedProduct(catalogProviderId)
+            ? 'primary'
+            : 'manual'
+      )
+      const providerConfig =
+        productProviderMode === 'secondary'
+          ? getProviderApiConfig('secondary')
+          : productProviderMode === 'primary'
+            ? getProviderApiConfig('primary')
+            : null
 
-      if (catalogProduct && isLikelyProviderBackedProduct(catalogProviderId)) {
-        const livePrice = await getLiveProviderPriceByProductId(catalogProviderId)
+      if (catalogProduct && isLikelyProviderBackedProduct(catalogProviderId) && providerConfig?.enabled) {
+        const livePrice = await getLiveProviderPriceByProductId(catalogProviderId, providerConfig)
 
         if (typeof livePrice === 'number' && Number.isFinite(livePrice) && livePrice > 0) {
           fallbackPrice = livePrice

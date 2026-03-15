@@ -1,4 +1,5 @@
 import mongoose, { Document, Schema } from 'mongoose';
+import type { ProductProviderMode } from '@/lib/products/providerMode';
 
 export type CustomProductMode = 'single' | 'package' | 'count';
 
@@ -27,6 +28,7 @@ export interface ICustomProduct extends Omit<Document, '_id'> {
   platform: string;
   deliveryTime: string;
   tags: string[];
+  providerMode: ProductProviderMode;
 }
 
 const CustomPackageOptionSchema = new Schema<ICustomPackageOption>(
@@ -63,6 +65,7 @@ const CustomProductSchema = new Schema<ICustomProduct>(
     platform: { type: String, default: 'BilyCard', trim: true },
     deliveryTime: { type: String, default: 'Instant', trim: true },
     tags: { type: [String], default: [] },
+    providerMode: { type: String, enum: ['primary', 'manual', 'secondary'], default: 'manual' },
   },
   { timestamps: true }
 );

@@ -3,6 +3,7 @@ import { withAdminAuth } from '@/lib/auth/middleware';
 import { connectDB } from '@/lib/db/mongodb';
 import { JWTPayload } from '@/lib/types';
 import CustomProduct from '@/lib/models/CustomProduct';
+import { normalizeProductProviderMode } from '@/lib/products/providerMode';
 
 function slugify(input: string) {
   return String(input || '')
@@ -132,6 +133,7 @@ async function postHandler(req: NextRequest, _user: JWTPayload): Promise<NextRes
           platform: String(body.platform || 'BilyCard').trim() || 'BilyCard',
           deliveryTime: String(body.deliveryTime || 'Instant').trim() || 'Instant',
           tags,
+          providerMode: normalizeProductProviderMode(body.providerMode, 'manual'),
         },
       },
       { upsert: true, new: true, setDefaultsOnInsert: true }

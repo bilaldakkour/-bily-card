@@ -27,6 +27,7 @@ const OrderSchema = new Schema(
     productSlug: String,
     category: String,
     providerProductId: String,
+    providerSlot: String,
     selectedPackageOption: String,
     providerMatchedProductName: String,
     providerMatchMode: String,

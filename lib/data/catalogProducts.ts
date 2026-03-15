@@ -10,6 +10,10 @@ import type { Product } from '@/lib/data/products';
 import { connectDB } from '@/lib/db/mongodb';
 import CustomProduct from '@/lib/models/CustomProduct';
 import ProductOverride from '@/lib/models/ProductOverride';
+import {
+  normalizeProductProviderMode,
+  type ProductProviderMode,
+} from '@/lib/products/providerMode';
 import { isTestModeEnabled, logTestMode } from '@/lib/utils/testMode';
 
 type CatalogProduct = Product;
@@ -34,6 +38,7 @@ type LeanCustomProduct = {
   platform?: string;
   deliveryTime?: string;
   tags?: string[];
+  providerMode?: ProductProviderMode;
 };
 
 type LeanProductOverride = {
@@ -51,6 +56,7 @@ type LeanProductOverride = {
   tags?: string[];
   featured?: boolean;
   bestSeller?: boolean;
+  providerMode?: ProductProviderMode;
 };
 
 function toPackageOptionText(option: { label: string; price: number; inStock: boolean }) {
@@ -114,6 +120,7 @@ function toCatalogProduct(product: LeanCustomProduct): CatalogProduct {
     platform: product.platform || 'BilyCard',
     deliveryTime: product.deliveryTime || 'Instant',
     tags: Array.isArray(product.tags) ? product.tags : [],
+    providerMode: normalizeProductProviderMode(product.providerMode, 'manual'),
   };
 }
 
@@ -177,6 +184,12 @@ function applyOverride(
     next.bestSeller = override.bestSeller;
   }
 
+  if (typeof override.providerMode === 'string' && override.providerMode.trim()) {
+    next.providerMode = normalizeProductProviderMode(override.providerMode, next.providerMode || 'primary');
+  } else if (!next.providerMode) {
+    next.providerMode = 'primary';
+  }
+
   return next;
 }
 
@@ -215,7 +228,18 @@ export async function getCatalogProducts(): Promise<CatalogProduct[]> {
   for (const product of bilycardProducts) {
     const slug = String(product.slug).toLowerCase();
     if (hiddenSlugs.has(slug)) continue;
-    map.set(slug, enrichProductDescriptions(applyOverride(product, overrideMap.get(slug))));
+    map.set(
+      slug,
+      enrichProductDescriptions(
+        applyOverride(
+          {
+            ...product,
+            providerMode: normalizeProductProviderMode(product.providerMode, 'primary'),
+          },
+          overrideMap.get(slug)
+        )
+      )
+    );
   }
 
   for (const product of customProducts) {
@@ -261,7 +285,15 @@ export async function getCatalogProductBySlug(slug: string): Promise<CatalogProd
   const base = bilycardProducts.find((product) => String(product.slug).toLowerCase() === normalized);
   if (!base) return undefined;
 
-  return enrichProductDescriptions(applyOverride(base, override));
+  return enrichProductDescriptions(
+    applyOverride(
+      {
+        ...base,
+        providerMode: normalizeProductProviderMode(base.providerMode, 'primary'),
+      },
+      override
+    )
+  );
 }
 
 export async function getCatalogBestSellingProducts(): Promise<CatalogProduct[]> {

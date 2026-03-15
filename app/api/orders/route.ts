@@ -9,6 +9,17 @@ import { extractToken, verifyToken } from '@/lib/auth/jwt'
 import { getEffectivePriceForProduct } from '@/lib/pricing/engine'
 import { getCatalogProductBySlug, getCatalogProducts } from '@/lib/data/catalogProducts'
 import { generateOrderId } from '@/lib/utils/helpers'
+import {
+  getProviderApiConfig,
+  providerHeaders,
+  type ProviderApiConfig,
+  type ProviderSlot,
+} from '@/lib/providers/providerConfig'
+import {
+  normalizeProductProviderMode,
+  type ProductProviderMode,
+} from '@/lib/products/providerMode'
+import { sendAdminNotification } from '@/lib/services/adminNotificationService'
 import { isTestModeEnabled, logTestMode } from '@/lib/utils/testMode'
 import { createTestModeOrder, getTestModeOrders, getTestModeUser } from '@/lib/utils/testModeStore'
 
@@ -36,24 +47,24 @@ function toPositiveNumber(value: unknown): number {
   return parsed
 }
 
-const PROVIDER_BASE =
-  process.env.DAILYCARD_API_BASE ||
-  process.env.PROVIDER_API_URL ||
-  'https://dailycard.shop/UAPI/api-keys'
+function getProductProviderMode(
+  catalogProduct: Awaited<ReturnType<typeof getCatalogProductBySlug>>,
+  productId: string
+): ProductProviderMode {
+  const fallback = catalogProduct
+    ? String(catalogProduct.id || '').startsWith('manual-')
+      ? 'manual'
+      : 'primary'
+    : isLikelyProviderBackedProduct(productId)
+      ? 'primary'
+      : 'manual'
 
-const PROVIDER_KEY = process.env.DAILYCARD_API_KEY || process.env.PROVIDER_API_KEY || ''
-const PROVIDER_SECRET = process.env.DAILYCARD_API_SECRET || process.env.PROVIDER_API_SECRET || ''
-
-function providerHeaders() {
-  return {
-    'Content-Type': 'application/json',
-    'X-API-Key': PROVIDER_KEY,
-    'X-API-Secret': PROVIDER_SECRET,
-  }
+  return normalizeProductProviderMode(catalogProduct?.providerMode, fallback)
 }
 
-function providerEnabled() {
-  return Boolean(PROVIDER_KEY && PROVIDER_SECRET)
+function getProviderSlotForMode(mode: ProductProviderMode): ProviderSlot | null {
+  if (mode === 'manual') return null
+  return mode === 'secondary' ? 'secondary' : 'primary'
 }
 
 function normalizeText(value: string) {
@@ -174,9 +185,12 @@ function getProductCountRules(product: Awaited<ReturnType<typeof getCatalogProdu
   }
 }
 
-async function fetchProviderProducts(search?: string): Promise<ProviderProduct[]> {
-  const response = await axios.get(`${PROVIDER_BASE}/products/`, {
-    headers: providerHeaders(),
+async function fetchProviderProducts(
+  config: ProviderApiConfig,
+  search?: string
+): Promise<ProviderProduct[]> {
+  const response = await axios.get(`${config.base}/products/`, {
+    headers: providerHeaders(config),
     params: {
       page: 1,
       page_size: 5000,
@@ -198,6 +212,7 @@ async function resolveProviderProduct(order: {
   productId: string
   name: string
   packageOption?: string
+  providerConfig: ProviderApiConfig
 }): Promise<ProviderProduct | null> {
   // For package products, require selected package matching first for all products.
   // If no safe match is found, we return null instead of risking wrong fulfillment.
@@ -206,7 +221,7 @@ async function resolveProviderProduct(order: {
     if (!preferredName) return null
 
     try {
-      const searched = await fetchProviderProducts(preferredName)
+      const searched = await fetchProviderProducts(order.providerConfig, preferredName)
       const matched = findMatchingProviderProduct(searched, preferredName)
       if (matched?.id) return matched
     } catch (error) {
@@ -214,7 +229,7 @@ async function resolveProviderProduct(order: {
     }
 
     try {
-      const allProducts = await fetchProviderProducts()
+      const allProducts = await fetchProviderProducts(order.providerConfig)
       const matched = findMatchingProviderProduct(allProducts, preferredName)
       if (matched?.id) return matched
     } catch (error) {
@@ -244,7 +259,7 @@ async function resolveProviderProduct(order: {
   const normalizedPreferred = normalizeText(preferredName)
 
   try {
-    const searched = await fetchProviderProducts(preferredName)
+    const searched = await fetchProviderProducts(order.providerConfig, preferredName)
     const exact = searched.find((item) => normalizeText(item.name) === normalizedPreferred)
     if (exact?.id) return exact
 
@@ -255,7 +270,7 @@ async function resolveProviderProduct(order: {
   }
 
   try {
-    const allProducts = await fetchProviderProducts()
+    const allProducts = await fetchProviderProducts(order.providerConfig)
     const exact = allProducts.find((item) => normalizeText(item.name) === normalizedPreferred)
     if (exact?.id) return exact
 
@@ -293,13 +308,14 @@ function extractProviderUnitCost(
 }
 
 async function createProviderOrder(params: {
+  providerConfig: ProviderApiConfig
   providerProductId: number
   playerId: string
   quantity: number
   clientOrderId: string
 }) {
   const response = await axios.post(
-    `${PROVIDER_BASE}/orders/create/`,
+    `${params.providerConfig.base}/orders/create/`,
     {
       product: params.providerProductId,
       account_id: params.playerId,
@@ -307,7 +323,7 @@ async function createProviderOrder(params: {
       client_order_id: params.clientOrderId,
     },
     {
-      headers: providerHeaders(),
+      headers: providerHeaders(params.providerConfig),
       timeout: 20000,
     }
   )
@@ -316,6 +332,7 @@ async function createProviderOrder(params: {
 }
 
 async function fetchProviderOrderStatus(order: {
+  providerConfig: ProviderApiConfig
   orderId: string
   providerOrderId?: string
   providerResponse?: Record<string, unknown>
@@ -329,8 +346,8 @@ async function fetchProviderOrderStatus(order: {
 
   if (order.providerOrderId) query.order_id = String(order.providerOrderId)
 
-  const response = await axios.get(`${PROVIDER_BASE}/orders/status/`, {
-    headers: providerHeaders(),
+  const response = await axios.get(`${order.providerConfig.base}/orders/status/`, {
+    headers: providerHeaders(order.providerConfig),
     params: query,
     timeout: 15000,
   })
@@ -440,75 +457,83 @@ export async function GET(request: NextRequest) {
       .sort({ createdAt: -1 })
       .lean()
 
-    if (providerEnabled()) {
-      for (const order of orderDocs) {
-        const hasProviderReference = Boolean(
-          order.providerOrderId ||
-            order.providerResponse?.transaction_id ||
-            order.providerResponse?.order_id
-        )
-        const needsSync = ['pending', 'processing'].includes(String(order.status || '').toLowerCase())
+    for (const order of orderDocs) {
+      const hasProviderReference = Boolean(
+        order.providerOrderId ||
+          order.providerResponse?.transaction_id ||
+          order.providerResponse?.order_id
+      )
+      const needsSync = ['pending', 'processing'].includes(String(order.status || '').toLowerCase())
+      const providerSlot =
+        order.providerSlot === 'secondary'
+          ? 'secondary'
+          : order.providerSlot === 'manual'
+            ? 'manual'
+            : 'primary'
 
-        if (!hasProviderReference || !needsSync) continue
+      if (!hasProviderReference || !needsSync || providerSlot === 'manual') continue
 
-        try {
-          const statusPayload = await fetchProviderOrderStatus({
-            orderId: String(order.orderId),
-            providerOrderId: order.providerOrderId,
-            providerResponse: order.providerResponse,
-          })
+      const providerConfig = getProviderApiConfig(providerSlot)
+      if (!providerConfig.enabled) continue
 
-          const providerStatus = String(
-            statusPayload?.status ||
-              statusPayload?.order_status ||
-              statusPayload?.data?.status ||
-              statusPayload?.details?.status ||
-              order.providerStatus ||
-              'pending'
-          ).toLowerCase()
+      try {
+        const statusPayload = await fetchProviderOrderStatus({
+          providerConfig,
+          orderId: String(order.orderId),
+          providerOrderId: order.providerOrderId,
+          providerResponse: order.providerResponse,
+        })
 
-          const mappedStatus = mapProviderStatusToLocal(providerStatus)
+        const providerStatus = String(
+          statusPayload?.status ||
+            statusPayload?.order_status ||
+            statusPayload?.data?.status ||
+            statusPayload?.details?.status ||
+            order.providerStatus ||
+            'pending'
+        ).toLowerCase()
 
-          if (mappedStatus === 'refunded' && order.status !== 'refunded') {
-            const refundAmount = Number(order.total || 0)
-            if (refundAmount > 0) {
-              await Wallet.updateOne(
-                { userId: order.userId },
-                {
-                  $inc: { balance_usd: refundAmount },
-                  $set: { lastUpdated: new Date() },
-                }
-              )
-            }
-          }
+        const mappedStatus = mapProviderStatusToLocal(providerStatus)
 
-          if (mappedStatus !== order.status || providerStatus !== order.providerStatus) {
-            await Order.updateOne(
-              { _id: order._id },
+        if (mappedStatus === 'refunded' && order.status !== 'refunded') {
+          const refundAmount = Number(order.total || 0)
+          if (refundAmount > 0) {
+            await Wallet.updateOne(
+              { userId: order.userId },
               {
-                $set: {
-                  status: mappedStatus,
-                  providerStatus,
-                  providerResponse: statusPayload,
-                  notes:
-                    mappedStatus === 'refunded'
-                      ? 'Auto refunded after provider cancellation'
-                      : order.notes,
-                  failureReason:
-                    providerStatus === 'cancelled'
-                      ? 'Provider cancelled order and refunded balance at source'
-                      : order.failureReason,
-                },
+                $inc: { balance_usd: refundAmount },
+                $set: { lastUpdated: new Date() },
               }
             )
-
-            order.status = mappedStatus
-            order.providerStatus = providerStatus
-            order.providerResponse = statusPayload
           }
-        } catch (error) {
-          console.error('Provider status sync failed:', order.orderId, error)
         }
+
+        if (mappedStatus !== order.status || providerStatus !== order.providerStatus) {
+          await Order.updateOne(
+            { _id: order._id },
+            {
+              $set: {
+                status: mappedStatus,
+                providerStatus,
+                providerResponse: statusPayload,
+                notes:
+                  mappedStatus === 'refunded'
+                    ? 'Auto refunded after provider cancellation'
+                    : order.notes,
+                failureReason:
+                  providerStatus === 'cancelled'
+                    ? 'Provider cancelled order and refunded balance at source'
+                    : order.failureReason,
+              },
+            }
+          )
+
+          order.status = mappedStatus
+          order.providerStatus = providerStatus
+          order.providerResponse = statusPayload
+        }
+      } catch (error) {
+        console.error('Provider status sync failed:', order.orderId, error)
       }
     }
 
@@ -697,6 +722,10 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    const productProviderMode = getProductProviderMode(catalogProduct, productId)
+    const providerSlot = getProviderSlotForMode(productProviderMode)
+    const providerConfig = providerSlot ? getProviderApiConfig(providerSlot) : null
+
     if (isTestModeEnabled()) {
       const mockUser = getTestModeUser()
 
@@ -801,8 +830,9 @@ export async function POST(request: NextRequest) {
             walletBalanceAfter,
             currency: 'USD',
             status: 'pending',
-            providerStatus: 'pending',
-            notes: 'Order created locally',
+            providerSlot: providerSlot || 'manual',
+            providerStatus: providerSlot ? 'pending' : 'local_only',
+            notes: providerSlot ? 'Order created locally' : 'Order created locally for manual processing',
           },
         ],
         { session }
@@ -834,7 +864,7 @@ export async function POST(request: NextRequest) {
       session.endSession()
     }
 
-    if (providerEnabled()) {
+    if (providerSlot && providerConfig?.enabled) {
       try {
         const providerProduct =
           resolvedProviderProduct ||
@@ -842,10 +872,12 @@ export async function POST(request: NextRequest) {
             productId,
             name,
             packageOption,
+            providerConfig,
           }))
 
         if (providerProduct?.id) {
           const providerResult = await createProviderOrder({
+            providerConfig,
             providerProductId: Number(providerProduct.id),
             playerId: cleanPlayerId,
             quantity,
@@ -874,44 +906,55 @@ export async function POST(request: NextRequest) {
           order.providerMatchedProductName = String(providerProduct.name || '')
           order.providerMatchMode = packageOption ? 'package-option' : 'product-id-or-name'
           order.providerOrderId = providerOrderId || undefined
+          order.providerSlot = providerSlot
           order.providerStatus = providerStatus
           order.providerUnitCost = providerUnitCost
           order.providerTotalCost = providerTotalCost
           order.grossProfit = grossProfit
           order.providerResponse = providerResult
           order.status = mapProviderStatusToLocal(providerStatus)
-          order.notes = 'Submitted to DailyCard provider'
+          order.notes = `Submitted to ${providerConfig.label}`
         } else {
+          order.providerSlot = providerSlot
           order.providerStatus = 'local_only'
           order.providerMatchMode = packageOption ? 'package-option-no-match' : 'unresolved'
-          order.notes = 'Product not found at provider, kept for local/manual processing'
+          order.notes = `${providerConfig.label} product not found, kept for local/manual processing`
         }
       } catch (error: any) {
+        order.providerSlot = providerSlot
         order.providerStatus = 'submit_failed'
         order.providerMatchMode = packageOption ? 'package-option-submit-failed' : 'submit-failed'
-        order.notes = 'Provider submission failed, kept for local/manual processing'
+        order.notes = `${providerConfig.label} submission failed, kept for local/manual processing`
         order.failureReason =
           error?.response?.data?.error ||
           error?.response?.data?.message ||
           error?.message ||
           'Provider submission failed'
       }
-    } else {
+    } else if (providerSlot && !providerConfig?.enabled) {
+      order.providerSlot = providerSlot
       order.providerStatus = 'local_only'
-      order.notes = 'Provider credentials missing, kept for local/manual processing'
+      order.notes = `${providerSlot === 'secondary' ? 'Secondary' : 'Primary'} API is not configured, kept for local/manual processing`
+    } else {
+      order.providerSlot = 'manual'
+      order.providerStatus = 'local_only'
+      order.notes = 'Product is set to manual mode, kept for local/manual processing'
     }
 
     await order.save()
 
-    void sendTelegramMessage(orderId, {
-      productId,
-      slug,
-      name,
-      price,
-      playerId: cleanPlayerId,
-      quantity,
-      total: effectiveTotal,
-      packageOption,
+    await sendAdminNotification({
+      title: 'New Order - Bily Card',
+      lines: [
+        `Order ID: ${orderId}`,
+        `Product: ${name}`,
+        packageOption ? `Package: ${packageOption}` : null,
+        `Player ID: ${cleanPlayerId}`,
+        `Quantity: ${quantity}`,
+        `Total: $${effectiveTotal.toFixed(2)}`,
+        `Provider Mode: ${productProviderMode}`,
+        providerSlot ? `Provider Slot: ${providerSlot}` : 'Provider Slot: manual',
+      ],
     })
 
     return NextResponse.json({

@@ -20,6 +20,14 @@ type SupportContact = {
   whatsappNumber: string
 }
 
+type AdminNotifications = {
+  telegramBotToken: string
+  telegramChatId: string
+  whatsappAccessToken: string
+  whatsappPhoneNumberId: string
+  whatsappAdminNumber: string
+}
+
 function toKey(value: string): string {
   return String(value || '')
     .trim()
@@ -63,6 +71,13 @@ export default function AdminPaymentMethodsPage() {
   const [token, setToken] = useState('')
   const [methods, setMethods] = useState<PaymentMethod[]>([])
   const [supportContact, setSupportContact] = useState<SupportContact>(DEFAULT_SUPPORT_CONTACT)
+  const [adminNotifications, setAdminNotifications] = useState<AdminNotifications>({
+    telegramBotToken: '',
+    telegramChatId: '',
+    whatsappAccessToken: '',
+    whatsappPhoneNumberId: '',
+    whatsappAdminNumber: '',
+  })
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [message, setMessage] = useState('')
@@ -100,6 +115,13 @@ export default function AdminPaymentMethodsPage() {
           whatsappNumber: String(
             data?.data?.supportContact?.whatsappNumber || DEFAULT_SUPPORT_CONTACT.whatsappNumber
           ),
+        })
+        setAdminNotifications({
+          telegramBotToken: String(data?.data?.adminNotifications?.telegramBotToken || ''),
+          telegramChatId: String(data?.data?.adminNotifications?.telegramChatId || ''),
+          whatsappAccessToken: String(data?.data?.adminNotifications?.whatsappAccessToken || ''),
+          whatsappPhoneNumberId: String(data?.data?.adminNotifications?.whatsappPhoneNumberId || ''),
+          whatsappAdminNumber: String(data?.data?.adminNotifications?.whatsappAdminNumber || ''),
         })
       } catch (error: any) {
         setMessage(error?.message || 'Failed to load payment methods')
@@ -148,6 +170,13 @@ export default function AdminPaymentMethodsPage() {
     }))
   }
 
+  const updateAdminNotifications = (field: keyof AdminNotifications, value: string) => {
+    setAdminNotifications((prev) => ({
+      ...prev,
+      [field]: value,
+    }))
+  }
+
   const handleSave = async () => {
     try {
       setSaving(true)
@@ -174,6 +203,7 @@ export default function AdminPaymentMethodsPage() {
         body: JSON.stringify({
           paymentMethods: normalizedMethods,
           supportContact,
+          adminNotifications,
         }),
       })
 
@@ -193,6 +223,15 @@ export default function AdminPaymentMethodsPage() {
           whatsappNumber: String(
             data.data.supportContact.whatsappNumber || DEFAULT_SUPPORT_CONTACT.whatsappNumber
           ),
+        })
+      }
+      if (data?.data?.adminNotifications) {
+        setAdminNotifications({
+          telegramBotToken: String(data.data.adminNotifications.telegramBotToken || ''),
+          telegramChatId: String(data.data.adminNotifications.telegramChatId || ''),
+          whatsappAccessToken: String(data.data.adminNotifications.whatsappAccessToken || ''),
+          whatsappPhoneNumberId: String(data.data.adminNotifications.whatsappPhoneNumberId || ''),
+          whatsappAdminNumber: String(data.data.adminNotifications.whatsappAdminNumber || ''),
         })
       }
       setMessage('Saved successfully')
@@ -282,6 +321,64 @@ export default function AdminPaymentMethodsPage() {
             <input
               value={supportContact.whatsappNumber}
               onChange={(e) => updateSupportContact('whatsappNumber', e.target.value)}
+              className="mt-1 w-full rounded-lg border border-white/10 bg-slate-800 px-3 py-2 text-white"
+            />
+          </label>
+        </div>
+      </div>
+
+      <div className="rounded-xl border border-white/10 bg-slate-900/70 p-5">
+        <div className="mb-4">
+          <h2 className="text-lg font-semibold text-white">Admin Notifications</h2>
+          <p className="text-sm text-slate-400">
+            Telegram alerts work with bot token and chat ID. WhatsApp alerts are optional and require Meta WhatsApp Cloud API credentials.
+          </p>
+        </div>
+
+        <div className="grid gap-4 md:grid-cols-2">
+          <label className="text-sm text-slate-300">
+            Telegram Bot Token
+            <input
+              type="password"
+              value={adminNotifications.telegramBotToken}
+              onChange={(e) => updateAdminNotifications('telegramBotToken', e.target.value)}
+              className="mt-1 w-full rounded-lg border border-white/10 bg-slate-800 px-3 py-2 text-white"
+            />
+          </label>
+
+          <label className="text-sm text-slate-300">
+            Telegram Chat ID
+            <input
+              value={adminNotifications.telegramChatId}
+              onChange={(e) => updateAdminNotifications('telegramChatId', e.target.value)}
+              className="mt-1 w-full rounded-lg border border-white/10 bg-slate-800 px-3 py-2 text-white"
+            />
+          </label>
+
+          <label className="text-sm text-slate-300">
+            WhatsApp Access Token
+            <input
+              type="password"
+              value={adminNotifications.whatsappAccessToken}
+              onChange={(e) => updateAdminNotifications('whatsappAccessToken', e.target.value)}
+              className="mt-1 w-full rounded-lg border border-white/10 bg-slate-800 px-3 py-2 text-white"
+            />
+          </label>
+
+          <label className="text-sm text-slate-300">
+            WhatsApp Phone Number ID
+            <input
+              value={adminNotifications.whatsappPhoneNumberId}
+              onChange={(e) => updateAdminNotifications('whatsappPhoneNumberId', e.target.value)}
+              className="mt-1 w-full rounded-lg border border-white/10 bg-slate-800 px-3 py-2 text-white"
+            />
+          </label>
+
+          <label className="text-sm text-slate-300 md:col-span-2">
+            WhatsApp Admin Number
+            <input
+              value={adminNotifications.whatsappAdminNumber}
+              onChange={(e) => updateAdminNotifications('whatsappAdminNumber', e.target.value)}
               className="mt-1 w-full rounded-lg border border-white/10 bg-slate-800 px-3 py-2 text-white"
             />
           </label>

@@ -6,6 +6,7 @@ import Otp from '@/lib/models/Otp';
 import { RegisterSchema } from '@/lib/utils/validation';
 import { sendOtpEmail } from '@/lib/email';
 import { enforceRateLimit } from '@/lib/utils/rateLimit';
+import { sendAdminNotification } from '@/lib/services/adminNotificationService';
 import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
 import { ZodError } from 'zod';
@@ -125,6 +126,16 @@ export async function POST(req: NextRequest) {
 
     // Send OTP email
     await sendOtpEmail(normalizedEmail, otp);
+
+    await sendAdminNotification({
+      title: 'New User Registration - Bily Card',
+      lines: [
+        `Name: ${name}`,
+        `Email: ${normalizedEmail}`,
+        `Phone: ${normalizedPhoneNumber}`,
+        `User ID: ${String(user._id)}`,
+      ],
+    });
 
     return NextResponse.json({ message: 'User registered successfully. Please check your email for verification.' });
   } catch (error) {

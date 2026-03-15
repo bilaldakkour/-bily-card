@@ -77,6 +77,7 @@ export interface IOrder {
   currency: 'USD' | 'LBP';
   status: 'pending' | 'processing' | 'completed' | 'failed' | 'refunded' | 'rejected';
   providerOrderId?: string;
+  providerSlot?: 'primary' | 'secondary' | 'manual';
   providerResponse?: any;
   notes?: string;
   failureReason?: string;
@@ -119,6 +120,14 @@ export interface ISupportContactSettings {
   whatsappNumber: string;
 }
 
+export interface IAdminNotificationSettings {
+  telegramBotToken: string;
+  telegramChatId: string;
+  whatsappAccessToken: string;
+  whatsappPhoneNumberId: string;
+  whatsappAdminNumber: string;
+}
+
 // Settings & Logs
 export interface ISystemSettings {
   _id: string;
@@ -139,6 +148,9 @@ export interface ISystemSettings {
   maxRetryAttempts: number;
   paymentMethods?: IPaymentMethodSettings[];
   supportContact?: ISupportContactSettings;
+  whatsappAccessToken?: string;
+  whatsappPhoneNumberId?: string;
+  whatsappAdminNumber?: string;
   updatedAt: Date;
 }
 

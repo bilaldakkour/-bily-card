@@ -5,6 +5,7 @@ import DepositRequest from '@/lib/models/DepositRequest';
 import { JWTPayload } from '@/lib/types';
 import { handleError } from '@/lib/utils/errors';
 import SystemSettings from '@/lib/models/SystemSettings';
+import { sendAdminNotification } from '@/lib/services/adminNotificationService';
 import { getActivePaymentMethods } from '@/lib/wallet/paymentMethods';
 import { isTestModeEnabled, logTestMode } from '@/lib/utils/testMode';
 import { createTestModeDeposit, getTestModePaymentMethods } from '@/lib/utils/testModeStore';
@@ -119,6 +120,18 @@ async function handler(
     });
 
     await depositRequest.save();
+
+    await sendAdminNotification({
+      title: 'New Deposit Request - Bily Card',
+      lines: [
+        `User: ${String(user.username || 'Unknown user')}`,
+        `Amount: $${amount.toFixed(2)}`,
+        `Method: ${selectedMethod.name}`,
+        `Address: ${selectedMethod.address || '-'}`,
+        `Receipt Provided: ${proofImage ? 'Yes' : 'No'}`,
+        `Deposit ID: ${String(depositRequest._id)}`,
+      ],
+    });
 
     return NextResponse.json(
       {

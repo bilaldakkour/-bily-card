@@ -3,6 +3,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { ChevronDown } from 'lucide-react';
+import type { ProductProviderMode } from '@/lib/products/providerMode';
 
 interface Product {
   id: string;
@@ -29,6 +30,7 @@ interface ManageProduct {
   tags: string[];
   featured: boolean;
   bestSeller: boolean;
+  providerMode: ProductProviderMode;
   source: 'custom' | 'provider';
 }
 
@@ -46,6 +48,7 @@ interface EditProductForm {
   tags: string;
   featured: boolean;
   bestSeller: boolean;
+  providerMode: ProductProviderMode;
 }
 
 interface PricingUser {
@@ -71,7 +74,26 @@ interface CustomProductForm {
   deliveryTime: string;
   stockStatus: 'in_stock' | 'out_of_stock' | 'limited';
   tags: string;
+  providerMode: ProductProviderMode;
 }
+
+const PROVIDER_MODE_OPTIONS: Array<{ value: ProductProviderMode; label: string; hint: string }> = [
+  { value: 'primary', label: 'Primary API', hint: 'Use the current main API for this product.' },
+  { value: 'manual', label: 'Manual / No API', hint: 'Keep orders local for manual processing only.' },
+  { value: 'secondary', label: 'Secondary API', hint: 'Use the secondary API if it is configured.' },
+];
+
+const PROVIDER_MODE_LABELS: Record<ProductProviderMode, string> = {
+  primary: 'Primary API',
+  manual: 'Manual',
+  secondary: 'Secondary API',
+};
+
+const PROVIDER_MODE_BADGES: Record<ProductProviderMode, string> = {
+  primary: 'bg-cyan-600/20 text-cyan-200 border-cyan-400/30',
+  manual: 'bg-amber-500/20 text-amber-100 border-amber-300/30',
+  secondary: 'bg-violet-600/20 text-violet-100 border-violet-400/30',
+};
 
 const CATEGORY_OPTIONS = [
   { value: 'cards', label: 'Gift Cards (cards)' },
@@ -117,6 +139,7 @@ export default function AdminProducts() {
     deliveryTime: 'Instant',
     stockStatus: 'in_stock',
     tags: '',
+    providerMode: 'manual',
   });
 
   useEffect(() => {
@@ -160,7 +183,8 @@ export default function AdminProducts() {
         String(product.name || '').toLowerCase().includes(q) ||
         String(product.slug || '').toLowerCase().includes(q) ||
         String(product.category || '').toLowerCase().includes(q) ||
-        String(product.source || '').toLowerCase().includes(q)
+        String(product.source || '').toLowerCase().includes(q) ||
+        String(product.providerMode || '').toLowerCase().includes(q)
       );
     });
   }, [manageProducts, manageSearch]);
@@ -225,6 +249,7 @@ export default function AdminProducts() {
       tags: Array.isArray(product.tags) ? product.tags.join(', ') : '',
       featured: Boolean(product.featured),
       bestSeller: Boolean(product.bestSeller),
+      providerMode: product.providerMode || 'primary',
     });
   };
 
@@ -254,6 +279,7 @@ export default function AdminProducts() {
           tags: editForm.tags,
           featured: editForm.featured,
           bestSeller: editForm.bestSeller,
+          providerMode: editForm.providerMode,
         }),
       });
 
@@ -374,6 +400,7 @@ export default function AdminProducts() {
         deliveryTime: customForm.deliveryTime,
         stockStatus: customForm.stockStatus,
         tags: customForm.tags,
+        providerMode: customForm.providerMode,
       };
 
       const res = await fetch('/api/admin/products/custom', {
@@ -400,6 +427,7 @@ export default function AdminProducts() {
         fullDescription: '',
         price: '0',
         packageLines: '',
+        providerMode: 'manual',
       }));
       fetchProducts();
     } catch (err: any) {
@@ -470,6 +498,14 @@ export default function AdminProducts() {
                   </span>
                 </div>
 
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <span
+                    className={`rounded-full border px-3 py-1 text-xs font-semibold ${PROVIDER_MODE_BADGES[product.providerMode]}`}
+                  >
+                    {PROVIDER_MODE_LABELS[product.providerMode]}
+                  </span>
+                </div>
+
                 <div className="mt-4 grid grid-cols-2 gap-2">
                   <button
                     onClick={() => openEditProduct(product)}
@@ -502,6 +538,7 @@ export default function AdminProducts() {
                   <th className="px-4 py-3 text-left text-sm text-white">Name</th>
                   <th className="px-4 py-3 text-left text-sm text-white">Category</th>
                   <th className="px-4 py-3 text-left text-sm text-white">Source</th>
+                  <th className="px-4 py-3 text-left text-sm text-white">API Mode</th>
                   <th className="px-4 py-3 text-left text-sm text-white">Price</th>
                   <th className="px-4 py-3 text-left text-sm text-white">Actions</th>
                 </tr>
@@ -520,6 +557,13 @@ export default function AdminProducts() {
                         }`}
                       >
                         {product.source}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-sm text-slate-300">
+                      <span
+                        className={`rounded-full border px-3 py-1 text-xs font-semibold ${PROVIDER_MODE_BADGES[product.providerMode]}`}
+                      >
+                        {PROVIDER_MODE_LABELS[product.providerMode]}
                       </span>
                     </td>
                     <td className="px-4 py-3 text-sm text-slate-200">{formatPrice(Number(product.price || 0))}</td>
@@ -545,7 +589,7 @@ export default function AdminProducts() {
 
                 {filteredManageProducts.length === 0 && (
                   <tr>
-                    <td colSpan={5} className="px-4 py-6 text-center text-sm text-slate-400">
+                    <td colSpan={6} className="px-4 py-6 text-center text-sm text-slate-400">
                       No products match your search.
                     </td>
                   </tr>
@@ -569,6 +613,9 @@ export default function AdminProducts() {
                     Close
                   </button>
                 </div>
+                <p className="mb-3 text-xs text-slate-400">
+                  Choose whether this product uses the main API, stays manual, or switches to the secondary API.
+                </p>
               <div className="grid gap-3 md:grid-cols-2">
                 <div>
                   <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-300">
@@ -648,6 +695,29 @@ export default function AdminProducts() {
                   <option value="limited">Limited</option>
                   <option value="out_of_stock">Out of stock</option>
                 </select>
+                <div className="relative">
+                  <select
+                    value={editForm.providerMode}
+                    onChange={(e) =>
+                      setEditForm((prev) =>
+                        prev
+                          ? {
+                              ...prev,
+                              providerMode: e.target.value as ProductProviderMode,
+                            }
+                          : prev
+                      )
+                    }
+                    className="w-full appearance-none rounded border border-white/10 bg-slate-800 px-3 py-2 pr-9 text-white"
+                  >
+                    {PROVIDER_MODE_OPTIONS.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                  <ChevronDown className="pointer-events-none absolute right-2 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-300" />
+                </div>
                 <input
                   value={editForm.tags}
                   onChange={(e) => setEditForm((prev) => (prev ? { ...prev, tags: e.target.value } : prev))}
@@ -724,6 +794,9 @@ export default function AdminProducts() {
 
         <div className="mb-6 rounded-lg border border-white/10 bg-slate-900/60 p-4">
           <h2 className="mb-4 text-xl font-semibold text-white">Add Custom Product (Not in BilyCard)</h2>
+          <p className="mb-4 text-xs text-slate-400">
+            New custom products default to manual mode, but you can switch them to the main or secondary API if needed.
+          </p>
           <div className="grid gap-3 md:grid-cols-2">
             <input
               value={customForm.name}
@@ -802,6 +875,22 @@ export default function AdminProducts() {
               <option value="in_stock">In stock</option>
               <option value="limited">Limited</option>
               <option value="out_of_stock">Out of stock</option>
+            </select>
+            <select
+              value={customForm.providerMode}
+              onChange={(e) =>
+                setCustomForm((prev) => ({
+                  ...prev,
+                  providerMode: e.target.value as ProductProviderMode,
+                }))
+              }
+              className="rounded border border-white/10 bg-slate-800 px-3 py-2 text-white"
+            >
+              {PROVIDER_MODE_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
             </select>
             <input
               value={customForm.tags}
