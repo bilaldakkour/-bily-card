@@ -4,7 +4,6 @@ import { useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Clock3, Search, Shield, Sparkles, WalletCards, X } from 'lucide-react'
 import {
-  MobileMetricTile,
   MobilePanel,
   MobileSectionHeading,
   mobileInputClass,
@@ -38,7 +37,7 @@ interface PaymentMethod {
 }
 
 export default function WalletPage() {
-  const { t, isRTL } = useLanguage()
+  const { t, isRTL, language } = useLanguage()
   const router = useRouter()
   const [balance, setBalance] = useState<WalletBalance>({ usd: 0 })
   const [txns, setTxns] = useState<Transaction[]>([])
@@ -53,6 +52,140 @@ export default function WalletPage() {
   const [proofName, setProofName] = useState('')
   const [searchTerm, setSearchTerm] = useState('')
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false)
+  const pageCopy = {
+    ar: {
+      mobileTitle: t('wallet.title'),
+      breadcrumbHome: 'الرئيسية',
+      chooseMethod: 'يرجى اختيار طريقة دفع',
+      heroDescription: 'رصيدك جاهز للإيداع والشراء من نفس الواجهة، مع تجربة أوضح ومظهر موحد على الديسكتوب.',
+      paymentRails: 'طرق الدفع',
+      recentActivity: 'آخر النشاطات',
+      desktopFlow: 'مسار الإيداع على الديسكتوب',
+      desktopTitle: 'واجهة محفظة أنظف',
+      desktopDescription: 'اختر وسيلة الدفع المناسبة، وستظهر نفس نافذة الإيداع المرتبة مباشرة مع العنوان والرسوم ورفع الإيصال.',
+      selectedMethod: 'الطريقة المختارة',
+      chooseAMethod: 'اختر طريقة',
+      minimum: 'الحد الأدنى',
+      fee: 'الرسوم',
+      depositEyebrow: 'إيداع',
+      depositDescription: 'أضف رصيدك من نفس الصفحة مع اختيار الطريقة المناسبة لك.',
+      paymentMethod: 'طريقة الدفع',
+      quickDeposit: 'إيداع سريع',
+      quickTipsTitle: 'إرشادات سريعة',
+      quickTipsDescription: 'كل الطرق تفتح نفس النافذة المرتبة، مع نسخ العنوان واحتساب الرسوم ورفع الإيصال من نفس المكان.',
+      chooseMethodStep: 'اختر الطريقة',
+      copyAddressStep: 'انسخ عنوان الدفع',
+      safeRequestStep: 'أرسل الطلب بأمان',
+      depositHint: 'اضغط على أي طريقة دفع لفتح نافذة الإيداع الخاصة بها وإظهار العنوان والمبلغ والإيصال.',
+      paymentAddress: 'عنوان الدفع',
+      noAddress: 'لا يوجد عنوان دفع مجهز بعد',
+      amountAfterFees: 'المبلغ بعد الرسوم',
+      receiptOptional: 'إيصال المعاملة (اختياري)',
+      uploadReceipt: 'انقر لرفع الإيصال',
+      searchEyebrow: 'بحث',
+      findActivity: 'ابحث في النشاط',
+      searchDescription: 'ابحث عن العمليات حسب النوع أو المبلغ أو التاريخ.',
+      searchPlaceholder: 'ابحث في العمليات أو المبلغ أو التاريخ...',
+      activityEyebrow: 'النشاط',
+      activityDescription: 'كل حركة في محفظتك، مع الرصيد المتبقي بعد كل خطوة.',
+      noMatchingTransactions: 'لا توجد عمليات مطابقة.',
+      depositMethod: 'طريقة الإيداع',
+      modalDescription: (name: string) => `أكمل الإيداع عبر ${name} ثم أرسل الطلب من نفس النافذة.`,
+      closeDepositPopup: 'إغلاق نافذة الإيداع',
+      copyAddressLabel: (name: string) => `نسخ عنوان ${name}`,
+      minBadge: (amount: number) => `الحد الأدنى $${amount.toFixed(2)}`,
+      amountLabel: 'المبلغ',
+      enterAmount: 'أدخل المبلغ',
+    },
+    en: {
+      mobileTitle: t('wallet.title'),
+      breadcrumbHome: 'Home',
+      chooseMethod: 'Please choose a payment method',
+      heroDescription: 'Your balance is ready for deposits and purchases from the same interface, with a cleaner and more unified layout.',
+      paymentRails: 'Payment Rails',
+      recentActivity: 'Recent Activity',
+      desktopFlow: 'Desktop Deposit Flow',
+      desktopTitle: 'Cleaner wallet view',
+      desktopDescription: 'Choose the payment method that fits you, then use the same organized deposit popup with address, fees, and receipt upload.',
+      selectedMethod: 'Selected Method',
+      chooseAMethod: 'Choose a method',
+      minimum: 'Minimum',
+      fee: 'Fee',
+      depositEyebrow: 'Deposit',
+      depositDescription: 'Add funds from the same page using the payment method that suits you best.',
+      paymentMethod: 'Payment Method',
+      quickDeposit: 'Quick Deposit',
+      quickTipsTitle: 'Quick Tips',
+      quickTipsDescription: 'Every method opens the same organized popup, with address copying, fee calculation, and receipt upload in one place.',
+      chooseMethodStep: 'Choose the method',
+      copyAddressStep: 'Copy the payment address',
+      safeRequestStep: 'Submit safely',
+      depositHint: 'Tap any payment method to open its deposit popup and reveal the address, amount, and receipt upload.',
+      paymentAddress: 'Payment Address',
+      noAddress: 'No payment address configured yet',
+      amountAfterFees: 'Amount After Fees',
+      receiptOptional: 'Transaction Receipt (Optional)',
+      uploadReceipt: 'Tap to upload the receipt',
+      searchEyebrow: 'Search',
+      findActivity: 'Find Activity',
+      searchDescription: 'Search transactions by type, amount, or date.',
+      searchPlaceholder: 'Search transactions, amount, date...',
+      activityEyebrow: 'Activity',
+      activityDescription: 'Every movement in your wallet, with the remaining balance after each step.',
+      noMatchingTransactions: 'No matching transactions.',
+      depositMethod: 'Deposit Method',
+      modalDescription: (name: string) => `Complete the deposit through ${name}, then submit the request from the same popup.`,
+      closeDepositPopup: 'Close deposit popup',
+      copyAddressLabel: (name: string) => `Copy ${name} address`,
+      minBadge: (amount: number) => `Min $${amount.toFixed(2)}`,
+      amountLabel: 'Amount',
+      enterAmount: 'Enter amount',
+    },
+    fr: {
+      mobileTitle: 'Mon portefeuille',
+      breadcrumbHome: 'Accueil',
+      chooseMethod: 'Veuillez choisir une methode de paiement',
+      heroDescription: 'Votre solde est pret pour les depots et les achats depuis la meme interface, avec une vue plus claire et unifiee.',
+      paymentRails: 'Moyens de paiement',
+      recentActivity: 'Activite recente',
+      desktopFlow: 'Flux de depot desktop',
+      desktopTitle: 'Vue portefeuille plus propre',
+      desktopDescription: 'Choisissez la methode de paiement adaptee, puis utilisez la meme fenetre de depot avec adresse, frais et recu.',
+      selectedMethod: 'Methode selectionnee',
+      chooseAMethod: 'Choisir une methode',
+      minimum: 'Minimum',
+      fee: 'Frais',
+      depositEyebrow: 'Depot',
+      depositDescription: 'Ajoutez du solde depuis la meme page avec la methode de paiement qui vous convient.',
+      paymentMethod: 'Methode de paiement',
+      quickDeposit: 'Depot rapide',
+      quickTipsTitle: 'Conseils rapides',
+      quickTipsDescription: 'Chaque methode ouvre la meme fenetre organisee, avec copie de l adresse, calcul des frais et envoi du recu.',
+      chooseMethodStep: 'Choisissez la methode',
+      copyAddressStep: 'Copiez l adresse de paiement',
+      safeRequestStep: 'Envoyez en securite',
+      depositHint: 'Touchez une methode de paiement pour ouvrir sa fenetre de depot et afficher l adresse, le montant et le recu.',
+      paymentAddress: 'Adresse de paiement',
+      noAddress: 'Aucune adresse de paiement configuree',
+      amountAfterFees: 'Montant apres frais',
+      receiptOptional: 'Recu de transaction (optionnel)',
+      uploadReceipt: 'Touchez pour televerser le recu',
+      searchEyebrow: 'Recherche',
+      findActivity: 'Rechercher une activite',
+      searchDescription: 'Recherchez les transactions par type, montant ou date.',
+      searchPlaceholder: 'Rechercher transactions, montant, date...',
+      activityEyebrow: 'Activite',
+      activityDescription: 'Tous les mouvements de votre portefeuille, avec le solde restant apres chaque etape.',
+      noMatchingTransactions: 'Aucune transaction correspondante.',
+      depositMethod: 'Methode de depot',
+      modalDescription: (name: string) => `Terminez le depot via ${name}, puis envoyez la demande depuis la meme fenetre.`,
+      closeDepositPopup: 'Fermer la fenetre de depot',
+      copyAddressLabel: (name: string) => `Copier l adresse ${name}`,
+      minBadge: (amount: number) => `Min $${amount.toFixed(2)}`,
+      amountLabel: 'Montant',
+      enterAmount: 'Saisir le montant',
+    },
+  }[language]
 
   const fallbackLogos: Record<string, string> = {
     'whish-money': '/payment-methods/whish-money.png',
@@ -179,7 +312,7 @@ export default function WalletPage() {
     const selectedMethod = paymentMethods.find((method) => method.key === selectedMethodKey)
     if (!selectedMethod) {
       setTopUpLoading(false)
-      setMessage('Please choose a payment method')
+      setMessage(pageCopy.chooseMethod)
       setMessageTone('error')
       return
     }
@@ -281,10 +414,10 @@ export default function WalletPage() {
     <div dir={isRTL ? 'rtl' : 'ltr'}>
       <UserPageLayout
         title={t('wallet.title')}
-        mobileTitle="المحفظة"
+        mobileTitle={pageCopy.mobileTitle}
         subtitle={t('wallet.subtitle')}
         breadcrumbs={[
-          { label: 'Home', href: '/' },
+          { label: pageCopy.breadcrumbHome, href: '/' },
           { label: t('wallet.title'), href: '/wallet' },
         ]}
         sidebarBalanceUpdate={fetchWalletData}
@@ -306,7 +439,7 @@ export default function WalletPage() {
                     ${balance.usd.toFixed(2)}
                   </div>
                   <p className="mt-2 max-w-2xl text-sm leading-6 text-emerald-50/80">
-                    رصيدك جاهز للإيداع والشراء من نفس الواجهة، مع تجربة أوضح ومظهر موحّد على الديسكتوب.
+                    {pageCopy.heroDescription}
                   </p>
                 </div>
 
@@ -314,7 +447,7 @@ export default function WalletPage() {
                   <div className="rounded-[20px] border border-white/10 bg-white/[0.08] px-3.5 py-3 text-right">
                     <div className="flex items-center justify-end gap-2 text-emerald-100">
                       <WalletCards className="h-4.5 w-4.5" />
-                      <span className="text-[11px] uppercase tracking-[0.18em] text-emerald-100/80">Payment Rails</span>
+                      <span className="text-[11px] uppercase tracking-[0.18em] text-emerald-100/80">{pageCopy.paymentRails}</span>
                     </div>
                     <p className="mt-2 text-2xl font-black text-white">{activePaymentMethodsCount}</p>
                   </div>
@@ -322,7 +455,7 @@ export default function WalletPage() {
                   <div className="rounded-[20px] border border-white/10 bg-white/[0.08] px-3.5 py-3 text-right">
                     <div className="flex items-center justify-end gap-2 text-cyan-100">
                       <Clock3 className="h-4.5 w-4.5" />
-                      <span className="text-[11px] uppercase tracking-[0.18em] text-cyan-100/80">Recent Activity</span>
+                      <span className="text-[11px] uppercase tracking-[0.18em] text-cyan-100/80">{pageCopy.recentActivity}</span>
                     </div>
                     <p className="mt-2 text-2xl font-black text-white">{txns.length}</p>
                   </div>
@@ -334,24 +467,24 @@ export default function WalletPage() {
           <MobilePanel tone="accent" className="hidden xl:block">
             <div className="flex h-full flex-col justify-between">
               <div className="text-right">
-                <p className="text-[11px] font-black uppercase tracking-[0.22em] text-cyan-300">Desktop Deposit Flow</p>
-                <h2 className="mt-1 text-2xl font-black text-white">واجهة محفظة أنظف</h2>
+                <p className="text-[11px] font-black uppercase tracking-[0.22em] text-cyan-300">{pageCopy.desktopFlow}</p>
+                <h2 className="mt-1 text-2xl font-black text-white">{pageCopy.desktopTitle}</h2>
                 <p className="mt-2 text-sm leading-6 text-slate-300">
-                  اختر وسيلة الدفع المناسبة، وستظهر نفس نافذة الإيداع المرتبة مباشرة مع العنوان والرسوم ورفع الإيصال.
+                  {pageCopy.desktopDescription}
                 </p>
               </div>
 
               <div className="mt-5 space-y-2.5 text-right">
                 <div className="rounded-[18px] border border-white/10 bg-white/[0.05] px-3.5 py-3">
-                  <p className="text-[11px] uppercase tracking-[0.18em] text-slate-400">Selected Method</p>
-                  <p className="mt-1 text-base font-bold text-white">{selectedMethod?.name || 'Choose a method'}</p>
+                  <p className="text-[11px] uppercase tracking-[0.18em] text-slate-400">{pageCopy.selectedMethod}</p>
+                  <p className="mt-1 text-base font-bold text-white">{selectedMethod?.name || pageCopy.chooseAMethod}</p>
                 </div>
                 <div className="rounded-[18px] border border-white/10 bg-white/[0.05] px-3.5 py-3">
-                  <p className="text-[11px] uppercase tracking-[0.18em] text-slate-400">Minimum</p>
+                  <p className="text-[11px] uppercase tracking-[0.18em] text-slate-400">{pageCopy.minimum}</p>
                   <p className="mt-1 text-base font-bold text-white">${Number(selectedMethod?.minAmount || 0).toFixed(2)}</p>
                 </div>
                 <div className="rounded-[18px] border border-white/10 bg-white/[0.05] px-3.5 py-3">
-                  <p className="text-[11px] uppercase tracking-[0.18em] text-slate-400">Fee</p>
+                  <p className="text-[11px] uppercase tracking-[0.18em] text-slate-400">{pageCopy.fee}</p>
                   <p className="mt-1 text-base font-bold text-white">{Number(selectedMethod?.feePercent || 0).toFixed(2)}%</p>
                 </div>
               </div>
@@ -361,14 +494,14 @@ export default function WalletPage() {
 
         <MobilePanel>
           <MobileSectionHeading
-            eyebrow="Deposit"
+            eyebrow={pageCopy.depositEyebrow}
             title={t('wallet.addBalance')}
-            description="أضف رصيدك من نفس الصفحة مع اختيار الطريقة المناسبة لك."
+            description={pageCopy.depositDescription}
           />
 
           <div className="mt-4 grid gap-4 xl:grid-cols-[minmax(0,1fr)_280px]">
             <div>
-            <p className="mb-3 text-sm font-medium text-slate-300">طريقة الدفع</p>
+            <p className="mb-3 text-sm font-medium text-slate-300">{pageCopy.paymentMethod}</p>
             <div className="grid grid-cols-3 gap-2.5 xl:grid-cols-4">
               {paymentMethods.map((method) => {
                 const active = method.key === selectedMethodKey
@@ -407,14 +540,14 @@ export default function WalletPage() {
                         )}
                       </div>
                       <span className="rounded-full border border-white/10 bg-white/[0.04] px-1.5 py-0.5 text-[9px] text-slate-400 sm:text-[11px]">
-                        ${Number(method.minAmount || 0).toFixed(2)} min
+                        {pageCopy.minBadge(Number(method.minAmount || 0))}
                       </span>
                     </div>
                     <p className="line-clamp-2 min-h-[2rem] text-[11px] font-semibold leading-4 text-white sm:min-h-0 sm:text-sm lg:text-[0.95rem]">
                       {method.name}
                     </p>
                     <p className="mt-0.5 text-[9px] text-slate-400 sm:mt-1 sm:text-[11px]">
-                      Fee: {Number(method.feePercent || 0).toFixed(2)}%
+                      {pageCopy.fee}: {Number(method.feePercent || 0).toFixed(2)}%
                     </p>
                   </button>
                 )
@@ -426,11 +559,11 @@ export default function WalletPage() {
               <div className="text-right">
                 <div className="inline-flex items-center gap-2 rounded-full border border-cyan-400/18 bg-cyan-500/10 px-2.5 py-1 text-[11px] font-semibold text-cyan-200">
                   <Sparkles className="h-3.5 w-3.5" />
-                  Quick Deposit
+                  {pageCopy.quickDeposit}
                 </div>
-                <h3 className="mt-3 text-lg font-black text-white">إرشادات سريعة</h3>
+                <h3 className="mt-3 text-lg font-black text-white">{pageCopy.quickTipsTitle}</h3>
                 <p className="mt-2 text-sm leading-6 text-slate-400">
-                  كل الطرق تفتح نفس النافذة المرتبة، مع نسخ العنوان واحتساب الرسوم ورفع الإيصال من نفس المكان.
+                  {pageCopy.quickTipsDescription}
                 </p>
               </div>
 
@@ -438,19 +571,19 @@ export default function WalletPage() {
                 <div className="rounded-[18px] border border-white/10 bg-white/[0.04] px-3.5 py-3 text-right">
                   <div className="flex items-center justify-end gap-2 text-cyan-200">
                     <Sparkles className="h-4 w-4" />
-                    <span className="text-sm font-semibold">اختر الطريقة</span>
+                    <span className="text-sm font-semibold">{pageCopy.chooseMethodStep}</span>
                   </div>
                 </div>
                 <div className="rounded-[18px] border border-white/10 bg-white/[0.04] px-3.5 py-3 text-right">
                   <div className="flex items-center justify-end gap-2 text-slate-200">
                     <WalletCards className="h-4 w-4" />
-                    <span className="text-sm font-semibold">انسخ عنوان الدفع</span>
+                    <span className="text-sm font-semibold">{pageCopy.copyAddressStep}</span>
                   </div>
                 </div>
                 <div className="rounded-[18px] border border-white/10 bg-white/[0.04] px-3.5 py-3 text-right">
                   <div className="flex items-center justify-end gap-2 text-emerald-200">
                     <Shield className="h-4 w-4" />
-                    <span className="text-sm font-semibold">أرسل الطلب بأمان</span>
+                    <span className="text-sm font-semibold">{pageCopy.safeRequestStep}</span>
                   </div>
                 </div>
               </div>
@@ -458,21 +591,21 @@ export default function WalletPage() {
           </div>
 
           <div className="mt-4 rounded-[20px] border border-dashed border-white/12 bg-white/[0.03] px-4 py-4 text-center text-sm text-slate-300 lg:text-right">
-            اضغط على أي طريقة دفع لفتح نافذة الإيداع الخاصة بها وإظهار العنوان والمبلغ والإيصال.
+            {pageCopy.depositHint}
           </div>
 
           <form onSubmit={handleTopUp} className="hidden">
             <div className="grid gap-2.5 md:grid-cols-2">
               <div>
-                <label className="mb-1.5 block text-xs font-medium text-slate-400 sm:mb-2 sm:text-sm">عنوان الدفع</label>
+                <label className="mb-1.5 block text-xs font-medium text-slate-400 sm:mb-2 sm:text-sm">{pageCopy.paymentAddress}</label>
                 <div className="flex items-start gap-2 rounded-[18px] border border-white/10 bg-white/[0.035] px-3 py-2.5 text-xs text-slate-200 sm:rounded-2xl sm:px-4 sm:py-3 sm:text-sm">
                   <div className="min-w-0 flex-1 break-all">
-                    {paymentAddress || 'No payment address configured yet'}
+                    {paymentAddress || pageCopy.noAddress}
                   </div>
                   {paymentAddress ? (
                     <CopyButton
                       value={paymentAddress}
-                      label={`Copy ${selectedMethod?.name || 'payment'} address`}
+                      label={pageCopy.copyAddressLabel(selectedMethod?.name || 'payment')}
                       className="h-7 w-7 border-white/10 bg-white/[0.04] text-slate-300 hover:border-cyan-400/25 hover:bg-cyan-500/10 hover:text-cyan-200"
                     />
                   ) : null}
@@ -498,15 +631,15 @@ export default function WalletPage() {
 
             <div className="grid gap-2.5 md:grid-cols-2">
               <div>
-                <label className="mb-1.5 block text-xs font-medium text-slate-400 sm:mb-2 sm:text-sm">المبلغ بعد الرسوم</label>
+                <label className="mb-1.5 block text-xs font-medium text-slate-400 sm:mb-2 sm:text-sm">{pageCopy.amountAfterFees}</label>
                 <div className="rounded-[18px] border border-white/10 bg-white/[0.045] px-3 py-2.5 text-sm text-slate-200 sm:rounded-2xl sm:px-4 sm:py-3">
                   ${amountAfterFee.toFixed(2)}
-                  <span className="ml-2 text-[10px] text-slate-400 sm:text-[11px]">Fee: {feePercent.toFixed(2)}%</span>
+                  <span className="ml-2 text-[10px] text-slate-400 sm:text-[11px]">{pageCopy.fee}: {feePercent.toFixed(2)}%</span>
                 </div>
               </div>
 
               <div>
-                <label className="mb-1.5 block text-xs font-medium text-slate-400 sm:mb-2 sm:text-sm">إيصال المعاملة (اختياري)</label>
+                <label className="mb-1.5 block text-xs font-medium text-slate-400 sm:mb-2 sm:text-sm">{pageCopy.receiptOptional}</label>
                 <label className="flex cursor-pointer items-center justify-center rounded-[18px] border border-dashed border-white/20 bg-white/[0.045] px-3 py-3 text-xs text-slate-300 hover:border-cyan-400/40 sm:rounded-2xl sm:px-4 sm:py-3.5 sm:text-sm">
                   <input
                     type="file"
@@ -514,7 +647,7 @@ export default function WalletPage() {
                     className="hidden"
                     onChange={(e) => handleProofUpload(e.target.files?.[0])}
                   />
-                  {proofName || 'انقر لرفع الإيصال'}
+                  {proofName || pageCopy.uploadReceipt}
                 </label>
               </div>
             </div>
@@ -537,9 +670,9 @@ export default function WalletPage() {
 
         <MobilePanel tone="soft">
           <MobileSectionHeading
-            eyebrow="Search"
-            title="Find Activity"
-            description="Search transactions by type, amount, or date."
+            eyebrow={pageCopy.searchEyebrow}
+            title={pageCopy.findActivity}
+            description={pageCopy.searchDescription}
           />
 
           <label className="relative mt-4 block">
@@ -548,7 +681,7 @@ export default function WalletPage() {
               type="text"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Search transactions, amount, date..."
+              placeholder={pageCopy.searchPlaceholder}
               className={`${mobileInputClass} pl-10`}
             />
           </label>
@@ -556,9 +689,9 @@ export default function WalletPage() {
 
         <MobilePanel tone="soft">
           <MobileSectionHeading
-            eyebrow="Activity"
+            eyebrow={pageCopy.activityEyebrow}
             title={t('wallet.txHistory')}
-            description="Every movement in your wallet, with the remaining balance after each step."
+            description={pageCopy.activityDescription}
           />
 
           {txns.length === 0 ? (
@@ -567,7 +700,7 @@ export default function WalletPage() {
             </div>
           ) : filteredTxns.length === 0 ? (
             <div className="mt-4 rounded-[20px] border border-white/10 bg-white/[0.04] p-6 text-center sm:rounded-[24px] sm:p-8">
-              <p className="text-slate-400">No matching transactions.</p>
+              <p className="text-slate-400">{pageCopy.noMatchingTransactions}</p>
             </div>
           ) : (
             <div className="mt-4 space-y-2.5">
@@ -612,12 +745,12 @@ export default function WalletPage() {
           >
             <div className="flex items-start justify-between gap-2.5 border-b border-white/8 px-3 py-3 sm:px-3.5 sm:py-3.5">
               <div className="min-w-0 text-right">
-                <p className="text-[11px] font-black uppercase tracking-[0.22em] text-cyan-300">Deposit Method</p>
+                <p className="text-[11px] font-black uppercase tracking-[0.22em] text-cyan-300">{pageCopy.depositMethod}</p>
                 <h2 id="wallet-deposit-modal-title" className="mt-1 text-[1.02rem] font-black text-white sm:text-lg">
                   {selectedMethod.name}
                 </h2>
                 <p className="mt-1 text-[12px] leading-5 text-slate-400">
-                  أكمل الإيداع عبر {selectedMethod.name} ثم أرسل الطلب من نفس النافذة.
+                  {pageCopy.modalDescription(selectedMethod.name)}
                 </p>
               </div>
 
@@ -625,7 +758,7 @@ export default function WalletPage() {
                 type="button"
                 onClick={() => setIsPaymentModalOpen(false)}
                 className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-rose-300/20 bg-rose-400/[0.09] text-rose-100 shadow-[0_10px_24px_rgba(15,23,42,0.28)] transition hover:border-rose-300/34 hover:bg-rose-400/[0.16] hover:text-white"
-                aria-label="Close deposit popup"
+                aria-label={pageCopy.closeDepositPopup}
               >
                 <X className="h-5 w-5 stroke-[2.7]" />
               </button>
@@ -650,26 +783,26 @@ export default function WalletPage() {
                       </span>
                     ) : null}
                     <span className="rounded-full border border-white/10 bg-white/[0.05] px-2.5 py-1 text-[11px] text-slate-300">
-                      Min ${Number(selectedMethod.minAmount || 0).toFixed(2)}
+                      {pageCopy.minBadge(Number(selectedMethod.minAmount || 0))}
                     </span>
                   </div>
                   <p className="mt-1.5 text-[12px] text-slate-400">
-                    Fee: {Number(selectedMethod.feePercent || 0).toFixed(2)}%
+                    {pageCopy.fee}: {Number(selectedMethod.feePercent || 0).toFixed(2)}%
                   </p>
                 </div>
               </div>
 
               <form onSubmit={handleTopUp} className="space-y-2.5">
                 <div>
-                  <label className="mb-1.5 block text-[13px] font-medium text-slate-300">عنوان الدفع</label>
+                  <label className="mb-1.5 block text-[13px] font-medium text-slate-300">{pageCopy.paymentAddress}</label>
                   <div className="flex items-center gap-2 rounded-[18px] border border-white/10 bg-white/[0.045] px-3 py-2.5 text-sm text-slate-200">
                     <div className="min-w-0 flex-1 break-all">
-                      {paymentAddress || 'No payment address configured yet'}
+                      {paymentAddress || pageCopy.noAddress}
                     </div>
                     {paymentAddress ? (
                       <CopyButton
                         value={paymentAddress}
-                        label={`Copy ${selectedMethod.name} address`}
+                        label={pageCopy.copyAddressLabel(selectedMethod.name)}
                         className="h-8.5 w-8.5 border-white/10 bg-white/[0.04] text-slate-300 hover:border-cyan-400/25 hover:bg-cyan-500/10 hover:text-cyan-200"
                       />
                     ) : null}
@@ -677,7 +810,7 @@ export default function WalletPage() {
                 </div>
 
                 <div>
-                  <label className="mb-1.5 block text-[13px] font-medium text-slate-300">Amount</label>
+                  <label className="mb-1.5 block text-[13px] font-medium text-slate-300">{pageCopy.amountLabel}</label>
                   <input
                     type="number"
                     step="0.01"
@@ -685,21 +818,21 @@ export default function WalletPage() {
                     value={topUpAmount}
                     onChange={(e) => setTopUpAmount(e.target.value)}
                     className={mobileInputClass}
-                    placeholder="Enter amount"
+                    placeholder={pageCopy.enterAmount}
                     required
                   />
                 </div>
 
                 <div>
-                  <label className="mb-1.5 block text-[13px] font-medium text-slate-300">المبلغ بعد الرسوم</label>
+                  <label className="mb-1.5 block text-[13px] font-medium text-slate-300">{pageCopy.amountAfterFees}</label>
                   <div className="rounded-[18px] border border-white/10 bg-white/[0.045] px-3 py-2.5 text-sm text-slate-200">
                     <span className="text-[1.35rem] font-bold text-white">${amountAfterFee.toFixed(2)}</span>
-                    <span className="ml-2 text-xs text-slate-400">Fee: {feePercent.toFixed(2)}%</span>
+                    <span className="ml-2 text-xs text-slate-400">{pageCopy.fee}: {feePercent.toFixed(2)}%</span>
                   </div>
                 </div>
 
                 <div>
-                  <label className="mb-1.5 block text-[13px] font-medium text-slate-300">إيصال المعاملة (اختياري)</label>
+                  <label className="mb-1.5 block text-[13px] font-medium text-slate-300">{pageCopy.receiptOptional}</label>
                   <label className="flex cursor-pointer items-center justify-center rounded-[18px] border border-dashed border-white/20 bg-white/[0.045] px-3 py-2.5 text-sm text-slate-300 transition hover:border-cyan-400/40">
                     <input
                       type="file"
@@ -707,7 +840,7 @@ export default function WalletPage() {
                       className="hidden"
                       onChange={(e) => handleProofUpload(e.target.files?.[0])}
                     />
-                    {proofName || 'انقر لرفع الإيصال'}
+                    {proofName || pageCopy.uploadReceipt}
                   </label>
                 </div>
 

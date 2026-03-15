@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { withAuth } from '@/lib/auth/middleware';
 import { connectDB } from '@/lib/db/mongodb';
 import DepositRequest from '@/lib/models/DepositRequest';
+import User from '@/lib/models/User';
 import { JWTPayload } from '@/lib/types';
 import { handleError } from '@/lib/utils/errors';
 import SystemSettings from '@/lib/models/SystemSettings';
@@ -9,6 +10,28 @@ import { sendAdminNotification } from '@/lib/services/adminNotificationService';
 import { getActivePaymentMethods } from '@/lib/wallet/paymentMethods';
 import { isTestModeEnabled, logTestMode } from '@/lib/utils/testMode';
 import { createTestModeDeposit, getTestModePaymentMethods } from '@/lib/utils/testModeStore';
+
+interface NotificationUserProfile {
+  displayName?: string;
+  username?: string;
+  email?: string;
+}
+
+function resolveNotificationUserName(
+  profile: NotificationUserProfile | null | undefined,
+  fallbackUsername?: string | null
+) {
+  const displayName = String(profile?.displayName || '').trim();
+  if (displayName) return displayName;
+
+  const username = String(profile?.username || fallbackUsername || '').trim();
+  if (username) return username;
+
+  const email = String(profile?.email || '').trim();
+  if (email) return email;
+
+  return 'Unknown user';
+}
 
 async function handler(
   req: NextRequest,
@@ -107,6 +130,10 @@ async function handler(
 
     await connectDB();
 
+    const depositUserProfile = (await User.findById(user.userId)
+      .select('displayName username email')
+      .lean()) as NotificationUserProfile | null;
+
     const depositRequest = new DepositRequest({
       userId: user.userId,
       username: user.username || '',
@@ -124,7 +151,7 @@ async function handler(
     await sendAdminNotification({
       title: 'New Deposit Request - Bily Card',
       lines: [
-        `User: ${String(user.username || 'Unknown user')}`,
+        `Customer: ${resolveNotificationUserName(depositUserProfile, user.username)}`,
         `Amount: $${amount.toFixed(2)}`,
         `Method: ${selectedMethod.name}`,
         `Address: ${selectedMethod.address || '-'}`,

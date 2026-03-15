@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { Search } from 'lucide-react'
+import OrderDetailsModal, { type OrderDetailsItem } from '@/components/shared/OrderDetailsModal'
 import OrderSummaryCard from '@/components/shared/OrderSummaryCard'
 import {
   MobileEmptyState,
@@ -14,26 +15,15 @@ import {
   mobilePrimaryButtonClass,
 } from '@/components/shared/MobileDesignSystem'
 import UserPageLayout from '@/components/shared/UserPageLayout'
-
-interface OrderItem {
-  _id: string
-  orderId: string
-  productName: string
-  playerId: string
-  quantity: number
-  price: number
-  total: number
-  walletBalanceBefore?: number
-  walletBalanceAfter?: number
-  status: 'pending' | 'processing' | 'completed' | 'failed' | 'refunded' | 'rejected'
-  createdAt: string
-}
+import { useLanguage } from '@/hooks/useLanguage'
 
 export default function MyOrdersPage() {
+  const { language } = useLanguage()
   const router = useRouter()
-  const [orders, setOrders] = useState<OrderItem[]>([])
+  const [orders, setOrders] = useState<OrderDetailsItem[]>([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
+  const [selectedOrder, setSelectedOrder] = useState<OrderDetailsItem | null>(null)
 
   useEffect(() => {
     const token = localStorage.getItem('bilycard_token')
@@ -82,14 +72,68 @@ export default function MyOrdersPage() {
     )
   }, [orders, searchTerm])
 
+  const pageCopy = {
+    ar: {
+      title: 'طلباتي',
+      subtitle: 'تتبع وراجع مشترياتك الأخيرة من مكان واحد.',
+      breadcrumbHome: 'الرئيسية',
+      headingEyebrow: 'سجل المشتريات',
+      headingTitle: 'طلباتك الأخيرة',
+      headingDescription: 'كل طلب صار أوضح وأسهل للمراجعة على شاشة الهاتف.',
+      ordersLabel: 'الطلبات',
+      completedLabel: 'المكتمل',
+      searchPlaceholder: 'ابحث بالطلب أو المنتج أو رقم الحساب...',
+      loading: 'جاري تحميل طلباتك...',
+      emptyTitle: 'لا يوجد طلبات بعد',
+      emptyDescription: 'عندما تشتري أي منتج ستظهر الطلبات هنا بشكل منظم وواضح.',
+      browseProducts: 'تصفح المنتجات',
+      noResultsTitle: 'لا يوجد نتائج',
+      noResultsDescription: 'جرّب كلمة بحث مختلفة أو امسح الفلتر الحالي.',
+    },
+    en: {
+      title: 'My Orders',
+      subtitle: 'Track and review your recent purchases in one place.',
+      breadcrumbHome: 'Home',
+      headingEyebrow: 'Purchase History',
+      headingTitle: 'Your Latest Orders',
+      headingDescription: 'Every order is easier to review in a layout tuned for mobile.',
+      ordersLabel: 'Orders',
+      completedLabel: 'Completed',
+      searchPlaceholder: 'Search by order, product, or account ID...',
+      loading: 'Loading your orders...',
+      emptyTitle: 'No orders yet',
+      emptyDescription: 'When you buy any product, your orders will appear here in a clear layout.',
+      browseProducts: 'Browse Products',
+      noResultsTitle: 'No results',
+      noResultsDescription: 'Try a different search term or clear the current filter.',
+    },
+    fr: {
+      title: 'Mes commandes',
+      subtitle: 'Suivez et consultez vos achats recents au meme endroit.',
+      breadcrumbHome: 'Accueil',
+      headingEyebrow: 'Historique des achats',
+      headingTitle: 'Vos dernieres commandes',
+      headingDescription: 'Chaque commande est plus simple a consulter dans une vue adaptee au mobile.',
+      ordersLabel: 'Commandes',
+      completedLabel: 'Terminees',
+      searchPlaceholder: 'Rechercher par commande, produit ou ID de compte...',
+      loading: 'Chargement de vos commandes...',
+      emptyTitle: 'Aucune commande pour le moment',
+      emptyDescription: 'Lorsque vous achetez un produit, vos commandes apparaitront ici clairement.',
+      browseProducts: 'Voir les produits',
+      noResultsTitle: 'Aucun resultat',
+      noResultsDescription: 'Essayez un autre terme de recherche ou effacez le filtre actuel.',
+    },
+  }[language]
+
   return (
     <UserPageLayout
-      title="My Orders"
-      mobileTitle="طلباتي"
-      subtitle="Track and review your recent purchases in one place."
+      title={pageCopy.title}
+      mobileTitle={pageCopy.title}
+      subtitle={pageCopy.subtitle}
       breadcrumbs={[
-        { label: 'Home', href: '/' },
-        { label: 'My Orders', href: '/my-orders' },
+        { label: pageCopy.breadcrumbHome, href: '/' },
+        { label: pageCopy.title, href: '/my-orders' },
       ]}
       showHeader={false}
       fixedSidebarDesktop
@@ -98,15 +142,15 @@ export default function MyOrdersPage() {
     >
       <MobilePanel>
         <MobileSectionHeading
-          eyebrow="Purchase History"
-          title="طلباتك الأخيرة"
-          description="كل طلب صار أوضح وأسهل للمراجعة على شاشة الهاتف."
+          eyebrow={pageCopy.headingEyebrow}
+          title={pageCopy.headingTitle}
+          description={pageCopy.headingDescription}
         />
 
         <div className="mt-4 grid grid-cols-2 gap-2.5">
-          <MobileMetricTile label="Orders" value={orders.length} />
+          <MobileMetricTile label={pageCopy.ordersLabel} value={orders.length} />
           <MobileMetricTile
-            label="Completed"
+            label={pageCopy.completedLabel}
             value={<span className="text-emerald-200">{completedOrders}</span>}
             className="border-emerald-400/15 bg-emerald-500/10"
           />
@@ -118,7 +162,7 @@ export default function MyOrdersPage() {
             type="text"
             value={searchTerm}
             onChange={(event) => setSearchTerm(event.target.value)}
-            placeholder="ابحث بالطلب أو المنتج أو رقم الحساب..."
+            placeholder={pageCopy.searchPlaceholder}
             className={`${mobileInputClass} pl-10`}
           />
         </label>
@@ -126,30 +170,36 @@ export default function MyOrdersPage() {
 
       {loading ? (
         <MobilePanel className="px-5 py-8 text-center" tone="soft">
-          <p className="text-slate-300">Loading your orders...</p>
+          <p className="text-slate-300">{pageCopy.loading}</p>
         </MobilePanel>
       ) : orders.length === 0 ? (
         <MobileEmptyState
-          title="لا يوجد طلبات بعد"
-          description="عندما تشتري أي منتج ستظهر الطلبات هنا بشكل منظم وواضح."
+          title={pageCopy.emptyTitle}
+          description={pageCopy.emptyDescription}
           action={
             <Link href="/products" className={mobilePrimaryButtonClass}>
-              تصفح المنتجات
+              {pageCopy.browseProducts}
             </Link>
           }
         />
       ) : filteredOrders.length === 0 ? (
         <MobileEmptyState
-          title="لا يوجد نتائج"
-          description="جرّب كلمة بحث مختلفة أو امسح الفلتر الحالي."
+          title={pageCopy.noResultsTitle}
+          description={pageCopy.noResultsDescription}
         />
       ) : (
         <div className="space-y-3">
           {filteredOrders.map((order) => (
-            <OrderSummaryCard key={order._id} order={order} />
+            <OrderSummaryCard key={order._id} order={order} onViewDetails={setSelectedOrder} />
           ))}
         </div>
       )}
+
+      <OrderDetailsModal
+        order={selectedOrder}
+        open={Boolean(selectedOrder)}
+        onClose={() => setSelectedOrder(null)}
+      />
     </UserPageLayout>
   )
 }

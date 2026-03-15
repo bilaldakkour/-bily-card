@@ -16,6 +16,8 @@ type MockOrder = {
   providerStatus: string
   createdAt: string
   selectedPackageOption?: string
+  notes?: string
+  failureReason?: string
 }
 
 type MockTransaction = {
@@ -98,6 +100,7 @@ function createInitialState(): TestModeState {
         status: 'completed',
         providerStatus: 'mock_completed',
         createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
+        notes: 'Test mode order completed successfully.',
       },
     ],
     transactions: [
@@ -250,6 +253,9 @@ export function createTestModeOrder(params: {
     providerStatus: 'mock_completed',
     createdAt,
     selectedPackageOption: params.packageOption,
+    notes: params.packageOption
+      ? `Test mode package order completed: ${params.packageOption}`
+      : 'Test mode order completed successfully.',
   }
 
   const transaction: MockTransaction = {

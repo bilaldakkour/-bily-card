@@ -7,7 +7,6 @@ import Link from 'next/link'
 import UserSidebar from '@/components/shared/UserSidebar'
 import MobileUserShell from '@/components/shared/MobileUserShell'
 import {
-  MobileMetricTile,
   MobilePanel,
   MobileSectionHeading,
 } from '@/components/shared/MobileDesignSystem'
@@ -210,6 +209,75 @@ export default function HomeCompactDashboard() {
       iconClass: 'from-purple-500 to-fuchsia-400',
       glowClass: 'from-purple-400/35 to-fuchsia-400/0',
       textureClass: 'bg-[radial-gradient(circle_at_20%_20%,rgba(255,255,255,0.12)_0_2px,transparent_2px),linear-gradient(130deg,rgba(255,255,255,0.08),transparent_40%)] bg-[length:20px_20px,auto]',
+    },
+  ]
+
+  const mobileQuickAccessItems = [
+    {
+      label: 'الرصيد',
+      subtitle: 'شحن سريع',
+      badge: 'TOP UP',
+      href: '/products?category=balance',
+      icon: BadgeDollarSign,
+      cardClass: 'border-emerald-300/18 bg-[linear-gradient(145deg,rgba(8,39,36,0.98),rgba(5,18,22,0.98))]',
+      glowClass: 'bg-[radial-gradient(circle_at_top_left,rgba(52,211,153,0.22),transparent_38%),radial-gradient(circle_at_bottom_right,rgba(34,197,94,0.12),transparent_34%)]',
+      iconClass: 'from-emerald-500 to-lime-400',
+      badgeClass: 'border-emerald-300/20 bg-emerald-500/12 text-emerald-100',
+    },
+    {
+      label: 'المحافظ',
+      subtitle: 'محافظ رقمية',
+      badge: 'WALLET',
+      href: '/products?category=wallets',
+      icon: WalletCards,
+      cardClass: 'border-blue-300/18 bg-[linear-gradient(145deg,rgba(9,28,51,0.98),rgba(7,16,33,0.98))]',
+      glowClass: 'bg-[radial-gradient(circle_at_top_left,rgba(56,189,248,0.22),transparent_38%),radial-gradient(circle_at_bottom_right,rgba(37,99,235,0.16),transparent_34%)]',
+      iconClass: 'from-sky-500 to-blue-500',
+      badgeClass: 'border-sky-300/20 bg-sky-500/12 text-sky-100',
+    },
+    {
+      label: 'الألعاب',
+      subtitle: 'شحن الألعاب',
+      badge: 'GAME',
+      href: '/products?category=games',
+      icon: Gamepad2,
+      cardClass: 'border-violet-300/18 bg-[linear-gradient(145deg,rgba(24,17,50,0.98),rgba(10,12,31,0.98))]',
+      glowClass: 'bg-[radial-gradient(circle_at_top_left,rgba(168,85,247,0.22),transparent_38%),radial-gradient(circle_at_bottom_right,rgba(99,102,241,0.14),transparent_34%)]',
+      iconClass: 'from-violet-500 to-fuchsia-500',
+      badgeClass: 'border-violet-300/20 bg-violet-500/12 text-violet-100',
+    },
+    {
+      label: 'التطبيقات',
+      subtitle: 'خدمات وتطبيقات',
+      badge: 'APPS',
+      href: '/products?category=applications',
+      icon: AppWindow,
+      cardClass: 'border-cyan-300/18 bg-[linear-gradient(145deg,rgba(8,29,40,0.98),rgba(7,16,30,0.98))]',
+      glowClass: 'bg-[radial-gradient(circle_at_top_left,rgba(34,211,238,0.24),transparent_38%),radial-gradient(circle_at_bottom_right,rgba(14,165,233,0.14),transparent_34%)]',
+      iconClass: 'from-cyan-500 to-sky-500',
+      badgeClass: 'border-cyan-300/20 bg-cyan-500/12 text-cyan-100',
+    },
+    {
+      label: 'البطاقات',
+      subtitle: 'بطاقات رقمية',
+      badge: 'CARD',
+      href: '/products?category=cards',
+      icon: CreditCard,
+      cardClass: 'border-amber-300/18 bg-[linear-gradient(145deg,rgba(48,29,9,0.98),rgba(23,15,8,0.98))]',
+      glowClass: 'bg-[radial-gradient(circle_at_top_left,rgba(251,191,36,0.22),transparent_38%),radial-gradient(circle_at_bottom_right,rgba(249,115,22,0.14),transparent_34%)]',
+      iconClass: 'from-amber-400 to-orange-500',
+      badgeClass: 'border-amber-300/20 bg-amber-500/12 text-amber-100',
+    },
+    {
+      label: 'الأكثر مبيعاً',
+      subtitle: 'الأعلى طلباً',
+      badge: 'HOT',
+      href: '/products?sort=popular',
+      icon: Flame,
+      cardClass: 'border-rose-300/18 bg-[linear-gradient(145deg,rgba(48,16,25,0.98),rgba(24,11,18,0.98))]',
+      glowClass: 'bg-[radial-gradient(circle_at_top_left,rgba(251,113,133,0.24),transparent_38%),radial-gradient(circle_at_bottom_right,rgba(249,115,22,0.14),transparent_34%)]',
+      iconClass: 'from-rose-500 to-orange-500',
+      badgeClass: 'border-rose-300/20 bg-rose-500/12 text-rose-100',
     },
   ]
 
@@ -435,9 +503,46 @@ export default function HomeCompactDashboard() {
               </div>
             </div>
 
-            <div className="mt-3 grid grid-cols-1 gap-2.5">
-              <MobileMetricTile label="USD Wallet" value={`$${walletUsd.toFixed(2)}`} />
-            </div>
+            <Link
+              href="/wallet"
+              className="group relative mt-3 block overflow-hidden rounded-[24px] border border-cyan-300/16 bg-[linear-gradient(145deg,rgba(8,31,54,0.98),rgba(7,18,33,0.99))] p-4 shadow-[0_18px_42px_rgba(2,6,23,0.24)]"
+            >
+              <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(34,211,238,0.24),transparent_34%),radial-gradient(circle_at_bottom_right,rgba(59,130,246,0.18),transparent_34%)]" />
+              <div className="relative z-10">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="text-right">
+                    <p className="text-[11px] font-black uppercase tracking-[0.22em] text-cyan-200/90">
+                      USD Wallet
+                    </p>
+                    <div className="mt-2 text-[1.9rem] font-black leading-none text-white">
+                      ${walletUsd.toFixed(2)}
+                    </div>
+                    <p className="mt-2 text-xs leading-5 text-slate-300">
+                      رصيدك الجاهز للشراء الفوري وإدارة الإيداعات من نفس الواجهة.
+                    </p>
+                  </div>
+
+                  <span className="flex h-14 w-14 items-center justify-center rounded-[20px] border border-white/10 bg-white/[0.06] shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
+                    <WalletCards className="h-6 w-6 text-cyan-100" />
+                  </span>
+                </div>
+
+                <div className="mt-4 flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-2">
+                    <span className="rounded-full border border-cyan-300/18 bg-cyan-500/10 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.16em] text-cyan-100">
+                      Secure
+                    </span>
+                    <span className="rounded-full border border-emerald-300/18 bg-emerald-500/10 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.16em] text-emerald-100">
+                      Ready
+                    </span>
+                  </div>
+                  <span className="inline-flex items-center gap-1 text-sm font-semibold text-cyan-100 transition group-hover:text-white">
+                    افتح المحفظة
+                    <ChevronRight className="h-4 w-4" />
+                  </span>
+                </div>
+              </div>
+            </Link>
           </MobilePanel>
 
           <MobilePanel tone="soft">
@@ -448,30 +553,31 @@ export default function HomeCompactDashboard() {
             />
 
             <div className="mt-4 grid grid-cols-3 gap-2.5">
-              {[
-                { label: 'الرصيد', icon: BadgeDollarSign, href: '/products?category=balance', active: false },
-                { label: 'المحافظ', icon: WalletCards, href: '/products?category=wallets', active: false },
-                { label: 'الألعاب', icon: Gamepad2, href: '/products?category=games', active: false },
-                { label: 'التطبيقات', icon: AppWindow, href: '/products?category=applications', active: false },
-                { label: 'البطاقات', icon: CreditCard, href: '/products?category=cards', active: false },
-                { label: 'الأكثر مبيعاً', icon: Flame, href: '/products?sort=popular', active: true },
-              ].map((item) => {
+              {mobileQuickAccessItems.map((item) => {
                 const Icon = item.icon
 
                 return (
                   <Link
                     key={item.label}
                     href={item.href}
-                    className={`flex flex-col items-center gap-2 rounded-[20px] border px-2.5 py-3 text-center transition ${
-                      item.active
-                        ? 'border-cyan-300/24 bg-[linear-gradient(135deg,rgba(34,211,238,0.14),rgba(37,99,235,0.18))] text-cyan-100'
-                        : 'border-white/10 bg-white/[0.04] text-slate-200'
-                    }`}
+                    className={`group relative overflow-hidden rounded-[22px] ${item.cardClass} px-2.5 py-3 text-center shadow-[0_18px_34px_rgba(2,6,23,0.22)] transition hover:-translate-y-0.5`}
                   >
-                    <span className="flex h-12 w-12 items-center justify-center rounded-full border border-white/10 bg-slate-950/35">
-                      <Icon className="h-5.5 w-5.5" />
-                    </span>
-                    <span className="text-[12px] font-semibold leading-5">{item.label}</span>
+                    <div className={`pointer-events-none absolute inset-0 ${item.glowClass}`} />
+                    <div className="relative z-10">
+                      <div className="flex items-start justify-between gap-2">
+                        <span className={`rounded-full border px-2 py-1 text-[9px] font-black uppercase tracking-[0.14em] ${item.badgeClass}`}>
+                          {item.badge}
+                        </span>
+                        <span className={`flex h-10 w-10 items-center justify-center rounded-[16px] bg-gradient-to-br ${item.iconClass} shadow-[0_10px_24px_rgba(2,6,23,0.24)]`}>
+                          <Icon className="h-4.5 w-4.5 text-white" />
+                        </span>
+                      </div>
+
+                      <div className="mt-6 text-right">
+                        <h3 className="text-[12px] font-bold leading-5 text-white">{item.label}</h3>
+                        <p className="mt-1 text-[10px] leading-4 text-slate-300/90">{item.subtitle}</p>
+                      </div>
+                    </div>
                   </Link>
                 )
               })}

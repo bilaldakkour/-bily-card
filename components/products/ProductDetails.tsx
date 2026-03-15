@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { CheckCircle2, Share } from 'lucide-react'
+import OrderDetailsModal, { type OrderDetailsItem } from '@/components/shared/OrderDetailsModal'
 import type { Product } from '@/lib/data'
 
 interface ProductDetailsProps {
@@ -70,6 +71,7 @@ export default function ProductDetails({ product, compact = false }: ProductDeta
   const [shareNotice, setShareNotice] = useState('')
   const [productPercent, setProductPercent] = useState(0)
   const [userPercent, setUserPercent] = useState(0)
+  const [createdOrderDetails, setCreatedOrderDetails] = useState<OrderDetailsItem | null>(null)
 
   useEffect(() => {
     setSelectedChildSlug(groupedChildren[0]?.slug || product.slug)
@@ -134,6 +136,7 @@ export default function ProductDetails({ product, compact = false }: ProductDeta
     setError('')
     setSuccess(false)
     setSuccessMessage('')
+    setCreatedOrderDetails(null)
   }, [safeProduct.slug])
 
   useEffect(() => {
@@ -307,6 +310,26 @@ export default function ProductDetails({ product, compact = false }: ProductDeta
       setShowConfirm(false)
       setSuccess(true)
       setSuccessMessage(`Order created successfully! Order ID: ${data.orderId}`)
+      setCreatedOrderDetails(
+        data?.data?.order || {
+          _id: String(data.orderId || `${safeProduct.slug}-${Date.now()}`),
+          orderId: String(data.orderId || ''),
+          productName: safeProduct.name,
+          productSlug: safeProduct.slug,
+          productImage: safeProduct.image,
+          playerId: playerId.trim(),
+          quantity: isCountProduct ? effectiveDisplayQuantity : 1,
+          price: effectiveUnitPrice,
+          total: totalPrice,
+          status: 'pending',
+          providerStatus: String(data.providerStatus || 'pending'),
+          selectedPackageOption: isPackageProduct
+            ? resolvedSelectedPackage?.label || resolvedSelectedPackage?.display || ''
+            : '',
+          createdAt: new Date().toISOString(),
+          notes: String(data.message || 'Order created successfully'),
+        }
+      )
       setPlayerId('')
       setQuantity(countMin)
       setQuantityInput(String(countMin))
@@ -623,6 +646,12 @@ export default function ProductDetails({ product, compact = false }: ProductDeta
             </div>
           </div>
         )}
+
+        <OrderDetailsModal
+          order={createdOrderDetails}
+          open={Boolean(createdOrderDetails)}
+          onClose={() => setCreatedOrderDetails(null)}
+        />
       </main>
     )
   }
@@ -910,6 +939,12 @@ export default function ProductDetails({ product, compact = false }: ProductDeta
           </div>
         </div>
       )}
+
+      <OrderDetailsModal
+        order={createdOrderDetails}
+        open={Boolean(createdOrderDetails)}
+        onClose={() => setCreatedOrderDetails(null)}
+      />
     </main>
   )
 }

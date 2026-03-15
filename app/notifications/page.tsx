@@ -10,6 +10,7 @@ import {
   mobileSecondaryButtonClass,
 } from '@/components/shared/MobileDesignSystem'
 import UserPageLayout from '@/components/shared/UserPageLayout'
+import { useLanguage } from '@/hooks/useLanguage'
 
 type OrderItem = {
   _id?: string
@@ -35,9 +36,69 @@ type NotificationItem = {
 }
 
 export default function NotificationsPage() {
+  const { language } = useLanguage()
   const router = useRouter()
   const [notifications, setNotifications] = useState<NotificationItem[]>([])
   const [loading, setLoading] = useState(true)
+  const pageCopy = {
+    ar: {
+      title: 'الإشعارات',
+      subtitle: 'آخر تحديثات الحساب والطلبات.',
+      breadcrumbHome: 'الرئيسية',
+      eyebrow: 'تحديثات مباشرة',
+      description: 'آخر تحديثات الطلبات والدفعات بحلة أوضح وأنسب للموبايل.',
+      refresh: 'تحديث',
+      all: 'الجميع',
+      unread: 'غير المقروءة',
+      read: 'المقروءة',
+      loading: 'جاري تحميل الإشعارات...',
+      emptyTitle: 'لا يوجد إشعارات بعد',
+      emptyDescription: 'عندما يصدر تحديث جديد على طلباتك أو دفعاتك سيظهر هنا.',
+      loaded: 'تم تحميل آخر الإشعارات بنجاح',
+      completedOrder: (name: string) => `تم إكمال طلبك ${name} بنجاح`,
+      updatedOrder: (name: string) => `تم تحديث حالة طلبك ${name}`,
+      depositRecorded: (amount: number, currency: string) =>
+        `تم تسجيل دفعة ${amount.toFixed(2)} ${currency} في حسابك`,
+    },
+    en: {
+      title: 'Notifications',
+      subtitle: 'Latest account and order updates.',
+      breadcrumbHome: 'Home',
+      eyebrow: 'Live Updates',
+      description: 'The latest order and deposit updates in a clearer mobile view.',
+      refresh: 'Refresh',
+      all: 'All',
+      unread: 'Unread',
+      read: 'Read',
+      loading: 'Loading notifications...',
+      emptyTitle: 'No notifications yet',
+      emptyDescription: 'When a new update appears for your orders or deposits, it will show here.',
+      loaded: 'Latest notifications loaded successfully',
+      completedOrder: (name: string) => `Your ${name} order was completed successfully`,
+      updatedOrder: (name: string) => `Your ${name} order status was updated`,
+      depositRecorded: (amount: number, currency: string) =>
+        `A deposit of ${amount.toFixed(2)} ${currency} was recorded on your account`,
+    },
+    fr: {
+      title: 'Notifications',
+      subtitle: 'Dernieres mises a jour du compte et des commandes.',
+      breadcrumbHome: 'Accueil',
+      eyebrow: 'Mises a jour en direct',
+      description: 'Les dernieres mises a jour des commandes et depots dans une vue mobile plus claire.',
+      refresh: 'Actualiser',
+      all: 'Toutes',
+      unread: 'Non lues',
+      read: 'Lues',
+      loading: 'Chargement des notifications...',
+      emptyTitle: 'Aucune notification pour le moment',
+      emptyDescription: 'Lorsqu une nouvelle mise a jour apparait pour vos commandes ou depots, elle sera affichee ici.',
+      loaded: 'Les dernieres notifications ont ete chargees avec succes',
+      completedOrder: (name: string) => `Votre commande ${name} a ete terminee avec succes`,
+      updatedOrder: (name: string) => `Le statut de votre commande ${name} a ete mis a jour`,
+      depositRecorded: (amount: number, currency: string) =>
+        `Un depot de ${amount.toFixed(2)} ${currency} a ete enregistre sur votre compte`,
+    },
+  }[language]
 
   const loadNotifications = async () => {
     const token = localStorage.getItem('bilycard_token')
@@ -69,8 +130,8 @@ export default function NotificationsPage() {
           id: order._id || `order-${index}`,
           title:
             String(order.status || '').toLowerCase() === 'completed'
-              ? `تم إكمال طلبك ${order.productName || ''} بنجاح`
-              : `تم تحديث حالة طلبك ${order.productName || ''}`,
+              ? pageCopy.completedOrder(order.productName || '')
+              : pageCopy.updatedOrder(order.productName || ''),
           time: order.createdAt || new Date().toISOString(),
         })),
         ...transactions
@@ -78,7 +139,7 @@ export default function NotificationsPage() {
           .slice(0, 8)
           .map((txn, index) => ({
             id: txn._id || `txn-${index}`,
-            title: `تم تسجيل دفعة ${Number(txn.amount || 0).toFixed(2)} ${txn.currency || 'USD'} في حسابك`,
+            title: pageCopy.depositRecorded(Number(txn.amount || 0), txn.currency || 'USD'),
             time: txn.createdAt || new Date().toISOString(),
           })),
       ]
@@ -108,12 +169,12 @@ export default function NotificationsPage() {
 
   return (
     <UserPageLayout
-      title="Notifications"
-      mobileTitle="الإشعارات"
-      subtitle="Latest account and order updates."
+      title={pageCopy.title}
+      mobileTitle={pageCopy.title}
+      subtitle={pageCopy.subtitle}
       breadcrumbs={[
-        { label: 'Home', href: '/' },
-        { label: 'Notifications', href: '/notifications' },
+        { label: pageCopy.breadcrumbHome, href: '/' },
+        { label: pageCopy.title, href: '/notifications' },
       ]}
       showHeader={false}
       fixedSidebarDesktop
@@ -122,9 +183,9 @@ export default function NotificationsPage() {
     >
       <MobilePanel tone="danger">
         <MobileSectionHeading
-          eyebrow="Live Updates"
-          title="الإشعارات"
-          description="آخر تحديثات الطلبات والدفعات بحلة أوضح وأنسب للموبايل."
+          eyebrow={pageCopy.eyebrow}
+          title={pageCopy.title}
+          description={pageCopy.description}
           action={
             <button
               type="button"
@@ -132,32 +193,32 @@ export default function NotificationsPage() {
               className={mobileSecondaryButtonClass}
             >
               <RefreshCw className="mr-2 h-4 w-4" />
-              تحديث
+              {pageCopy.refresh}
             </button>
           }
         />
 
         <div className="mt-4 grid grid-cols-3 gap-2.5">
           <div className="rounded-[18px] border border-cyan-400/16 bg-cyan-500/10 px-3 py-3 text-center text-sm font-semibold text-cyan-100">
-            الجميع
+            {pageCopy.all}
           </div>
           <div className="rounded-[18px] border border-white/8 bg-white/[0.04] px-3 py-3 text-center text-sm font-medium text-slate-200">
-            غير المقروءة
+            {pageCopy.unread}
           </div>
           <div className="rounded-[18px] border border-white/8 bg-white/[0.04] px-3 py-3 text-center text-sm font-medium text-slate-200">
-            المقروءة
+            {pageCopy.read}
           </div>
         </div>
       </MobilePanel>
 
       {loading ? (
         <MobilePanel className="px-5 py-8 text-center" tone="soft">
-          <p className="text-slate-300">جارٍ تحميل الإشعارات...</p>
+          <p className="text-slate-300">{pageCopy.loading}</p>
         </MobilePanel>
       ) : formattedNotifications.length === 0 ? (
         <MobileEmptyState
-          title="لا يوجد إشعارات بعد"
-          description="عندما يصدر تحديث جديد على طلباتك أو دفعاتك سيظهر هنا."
+          title={pageCopy.emptyTitle}
+          description={pageCopy.emptyDescription}
         />
       ) : (
         <div className="space-y-3">
@@ -181,7 +242,7 @@ export default function NotificationsPage() {
       {!loading && formattedNotifications.length > 0 ? (
         <MobilePanel className="flex items-center justify-center gap-2 px-4 py-3 text-cyan-200" tone="accent">
           <CheckCircle2 className="h-4 w-4" />
-          <span>تم تحميل آخر الإشعارات بنجاح</span>
+          <span>{pageCopy.loaded}</span>
         </MobilePanel>
       ) : null}
     </UserPageLayout>

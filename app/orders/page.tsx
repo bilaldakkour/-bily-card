@@ -4,28 +4,17 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { LogoutButton } from '@/components/shared'
+import OrderDetailsModal, { type OrderDetailsItem } from '@/components/shared/OrderDetailsModal'
 import OrderSummaryCard from '@/components/shared/OrderSummaryCard'
 import UserPageLayout from '@/components/shared/UserPageLayout'
 import { useLanguage } from '@/hooks/useLanguage'
 
-interface Order {
-  _id: string
-  orderId: string
-  productName: string
-  playerId: string
-  price: number
-  total?: number
-  walletBalanceBefore?: number
-  walletBalanceAfter?: number
-  status: 'pending' | 'processing' | 'completed' | 'failed' | 'refunded' | 'rejected'
-  createdAt: string
-}
-
 export default function OrdersPage() {
   const { t, isRTL } = useLanguage()
   const router = useRouter()
-  const [orders, setOrders] = useState<Order[]>([])
+  const [orders, setOrders] = useState<OrderDetailsItem[]>([])
   const [loading, setLoading] = useState(true)
+  const [selectedOrder, setSelectedOrder] = useState<OrderDetailsItem | null>(null)
 
   useEffect(() => {
     const token = localStorage.getItem('bilycard_token')
@@ -92,7 +81,7 @@ export default function OrdersPage() {
         ) : (
           <div className="space-y-3">
             {orders.map((order) => (
-              <OrderSummaryCard key={order._id} order={order} />
+              <OrderSummaryCard key={order._id} order={order} onViewDetails={setSelectedOrder} />
             ))}
           </div>
         )}
@@ -100,6 +89,12 @@ export default function OrdersPage() {
         <div className="pt-2">
           <LogoutButton />
         </div>
+
+        <OrderDetailsModal
+          order={selectedOrder}
+          open={Boolean(selectedOrder)}
+          onClose={() => setSelectedOrder(null)}
+        />
       </UserPageLayout>
     </div>
   )

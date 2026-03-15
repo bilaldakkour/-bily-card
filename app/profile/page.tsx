@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { BadgeCheck, Mail, Shield, Wallet } from 'lucide-react'
 import { MobileMetricTile, MobilePanel } from '@/components/shared/MobileDesignSystem'
 import UserPageLayout from '@/components/shared/UserPageLayout'
+import { useLanguage } from '@/hooks/useLanguage'
 
 interface ProfileData {
   id?: string
@@ -20,6 +21,7 @@ interface ProfileData {
 }
 
 export default function ProfilePage() {
+  const { language } = useLanguage()
   const router = useRouter()
   const [user, setUser] = useState<ProfileData | null>(null)
   const [loading, setLoading] = useState(true)
@@ -63,36 +65,99 @@ export default function ProfilePage() {
   if (loading) {
     return (
       <main className="flex min-h-screen items-center justify-center bg-slate-950 p-4">
-        <div className="text-white">Loading profile...</div>
+        <div className="text-white">
+          {language === 'ar'
+            ? 'جاري تحميل الحساب...'
+            : language === 'fr'
+              ? 'Chargement du profil...'
+              : 'Loading profile...'}
+        </div>
       </main>
     )
   }
 
   if (!user) return null
 
+  const pageCopy = {
+    ar: {
+      loading: 'جاري تحميل الحساب...',
+      userFallback: 'مستخدم',
+      title: 'الملف الشخصي',
+      mobileTitle: 'إعدادات الحساب',
+      subtitle: 'معلومات حسابك ضمن واجهة أوضح وموحدة.',
+      breadcrumbHome: 'الرئيسية',
+      breadcrumbProfile: 'الملف الشخصي',
+      accountLabel: 'حساب Bily Card',
+      emailLabel: 'البريد الإلكتروني',
+      verified: 'تم التحقق من البريد',
+      notVerified: 'البريد غير محقق',
+      roleLabel: 'الدور',
+      verificationLabel: 'التحقق',
+      walletLabel: 'محفظة USD',
+      pending: 'قيد الانتظار',
+      displayName: 'اسم العرض',
+    },
+    en: {
+      loading: 'Loading profile...',
+      userFallback: 'User',
+      title: 'My Profile',
+      mobileTitle: 'Account Settings',
+      subtitle: 'Your account information in a cleaner, unified layout.',
+      breadcrumbHome: 'Home',
+      breadcrumbProfile: 'Profile',
+      accountLabel: 'Bily Card Account',
+      emailLabel: 'Email',
+      verified: 'Email verified',
+      notVerified: 'Email not verified',
+      roleLabel: 'Role',
+      verificationLabel: 'Verification',
+      walletLabel: 'Wallet USD',
+      pending: 'Pending',
+      displayName: 'Display Name',
+    },
+    fr: {
+      loading: 'Chargement du profil...',
+      userFallback: 'Utilisateur',
+      title: 'Mon profil',
+      mobileTitle: 'Parametres du compte',
+      subtitle: 'Les informations de votre compte dans une interface plus claire et unifiee.',
+      breadcrumbHome: 'Accueil',
+      breadcrumbProfile: 'Profil',
+      accountLabel: 'Compte Bily Card',
+      emailLabel: 'Email',
+      verified: 'Email verifie',
+      notVerified: 'Email non verifie',
+      roleLabel: 'Role',
+      verificationLabel: 'Verification',
+      walletLabel: 'Portefeuille USD',
+      pending: 'En attente',
+      displayName: 'Nom affiche',
+    },
+  }[language]
+
   const displayName =
     user.displayName ||
     user.username ||
     user.name ||
     (user.email ? user.email.split('@')[0] : '') ||
-    'User'
+    pageCopy.userFallback
 
   const profileCards = [
-    { label: 'Display Name', value: displayName },
-    { label: 'Email', value: user.email || '-' },
-    { label: 'Role', value: user.role || 'user' },
-    { label: 'Verification', value: user.isVerified ? 'Verified' : 'Not Verified' },
-    { label: 'Wallet USD', value: `$${Number(user.walletBalance?.usd || 0).toFixed(2)}` },
+    { label: pageCopy.displayName, value: displayName },
+    { label: pageCopy.emailLabel, value: user.email || '-' },
+    { label: pageCopy.roleLabel, value: user.role || 'user' },
+    { label: pageCopy.verificationLabel, value: user.isVerified ? pageCopy.verified : pageCopy.notVerified },
+    { label: pageCopy.walletLabel, value: `$${Number(user.walletBalance?.usd || 0).toFixed(2)}` },
   ]
 
   return (
     <UserPageLayout
-      title="My Profile"
-      mobileTitle="إعدادات الحساب"
-      subtitle="Your account information in a cleaner, unified layout."
+      title={pageCopy.title}
+      mobileTitle={pageCopy.mobileTitle}
+      subtitle={pageCopy.subtitle}
       breadcrumbs={[
-        { label: 'Home', href: '/' },
-        { label: 'Profile', href: '/profile' },
+        { label: pageCopy.breadcrumbHome, href: '/' },
+        { label: pageCopy.breadcrumbProfile, href: '/profile' },
       ]}
     >
       <div className="space-y-4 md:hidden">
@@ -100,7 +165,7 @@ export default function ProfilePage() {
           <div className="mb-5 flex items-center justify-between gap-4">
             <div className="min-w-0 text-right">
               <h2 className="truncate text-2xl font-black text-white">{displayName}</h2>
-              <p className="mt-1 text-sm text-slate-400">Bily Card Account</p>
+              <p className="mt-1 text-sm text-slate-400">{pageCopy.accountLabel}</p>
             </div>
 
             <div className="flex h-20 w-20 items-center justify-center rounded-full border border-cyan-300/18 bg-[linear-gradient(135deg,rgba(34,211,238,0.18),rgba(37,99,235,0.24))]">
@@ -114,17 +179,17 @@ export default function ProfilePage() {
             <div className="flex items-center justify-between gap-4 rounded-[20px] border border-white/10 bg-white/[0.04] px-4 py-3.5">
               <Mail className="h-5 w-5 text-cyan-200" />
               <div className="min-w-0 text-right">
-                <p className="text-xs uppercase tracking-[0.16em] text-slate-500">Email</p>
+                <p className="text-xs uppercase tracking-[0.16em] text-slate-500">{pageCopy.emailLabel}</p>
                 <p className="mt-1 break-all text-sm font-semibold text-white">{user.email || '-'}</p>
                 <p className="mt-1 text-xs text-emerald-300">
-                  {user.isVerified ? 'تم التحقق من البريد' : 'البريد غير محقق'}
+                  {user.isVerified ? pageCopy.verified : pageCopy.notVerified}
                 </p>
               </div>
             </div>
 
             <div className="grid grid-cols-3 gap-2.5">
               <MobileMetricTile
-                label="Role"
+                label={pageCopy.roleLabel}
                 value={
                   <span className="inline-flex items-center gap-2">
                     <Shield className="h-4 w-4 text-cyan-200" />
@@ -133,16 +198,16 @@ export default function ProfilePage() {
                 }
               />
               <MobileMetricTile
-                label="Verification"
+                label={pageCopy.verificationLabel}
                 value={
                   <span className="inline-flex items-center gap-2">
                     <BadgeCheck className="h-4 w-4 text-emerald-300" />
-                    {user.isVerified ? 'Verified' : 'Pending'}
+                    {user.isVerified ? pageCopy.verified : pageCopy.pending}
                   </span>
                 }
               />
               <MobileMetricTile
-                label="Wallet USD"
+                label={pageCopy.walletLabel}
                 value={
                   <span className="inline-flex items-center gap-2">
                     <Wallet className="h-4 w-4 text-cyan-200" />

@@ -3,6 +3,7 @@ import axios from 'axios'
 import mongoose from 'mongoose'
 import { connectDB } from '@/lib/db/mongodb'
 import Order from '@/lib/models/Order'
+import User from '@/lib/models/User'
 import Wallet from '@/lib/models/Wallet'
 import WalletTransaction from '@/lib/models/WalletTransaction'
 import { extractToken, verifyToken } from '@/lib/auth/jwt'
@@ -41,10 +42,32 @@ interface ProviderProduct {
   price?: string | number
 }
 
+interface NotificationUserProfile {
+  displayName?: string
+  username?: string
+  email?: string
+}
+
 function toPositiveNumber(value: unknown): number {
   const parsed = Number(value)
   if (!Number.isFinite(parsed) || parsed <= 0) return 0
   return parsed
+}
+
+function resolveNotificationUserName(
+  profile: NotificationUserProfile | null | undefined,
+  fallbackUsername?: string | null
+) {
+  const displayName = String(profile?.displayName || '').trim()
+  if (displayName) return displayName
+
+  const username = String(profile?.username || fallbackUsername || '').trim()
+  if (username) return username
+
+  const email = String(profile?.email || '').trim()
+  if (email) return email
+
+  return 'Unknown user'
 }
 
 function getProductProviderMode(
@@ -183,6 +206,61 @@ function getProductCountRules(product: Awaited<ReturnType<typeof getCatalogProdu
     min,
     max: hasValidMax ? rawMax : null,
   }
+}
+
+function buildOrderResponse(order: any, productImage?: string) {
+  return {
+    _id: String(order._id),
+    orderId: String(order.orderId || ''),
+    productName: String(order.productName || ''),
+    productSlug: String(order.productSlug || ''),
+    productImage: String(productImage || ''),
+    playerId: String(order.playerId || ''),
+    quantity: Number(order.quantity || 1),
+    price: Number(order.price || 0),
+    total: Number(order.total || 0),
+    walletBalanceBefore: Number(order.walletBalanceBefore || 0),
+    walletBalanceAfter: Number(order.walletBalanceAfter || 0),
+    status: String(order.status || 'pending'),
+    providerStatus: String(order.providerStatus || ''),
+    selectedPackageOption: String(order.selectedPackageOption || ''),
+    notes: String(order.notes || ''),
+    failureReason: String(order.failureReason || ''),
+    createdAt: order.createdAt,
+  }
+}
+
+type ProductImageLookup = {
+  bySlug: Map<string, string>
+  byName: Map<string, string>
+}
+
+function buildProductImageLookup(products: Awaited<ReturnType<typeof getCatalogProducts>>): ProductImageLookup {
+  const bySlug = new Map<string, string>()
+  const byName = new Map<string, string>()
+
+  for (const product of products) {
+    const slug = String(product.slug || '').trim().toLowerCase()
+    const name = String(product.name || '').trim().toLowerCase()
+    const image = String(product.image || '').trim()
+
+    if (slug && image && !bySlug.has(slug)) {
+      bySlug.set(slug, image)
+    }
+
+    if (name && image && !byName.has(name)) {
+      byName.set(name, image)
+    }
+  }
+
+  return { bySlug, byName }
+}
+
+function resolveOrderProductImage(order: any, lookup: ProductImageLookup) {
+  const slug = String(order.productSlug || '').trim().toLowerCase()
+  const name = String(order.productName || '').trim().toLowerCase()
+
+  return lookup.bySlug.get(slug) || lookup.byName.get(name) || ''
 }
 
 async function fetchProviderProducts(
@@ -429,20 +507,12 @@ export async function GET(request: NextRequest) {
     if (isTestModeEnabled()) {
       logTestMode('orders/list requested', { userId: user.userId })
 
-      const orders = getTestModeOrders().map((order) => ({
-        _id: String(order._id),
-        orderId: order.orderId,
-        productName: order.productName,
-        playerId: order.playerId,
-        quantity: order.quantity,
-        price: order.price,
-        total: order.total,
-        walletBalanceBefore: Number(order.walletBalanceBefore || 0),
-        walletBalanceAfter: Number(order.walletBalanceAfter || 0),
-        status: order.status,
-        providerStatus: order.providerStatus,
-        createdAt: order.createdAt,
-      }))
+      const catalogProducts = await getCatalogProducts()
+      const imageLookup = buildProductImageLookup(catalogProducts)
+
+      const orders = getTestModeOrders().map((order) =>
+        buildOrderResponse(order, resolveOrderProductImage(order, imageLookup))
+      )
 
       return NextResponse.json({
         success: true,
@@ -537,20 +607,13 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    const orders = orderDocs.map((order) => ({
-      _id: String(order._id),
-      orderId: order.orderId,
-      productName: order.productName,
-      playerId: order.playerId,
-      quantity: order.quantity,
-      price: order.price,
-      total: order.total,
-      walletBalanceBefore: Number(order.walletBalanceBefore || 0),
-      walletBalanceAfter: Number(order.walletBalanceAfter || 0),
-      status: order.status,
-      providerStatus: order.providerStatus,
-      createdAt: order.createdAt,
-    }))
+    const catalogProducts = await getCatalogProducts()
+    const imageLookup = buildProductImageLookup(catalogProducts)
+
+    const orders = orderDocs.map((order) => {
+      const image = resolveOrderProductImage(order, imageLookup)
+      return buildOrderResponse(order, image)
+    })
 
     return NextResponse.json({
       success: true,
@@ -772,11 +835,18 @@ export async function POST(request: NextRequest) {
         orderId: result.order.orderId,
         providerStatus: result.order.providerStatus,
         message: 'Test mode order created successfully',
+        data: {
+          order: buildOrderResponse(result.order, String(catalogProduct?.image || '')),
+        },
         testMode: true,
       })
     }
 
     await connectDB()
+
+    const orderUserProfile = (await User.findById(user.userId)
+      .select('displayName username email')
+      .lean()) as NotificationUserProfile | null
 
     let resolvedProviderProduct: ProviderProduct | null = null
 
@@ -946,6 +1016,7 @@ export async function POST(request: NextRequest) {
     await sendAdminNotification({
       title: 'New Order - Bily Card',
       lines: [
+        `Customer: ${resolveNotificationUserName(orderUserProfile, user.username)}`,
         `Order ID: ${orderId}`,
         `Product: ${name}`,
         packageOption ? `Package: ${packageOption}` : null,
@@ -962,6 +1033,9 @@ export async function POST(request: NextRequest) {
       orderId,
       providerStatus: order.providerStatus,
       message: 'Order created successfully',
+      data: {
+        order: buildOrderResponse(order, String(catalogProduct?.image || '')),
+      },
     })
   } catch (error) {
     console.error('Order creation error:', error)

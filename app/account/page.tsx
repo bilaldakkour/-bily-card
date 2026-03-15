@@ -39,7 +39,7 @@ interface UserData {
 }
 
 export default function AccountPage() {
-  const { t, isRTL } = useLanguage()
+  const { t, isRTL, language } = useLanguage()
   const router = useRouter()
   const [user, setUser] = useState<UserData | null>(null)
   const [recentOrders, setRecentOrders] = useState<Order[]>([])
@@ -91,22 +91,64 @@ export default function AccountPage() {
 
   if (!user) return null
 
+  const pageCopy = {
+    ar: {
+      mobileTitle: 'حسابي',
+      overviewEyebrow: 'نظرة عامة',
+      overviewTitle: 'لوحة الحساب',
+      overviewDescription: 'ملخص سريع لحسابك ورصيدك وآخر نشاطاتك.',
+      roleLabel: 'الدور',
+      usdOnlyWallet: 'محفظة USD فقط',
+      recentEyebrow: 'آخر النشاطات',
+      recentDescription: 'طلباتك الأحدث ضمن عرض مختصر ومناسب للتلفون.',
+      breadcrumbHome: 'الرئيسية',
+      copyOrderId: 'نسخ رقم الطلب',
+      copyPlayerId: 'نسخ رقم الحساب',
+    },
+    en: {
+      mobileTitle: t('account.title'),
+      overviewEyebrow: 'Account Overview',
+      overviewTitle: 'Account Dashboard',
+      overviewDescription: 'A quick summary of your account, balance, and latest activity.',
+      roleLabel: 'Role',
+      usdOnlyWallet: 'USD-only wallet',
+      recentEyebrow: 'Recent Activity',
+      recentDescription: 'Your latest orders in a compact layout that fits mobile.',
+      breadcrumbHome: t('sidebar.home'),
+      copyOrderId: 'Copy order ID',
+      copyPlayerId: 'Copy player ID',
+    },
+    fr: {
+      mobileTitle: 'Mon compte',
+      overviewEyebrow: 'Vue du compte',
+      overviewTitle: 'Tableau du compte',
+      overviewDescription: 'Un resume rapide de votre compte, de votre solde et de votre activite recente.',
+      roleLabel: 'Role',
+      usdOnlyWallet: 'Portefeuille USD uniquement',
+      recentEyebrow: 'Activite recente',
+      recentDescription: 'Vos dernieres commandes dans une vue compacte adaptee au mobile.',
+      breadcrumbHome: 'Accueil',
+      copyOrderId: 'Copier l ID de commande',
+      copyPlayerId: 'Copier l ID du compte',
+    },
+  }[language]
+
   return (
     <div dir={isRTL ? 'rtl' : 'ltr'}>
       <UserPageLayout
         title={t('account.title')}
-        mobileTitle="حسابي"
+        mobileTitle={pageCopy.mobileTitle}
         subtitle={t('account.subtitle')}
         breadcrumbs={[
-          { label: 'Home', href: '/' },
+          { label: pageCopy.breadcrumbHome, href: '/' },
           { label: t('account.title'), href: '/account' },
         ]}
       >
         <MobilePanel>
           <MobileSectionHeading
-            eyebrow="Account Overview"
-            title="لوحة الحساب"
-            description="ملخص سريع لحسابك ورصيدك وآخر نشاطاتك."
+            eyebrow={pageCopy.overviewEyebrow}
+            title={pageCopy.overviewTitle}
+            description={pageCopy.overviewDescription}
             action={
               <Link href="/wallet" className={mobilePrimaryButtonClass}>
                 {t('account.topUpWallet')}
@@ -117,15 +159,15 @@ export default function AccountPage() {
           <div className="mt-4 grid gap-2.5 md:grid-cols-3">
             <MobileMetricTile label={t('account.name')} value={user.displayName} hint={user.email} />
             <MobileMetricTile label={t('account.walletUsd')} value={`$${user.walletBalance.usd.toFixed(2)}`} />
-            <MobileMetricTile label="Role" value={user.role} hint="USD only wallet" />
+            <MobileMetricTile label={pageCopy.roleLabel} value={user.role} hint={pageCopy.usdOnlyWallet} />
           </div>
         </MobilePanel>
 
         <MobilePanel tone="soft">
           <MobileSectionHeading
-            eyebrow="Recent Activity"
+            eyebrow={pageCopy.recentEyebrow}
             title={t('account.recentOrders')}
-            description="طلباتك الأحدث ضمن عرض مختصر ومناسب للتلفون."
+            description={pageCopy.recentDescription}
             action={
               <Link
                 href="/orders"
@@ -157,7 +199,7 @@ export default function AccountPage() {
                       {order.orderId}
                       <CopyButton
                         value={order.orderId}
-                        label="Copy order ID"
+                        label={pageCopy.copyOrderId}
                         className="h-5 w-5 border-transparent bg-transparent text-cyan-200 hover:border-cyan-400/20 hover:bg-cyan-500/10"
                       />
                     </span>
@@ -169,7 +211,7 @@ export default function AccountPage() {
                       {order.playerId ? (
                         <CopyButton
                           value={order.playerId}
-                          label="Copy player ID"
+                          label={pageCopy.copyPlayerId}
                           className="h-5 w-5 border-transparent bg-transparent text-slate-300 hover:border-cyan-400/20 hover:bg-cyan-500/10 hover:text-cyan-200"
                         />
                       ) : null}
