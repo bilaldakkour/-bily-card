@@ -39,6 +39,9 @@ const cleanPackageOptionLabel = (source: string): string =>
 
 export default function ProductDetails({ product, compact = false }: ProductDetailsProps) {
   const router = useRouter()
+  const applyMarkup = (basePrice: number, productPct: number, userPct: number) =>
+    Number(Math.max(0, Number(basePrice || 0) * (1 + (Number(productPct || 0) + Number(userPct || 0)) / 100)).toFixed(6))
+
   const groupedChildren = useMemo(
     () => (Array.isArray(product.groupChildren) && product.groupChildren.length ? product.groupChildren : [product]),
     [product]
@@ -105,18 +108,27 @@ export default function ProductDetails({ product, compact = false }: ProductDeta
     })
   }, [packageField?.options, safeProduct.price])
 
+  const pricedPackageOptions = useMemo(
+    () =>
+      packageOptions.map((option) => ({
+        ...option,
+        effectivePrice: applyMarkup(option.price, productPercent, userPercent),
+      })),
+    [packageOptions, productPercent, userPercent]
+  )
+
   const [selectedPackage, setSelectedPackage] = useState<string>('')
 
   const firstAvailablePackage = useMemo(
-    () => packageOptions.find((option) => option.inStock) || null,
-    [packageOptions]
+    () => pricedPackageOptions.find((option) => option.inStock) || null,
+    [pricedPackageOptions]
   )
 
   const resolvedSelectedPackage =
-    packageOptions.find((option) => option.display === selectedPackage) || firstAvailablePackage || packageOptions[0]
-  const isPackageProduct = packageOptions.length > 0
+    pricedPackageOptions.find((option) => option.display === selectedPackage) || firstAvailablePackage || pricedPackageOptions[0]
+  const isPackageProduct = pricedPackageOptions.length > 0
   const isCountProduct = !isPackageProduct && Boolean(countField)
-  const hasAvailablePackageOptions = !isPackageProduct || packageOptions.some((option) => option.inStock)
+  const hasAvailablePackageOptions = !isPackageProduct || pricedPackageOptions.some((option) => option.inStock)
   const selectedPackageInStock = !isPackageProduct || Boolean(resolvedSelectedPackage?.inStock)
 
   const countMin = countField?.validation?.min ?? 1
@@ -200,9 +212,7 @@ export default function ProductDetails({ product, compact = false }: ProductDeta
     void loadPricing()
   }, [safeProduct.slug])
 
-  const effectiveUnitPrice = Number(
-    Math.max(0, unitPrice * (1 + (productPercent + userPercent) / 100)).toFixed(6)
-  )
+  const effectiveUnitPrice = applyMarkup(unitPrice, productPercent, userPercent)
 
   const productDescription = safeProduct.description || ''
   const totalPrice = effectiveUnitPrice * (isCountProduct ? effectiveDisplayQuantity : 1)
@@ -436,7 +446,7 @@ export default function ProductDetails({ product, compact = false }: ProductDeta
                   <div className="space-y-2">
                     <p className="text-xs font-bold uppercase tracking-[0.22em] text-slate-400">Choose Package</p>
                     <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-                      {packageOptions.map((option) => {
+                      {pricedPackageOptions.map((option) => {
                         const active = option.display === (resolvedSelectedPackage?.display || '')
                         return (
                           <button
@@ -464,7 +474,7 @@ export default function ProductDetails({ product, compact = false }: ProductDeta
                               )}
                             </div>
                             <div className={`mt-1 text-xs ${active ? 'text-amber-50/85' : option.inStock ? 'text-slate-400' : 'text-red-200/70'}`}>
-                              ${option.price.toFixed(2)}
+                              ${option.effectivePrice.toFixed(2)}
                             </div>
                           </button>
                         )
@@ -752,7 +762,7 @@ export default function ProductDetails({ product, compact = false }: ProductDeta
               <div>
                 <label className="mb-2 block text-sm font-semibold text-slate-200">Choose Package</label>
                 <div className="grid grid-cols-2 gap-2">
-                  {packageOptions.map((option) => {
+                  {pricedPackageOptions.map((option) => {
                     const active = option.display === (resolvedSelectedPackage?.display || '')
                     return (
                       <button
@@ -774,7 +784,7 @@ export default function ProductDetails({ product, compact = false }: ProductDeta
                         <div className={`text-xs ${option.inStock ? 'text-slate-400' : 'text-red-200/70'}`}>Package</div>
                         <div className="truncate text-sm font-semibold">{option.label}</div>
                         <div className={`mt-1 text-sm ${option.inStock ? 'text-cyan-300' : 'text-red-200/80'}`}>
-                          ${option.price.toFixed(2)}
+                          ${option.effectivePrice.toFixed(2)}
                         </div>
                         {!option.inStock && (
                           <div className="mt-1 text-[11px] font-medium uppercase tracking-[0.16em] text-red-200">
