@@ -2,6 +2,8 @@ import { bilycardProducts } from '@/lib/data/bilycardProducts';
 import { getCatalogProductBySlug } from '@/lib/data/catalogProducts';
 import ProductPricing from '@/lib/models/ProductPricing';
 import User from '@/lib/models/User';
+import UserProductDiscount from '@/lib/models/UserProductDiscount';
+import { isManualCountProduct } from '@/lib/pricing/manualCount';
 import { isTestModeEnabled, logTestMode } from '@/lib/utils/testMode';
 
 export const clampPercent = (value: number): number => {
@@ -16,7 +18,8 @@ export const applyPricingPercent = (
   productPercent: number,
   userPercent: number
 ): number => {
-  const totalPercent = clampPercent(productPercent) + clampPercent(userPercent);
+  // Product percent is markup, user percent is customer discount.
+  const totalPercent = clampPercent(clampPercent(productPercent) - clampPercent(userPercent));
   const raw = Number(basePrice) * (1 + totalPercent / 100);
   return Number(Math.max(0, raw).toFixed(6));
 };
@@ -52,13 +55,40 @@ export async function getUserPricingPercent(userId?: string | null): Promise<num
   return Number(user?.pricingPercent || 0);
 }
 
+export async function getUserProductDiscountMap(
+  userId?: string | null
+): Promise<Record<string, number>> {
+  if (isTestModeEnabled()) {
+    return {};
+  }
+
+  if (!userId) return {};
+
+  const rows = await UserProductDiscount.find({
+    userId: String(userId),
+    isActive: true,
+  })
+    .select('productSlug discountPercent')
+    .lean();
+
+  const map: Record<string, number> = {};
+  for (const row of rows as Array<{ productSlug?: string; discountPercent?: number }>) {
+    const slug = String(row?.productSlug || '').trim().toLowerCase();
+    if (!slug) continue;
+    map[slug] = Number(row?.discountPercent || 0);
+  }
+
+  return map;
+}
+
 export async function getEffectivePricingContext(userId?: string | null) {
-  const [productMap, userPercent] = await Promise.all([
+  const [productMap, userPercent, userProductDiscountMap] = await Promise.all([
     getProductPricingMap(),
     getUserPricingPercent(userId || null),
+    getUserProductDiscountMap(userId || null),
   ]);
 
-  return { productMap, userPercent };
+  return { productMap, userPercent, userProductDiscountMap };
 }
 
 export async function getEffectivePriceForProduct(input: {
@@ -72,18 +102,32 @@ export async function getEffectivePriceForProduct(input: {
   const hasFallback = Number.isFinite(fallback) && fallback > 0;
   const basePrice = hasFallback ? fallback : Number(product?.price ?? 0);
 
-  const [productMap, userPercent] = await Promise.all([
+  const [productMap, userPercent, userProductDiscountMap] = await Promise.all([
     getProductPricingMap(),
     getUserPricingPercent(input.userId || null),
+    getUserProductDiscountMap(input.userId || null),
   ]);
 
+  if (product && isManualCountProduct(product)) {
+    const productPercent = slug ? Number(productMap[slug] || 0) : 0;
+    return {
+      basePrice,
+      productPercent,
+      userPercent: 0,
+      effectivePrice: basePrice,
+    };
+  }
+
   const productPercent = slug ? Number(productMap[slug] || 0) : 0;
-  const effectivePrice = applyPricingPercent(basePrice, productPercent, userPercent);
+  const effectiveUserPercent = slug
+    ? Number(userProductDiscountMap[slug] ?? userPercent)
+    : Number(userPercent || 0);
+  const effectivePrice = applyPricingPercent(basePrice, productPercent, effectiveUserPercent);
 
   return {
     basePrice,
     productPercent,
-    userPercent,
+    userPercent: effectiveUserPercent,
     effectivePrice,
   };
 }
@@ -91,18 +135,35 @@ export async function getEffectivePriceForProduct(input: {
 export function applyPricingMapToProducts(
   products: typeof bilycardProducts,
   productMap: Record<string, number>,
-  userPercent: number
+  userPercent: number,
+  userProductDiscountMap?: Record<string, number>
 ) {
   return products.map((product) => {
+    if (isManualCountProduct(product)) {
+      return {
+        ...product,
+        price: Number(product.price || 0),
+        startingPrice:
+          typeof product.startingPrice === 'number' ? Number(product.startingPrice || 0) : product.startingPrice,
+      };
+    }
+
     const productPercent = Number(productMap[product.slug.toLowerCase()] || 0);
-    const nextPrice = applyPricingPercent(product.price, productPercent, userPercent);
+    const effectiveUserPercent = Number(
+      userProductDiscountMap?.[product.slug.toLowerCase()] ?? userPercent
+    );
+    const nextPrice = applyPricingPercent(product.price, productPercent, effectiveUserPercent);
 
     return {
       ...product,
       price: nextPrice,
       startingPrice:
         typeof product.startingPrice === 'number'
-          ? applyPricingPercent(product.startingPrice, productPercent, userPercent)
+          ? applyPricingPercent(
+              product.startingPrice,
+              productPercent,
+              effectiveUserPercent
+            )
           : product.startingPrice,
     };
   });

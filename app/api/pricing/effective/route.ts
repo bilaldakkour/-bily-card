@@ -273,6 +273,7 @@ export async function GET(request: NextRequest) {
         data: {
           userPercent: 0,
           productMap: {},
+          userProductDiscountMap: {},
           products: catalogProducts,
         },
         testMode: true,
@@ -348,15 +349,21 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ success: true, data })
     }
 
-    const { productMap, userPercent } = await getEffectivePricingContext(userId)
+    const { productMap, userPercent, userProductDiscountMap } = await getEffectivePricingContext(userId)
     const catalogProducts = await getCatalogProducts()
-    const pricedProducts = applyPricingMapToProducts(catalogProducts, productMap, userPercent)
+    const pricedProducts = applyPricingMapToProducts(
+      catalogProducts,
+      productMap,
+      userPercent,
+      userProductDiscountMap
+    )
 
     return NextResponse.json({
       success: true,
       data: {
         userPercent,
         productMap,
+        userProductDiscountMap,
         products: pricedProducts,
       },
     })

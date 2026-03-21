@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 
 interface User {
@@ -18,6 +18,12 @@ interface User {
   createdAt: string
 }
 
+interface ProductDiscountItem {
+  slug: string
+  name: string
+  category?: string
+}
+
 export default function AdminUsersPage() {
   const router = useRouter()
   const [users, setUsers] = useState<User[]>([])
@@ -33,6 +39,12 @@ export default function AdminUsersPage() {
   const [walletAmountInputs, setWalletAmountInputs] = useState<Record<string, string>>({})
   const [walletDirectionInputs, setWalletDirectionInputs] = useState<Record<string, 'add' | 'deduct'>>({})
   const [walletNoteInputs, setWalletNoteInputs] = useState<Record<string, string>>({})
+  const [discountEditorUser, setDiscountEditorUser] = useState<User | null>(null)
+  const [discountCatalog, setDiscountCatalog] = useState<ProductDiscountItem[]>([])
+  const [discountSearch, setDiscountSearch] = useState('')
+  const [discountValues, setDiscountValues] = useState<Record<string, string>>({})
+  const [discountLoading, setDiscountLoading] = useState(false)
+  const [discountSaving, setDiscountSaving] = useState(false)
 
   useEffect(() => {
     const token = localStorage.getItem('adminToken')
@@ -245,6 +257,113 @@ export default function AdminUsersPage() {
     }
   }
 
+  const openProductDiscountEditor = async (user: User) => {
+    const token = localStorage.getItem('adminToken')
+    if (!token) return
+
+    setDiscountEditorUser(user)
+    setDiscountSearch('')
+    setDiscountLoading(true)
+    setDiscountValues({})
+    setMessage('')
+
+    try {
+      const [productsRes, discountsRes] = await Promise.all([
+        fetch('/api/admin/pricing/products', {
+          headers: { Authorization: `Bearer ${token}` },
+          cache: 'no-store',
+        }),
+        fetch(`/api/admin/users/${user._id}/product-discounts`, {
+          headers: { Authorization: `Bearer ${token}` },
+          cache: 'no-store',
+        }),
+      ])
+
+      const productsData = await productsRes.json()
+      const discountsData = await discountsRes.json()
+
+      if (!productsRes.ok || !productsData?.success || !Array.isArray(productsData?.data)) {
+        throw new Error('Failed to load products list')
+      }
+
+      const catalog = (productsData.data as any[]).map((item) => ({
+        slug: String(item?.slug || '').trim().toLowerCase(),
+        name: String(item?.name || item?.slug || ''),
+        category: String(item?.category || ''),
+      }))
+
+      setDiscountCatalog(catalog)
+
+      const nextValues: Record<string, string> = {}
+      if (discountsRes.ok && discountsData?.success && Array.isArray(discountsData?.data)) {
+        for (const row of discountsData.data as any[]) {
+          const slug = String(row?.productSlug || '').trim().toLowerCase()
+          if (!slug) continue
+          nextValues[slug] = String(Number(row?.discountPercent || 0))
+        }
+      }
+      setDiscountValues(nextValues)
+    } catch (err: any) {
+      setMessage(err?.message || 'Failed to load user product discounts')
+    } finally {
+      setDiscountLoading(false)
+    }
+  }
+
+  const handleSaveProductDiscounts = async () => {
+    if (!discountEditorUser) return
+    const token = localStorage.getItem('adminToken')
+    if (!token) return
+
+    setDiscountSaving(true)
+    setMessage('')
+
+    try {
+      const discounts = Object.entries(discountValues)
+        .map(([productSlug, value]) => ({
+          productSlug: String(productSlug || '').trim().toLowerCase(),
+          discountPercent: Number(value || 0),
+        }))
+        .filter((item) => item.productSlug && Number.isFinite(item.discountPercent) && item.discountPercent > 0)
+        .map((item) => ({
+          ...item,
+          discountPercent: Math.max(0, Math.min(100, item.discountPercent)),
+        }))
+
+      const res = await fetch(`/api/admin/users/${discountEditorUser._id}/product-discounts`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ discounts }),
+      })
+
+      const data = await res.json()
+      if (!res.ok || !data?.success) {
+        throw new Error(data?.message || 'Failed to save user product discounts')
+      }
+
+      setMessage('User product discounts saved successfully')
+      setDiscountEditorUser(null)
+    } catch (err: any) {
+      setMessage(err?.message || 'Failed to save user product discounts')
+    } finally {
+      setDiscountSaving(false)
+    }
+  }
+
+  const filteredDiscountCatalog = useMemo(() => {
+    const term = discountSearch.trim().toLowerCase()
+    if (!term) return discountCatalog
+
+    return discountCatalog.filter((item) =>
+      [item.name, item.slug, item.category].some((value) =>
+        String(value || '').toLowerCase().includes(term)
+      )
+    )
+  }, [discountCatalog, discountSearch])
+
   if (loading) {
     return (
       <div className="text-white">Loading...</div>
@@ -430,6 +549,13 @@ export default function AdminUsersPage() {
                 >
                   {processingId === user._id ? 'Processing...' : user.isBlocked ? 'Unblock User' : 'Block User'}
                 </button>
+
+                <button
+                  onClick={() => openProductDiscountEditor(user)}
+                  className="mt-2 w-full rounded-xl bg-cyan-600 px-3 py-2 text-sm font-medium text-white hover:bg-cyan-700"
+                >
+                  Product Discounts
+                </button>
               </div>
             ))}
           </div>
@@ -519,6 +645,13 @@ export default function AdminUsersPage() {
                           {processingId === user._id ? 'Processing...' : user.isBlocked ? 'Unblock' : 'Block'}
                         </button>
 
+                        <button
+                          onClick={() => openProductDiscountEditor(user)}
+                          className="rounded bg-cyan-600 px-3 py-1 text-sm text-white hover:bg-cyan-700"
+                        >
+                          Product Discounts
+                        </button>
+
                         <div className="flex items-center gap-2">
                           <select
                             value={walletDirectionInputs[user._id] || 'add'}
@@ -597,6 +730,92 @@ export default function AdminUsersPage() {
               </button>
             </div>
           )}
+        </div>
+      )}
+
+      {discountEditorUser && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
+          <div className="max-h-[85vh] w-full max-w-3xl overflow-y-auto rounded-2xl border border-white/10 bg-slate-900 p-4">
+            <div className="mb-4 flex items-center justify-between">
+              <div>
+                <h2 className="text-lg font-semibold text-white">
+                  Product Discounts - {discountEditorUser.displayName}
+                </h2>
+                <p className="text-xs text-slate-400">
+                  Set custom discount per product (0 to remove / fallback to user percent)
+                </p>
+              </div>
+              <button
+                onClick={() => setDiscountEditorUser(null)}
+                className="rounded-lg border border-white/10 px-3 py-1 text-sm text-slate-200 hover:bg-slate-800"
+              >
+                Close
+              </button>
+            </div>
+
+            <div className="mb-3">
+              <input
+                type="text"
+                value={discountSearch}
+                onChange={(e) => setDiscountSearch(e.target.value)}
+                placeholder="Search product by name / slug / category..."
+                className="w-full rounded-lg border border-white/10 bg-slate-800 px-3 py-2 text-sm text-white placeholder-slate-400"
+              />
+            </div>
+
+            {discountLoading ? (
+              <div className="rounded-lg border border-white/10 bg-slate-800/50 p-5 text-center text-slate-300">
+                Loading products...
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {filteredDiscountCatalog.map((item) => (
+                  <div
+                    key={item.slug}
+                    className="grid grid-cols-1 gap-2 rounded-lg border border-white/10 bg-slate-800/40 p-3 sm:grid-cols-[minmax(0,1fr)_160px] sm:items-center"
+                  >
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-medium text-white">{item.name}</p>
+                      <p className="truncate text-xs text-slate-400">
+                        {item.slug}{item.category ? ` • ${item.category}` : ''}
+                      </p>
+                    </div>
+                    <input
+                      type="number"
+                      min="0"
+                      max="100"
+                      step="0.01"
+                      value={discountValues[item.slug] ?? ''}
+                      onChange={(e) =>
+                        setDiscountValues((prev) => ({
+                          ...prev,
+                          [item.slug]: e.target.value,
+                        }))
+                      }
+                      placeholder="0 - 100"
+                      className="w-full rounded-lg border border-white/10 bg-slate-900 px-3 py-2 text-sm text-white"
+                    />
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <div className="mt-4 flex items-center justify-end gap-2">
+              <button
+                onClick={() => setDiscountEditorUser(null)}
+                className="rounded-lg border border-white/10 px-4 py-2 text-sm text-slate-200 hover:bg-slate-800"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSaveProductDiscounts}
+                disabled={discountSaving || discountLoading}
+                className="rounded-lg bg-cyan-600 px-4 py-2 text-sm text-white hover:bg-cyan-700 disabled:opacity-50"
+              >
+                {discountSaving ? 'Saving...' : 'Save Discounts'}
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>
