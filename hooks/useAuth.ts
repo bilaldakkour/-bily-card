@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { clearAuthUserCache, fetchAuthUser } from '@/lib/utils/authClient';
+import { logoutCustomer } from '@/lib/utils/customerLogout';
 
 export interface AuthUser {
   userId: string;
@@ -103,18 +104,18 @@ export function useAuth() {
     [router]
   );
 
-  const logout = useCallback(() => {
-    const token =
-      localStorage.getItem('bilycard_token') ||
-      localStorage.getItem('token') ||
-      localStorage.getItem('adminToken') ||
-      undefined;
-    clearAuthUserCache(token);
-    localStorage.removeItem('bilycard_token');
-    localStorage.removeItem('token');
-    localStorage.removeItem('adminToken');
+  const logout = useCallback(async () => {
+    const adminToken = localStorage.getItem('adminToken');
+    if (adminToken) {
+      clearAuthUserCache(adminToken);
+      localStorage.removeItem('adminToken');
+      setUser(null);
+      router.push('/');
+      return;
+    }
+
     setUser(null);
-    router.push('/');
+    await logoutCustomer('/login');
   }, [router]);
 
   return {

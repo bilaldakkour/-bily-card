@@ -97,6 +97,7 @@ const rawBilycardProducts: Product[] = [
     "shortDescription": "Package-based digital product with instant delivery.",
     "fullDescription": "Choose a package and get instant digital delivery.",
     "price": 17.4676773,
+    "hideCardPrice": true,
     "category": "applications",
     "image": "https://dailycard-media.s3.amazonaws.com/product_packages_images/nmvbmbntretrdff.jpeg",
     "featured": true,

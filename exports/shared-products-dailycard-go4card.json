@@ -1,0 +1,13 @@
+{
+  "count": 1,
+  "rows": [
+    {
+      "slug": "hala-me",
+      "productName": "hala-me",
+      "category": "",
+      "routingMode": "cheapest",
+      "dailycardIds": "348",
+      "go4cardIds": "784"
+    }
+  ]
+}

@@ -1,4 +1,4 @@
-'use client'
+'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { createPortal } from 'react-dom'
@@ -10,13 +10,12 @@ import {
   MobilePanel,
   MobileSectionHeading,
 } from '@/components/shared/MobileDesignSystem'
-import FavoriteButton from '@/components/ui/FavoriteButton'
 import Footer from '@/components/ui/Footer'
 import HeroSection from '@/components/ui/HeroSection'
 import TopPromoCarousel from '@/components/ui/TopPromoCarousel'
 import ProductDetails from '@/components/products/ProductDetails'
+import FavoriteButton from '@/components/ui/FavoriteButton'
 import { useLanguage } from '@/hooks/useLanguage'
-import { notifySessionExpired } from '@/lib/utils/sessionNotice'
 import { bilycardProducts } from '@/lib/data/bilycardProducts'
 import { groupCatalogProducts } from '@/lib/data/catalogGrouping'
 import { classifyCatalogProduct } from '@/lib/data/catalogTaxonomy'
@@ -39,15 +38,6 @@ import {
   X,
 } from 'lucide-react'
 
-type MeResponse = {
-  success?: boolean
-  data?: {
-    walletBalance?: {
-      usd?: number
-    }
-  }
-}
-
 type TopSellingItem = {
   slug: string
   name: string
@@ -56,7 +46,6 @@ type TopSellingItem = {
 
 export default function HomeCompactDashboard() {
   const { t, isRTL } = useLanguage()
-  const [walletUsd, setWalletUsd] = useState(0)
   const [topSellingSlugs, setTopSellingSlugs] = useState<string[]>([])
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null)
   const [isModalVisible, setIsModalVisible] = useState(false)
@@ -116,9 +105,9 @@ export default function HomeCompactDashboard() {
   const quickTabs = [
     {
       key: 'best-selling',
-      label: 'BEST SELLERS',
-      subtitle: 'Top sold items',
-      chip: 'TREND',
+      label: 'الأكثر مبيعاً',
+      subtitle: 'المنتجات الأعلى طلباً',
+      chip: 'رائج',
       href: '/products?sort=popular',
       icon: TrendingUp,
       cardClass: 'from-rose-500/25 via-orange-500/20 to-yellow-500/20 border-rose-300/30 hover:border-rose-200/60',
@@ -128,8 +117,8 @@ export default function HomeCompactDashboard() {
     },
     {
       key: 'cards',
-      label: 'CARDS',
-      subtitle: 'Gift cards',
+      label: 'البطاقات',
+      subtitle: 'بطاقات رقمية',
       chip: 'PIN',
       href: '/products?category=cards',
       icon: CreditCard,
@@ -140,9 +129,9 @@ export default function HomeCompactDashboard() {
     },
     {
       key: 'applications',
-      label: 'APPS',
-      subtitle: 'Live apps',
-      chip: 'LIVE',
+      label: 'التطبيقات',
+      subtitle: 'خدمات رقمية',
+      chip: 'مباشر',
       href: '/products?category=applications',
       icon: AppWindow,
       cardClass: 'from-fuchsia-500/25 via-violet-500/20 to-indigo-500/20 border-fuchsia-300/30 hover:border-fuchsia-200/60',
@@ -152,8 +141,8 @@ export default function HomeCompactDashboard() {
     },
     {
       key: 'games',
-      label: 'GAMES',
-      subtitle: 'Game topups',
+      label: 'الألعاب',
+      subtitle: 'شحن الألعاب',
       chip: 'XP',
       href: '/products?category=games',
       icon: Gamepad2,
@@ -164,9 +153,9 @@ export default function HomeCompactDashboard() {
     },
     {
       key: 'wallets',
-      label: 'WALLETS',
-      subtitle: 'Crypto wallets',
-      chip: 'CRYPTO',
+      label: 'المحافظ',
+      subtitle: 'محافظ رقمية',
+      chip: 'رقمي',
       href: '/products?category=wallets',
       icon: WalletCards,
       cardClass: 'from-indigo-500/25 via-blue-500/20 to-purple-500/20 border-indigo-300/30 hover:border-indigo-200/60',
@@ -176,9 +165,9 @@ export default function HomeCompactDashboard() {
     },
     {
       key: 'balance',
-      label: 'BALANCE',
-      subtitle: 'Mobile recharge',
-      chip: 'TOPUP',
+      label: 'الرصيد',
+      subtitle: 'شحن سريع',
+      chip: 'فوري',
       href: '/products?category=balance',
       icon: BadgeDollarSign,
       cardClass: 'from-lime-500/25 via-emerald-500/20 to-green-500/20 border-lime-300/30 hover:border-lime-200/60',
@@ -188,9 +177,9 @@ export default function HomeCompactDashboard() {
     },
     {
       key: 'accounts',
-      label: 'ACCOUNTS',
-      subtitle: 'Subscriptions',
-      chip: 'PREMIUM',
+      label: 'الحسابات',
+      subtitle: 'اشتراكات',
+      chip: 'مميز',
       href: '/products?category=accounts-subscriptions',
       icon: UserRoundCog,
       cardClass: 'from-amber-500/25 via-orange-500/20 to-red-500/20 border-amber-300/30 hover:border-amber-200/60',
@@ -200,9 +189,9 @@ export default function HomeCompactDashboard() {
     },
     {
       key: 'redemption',
-      label: 'COUPONS',
-      subtitle: 'Redemption tools',
-      chip: 'TOOLS',
+      label: 'الكوبونات',
+      subtitle: 'أدوات الاستبدال',
+      chip: 'أدوات',
       href: '/products?category=redemption-coupons',
       icon: Ticket,
       cardClass: 'from-purple-500/25 via-fuchsia-500/20 to-pink-500/20 border-purple-300/30 hover:border-purple-200/60',
@@ -216,7 +205,7 @@ export default function HomeCompactDashboard() {
     {
       label: 'الرصيد',
       subtitle: 'شحن سريع',
-      badge: 'TOP UP',
+      badge: 'فوري',
       href: '/products?category=balance',
       icon: BadgeDollarSign,
       cardClass: 'border-emerald-300/18 bg-[linear-gradient(145deg,rgba(8,39,36,0.98),rgba(5,18,22,0.98))]',
@@ -227,7 +216,7 @@ export default function HomeCompactDashboard() {
     {
       label: 'المحافظ',
       subtitle: 'محافظ رقمية',
-      badge: 'WALLET',
+      badge: 'آمن',
       href: '/products?category=wallets',
       icon: WalletCards,
       cardClass: 'border-blue-300/18 bg-[linear-gradient(145deg,rgba(9,28,51,0.98),rgba(7,16,33,0.98))]',
@@ -238,7 +227,7 @@ export default function HomeCompactDashboard() {
     {
       label: 'الألعاب',
       subtitle: 'شحن الألعاب',
-      badge: 'GAME',
+      badge: 'سريع',
       href: '/products?category=games',
       icon: Gamepad2,
       cardClass: 'border-violet-300/18 bg-[linear-gradient(145deg,rgba(24,17,50,0.98),rgba(10,12,31,0.98))]',
@@ -249,7 +238,7 @@ export default function HomeCompactDashboard() {
     {
       label: 'التطبيقات',
       subtitle: 'خدمات وتطبيقات',
-      badge: 'APPS',
+      badge: 'مباشر',
       href: '/products?category=applications',
       icon: AppWindow,
       cardClass: 'border-cyan-300/18 bg-[linear-gradient(145deg,rgba(8,29,40,0.98),rgba(7,16,30,0.98))]',
@@ -260,7 +249,7 @@ export default function HomeCompactDashboard() {
     {
       label: 'البطاقات',
       subtitle: 'بطاقات رقمية',
-      badge: 'CARD',
+      badge: 'رقمي',
       href: '/products?category=cards',
       icon: CreditCard,
       cardClass: 'border-amber-300/18 bg-[linear-gradient(145deg,rgba(48,29,9,0.98),rgba(23,15,8,0.98))]',
@@ -271,7 +260,7 @@ export default function HomeCompactDashboard() {
     {
       label: 'الأكثر مبيعاً',
       subtitle: 'الأعلى طلباً',
-      badge: 'HOT',
+      badge: 'الأكثر طلباً',
       href: '/products?sort=popular',
       icon: Flame,
       cardClass: 'border-rose-300/18 bg-[linear-gradient(145deg,rgba(48,16,25,0.98),rgba(24,11,18,0.98))]',
@@ -293,43 +282,9 @@ export default function HomeCompactDashboard() {
     return () => window.clearInterval(interval)
   }, [mobileBannerSlides.length])
 
-  useEffect(() => {
-    const token = localStorage.getItem('bilycard_token')
-    if (!token) return
-
-    const loadMe = async () => {
-      try {
-        const res = await fetch('/api/auth/me', {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-          cache: 'no-store',
-        })
-
-        if (res.status === 401 || res.status === 403) {
-          localStorage.removeItem('bilycard_token')
-          localStorage.removeItem('token')
-          localStorage.removeItem('adminToken')
-          notifySessionExpired('انتهت الجلسة، سجل دخولك من جديد')
-          setWalletUsd(0)
-          return
-        }
-
-        const data: MeResponse = await res.json()
-
-        if (res.ok && data?.success) {
-          setWalletUsd(Number(data?.data?.walletBalance?.usd || 0))
-        }
-      } catch {
-        setWalletUsd(0)
-      }
-    }
-
-    void loadMe()
-  }, [])
 
   const renderPopularSection = (title: string, items: typeof popularProducts) => (
-    <div className="glass-panel rounded-[24px] p-3.5">
+    <div className="glass-panel rounded-[22px] p-3">
       <div className="mb-3 flex items-center justify-between">
         <h2 className="flex items-center gap-2 text-xl font-semibold text-white">
           <Flame className="h-5 w-5 text-red-400" />
@@ -340,17 +295,17 @@ export default function HomeCompactDashboard() {
         </Link>
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid gap-2.5 sm:grid-cols-2 xl:grid-cols-4">
         {items.map((card, index) => (
           <article
             key={`${title}-${card.id}`}
-            className="group relative overflow-hidden rounded-[24px] border border-white/10 bg-[linear-gradient(180deg,rgba(15,23,42,0.92),rgba(5,10,22,0.96))] shadow-[0_16px_34px_rgba(2,6,23,0.24)] transition duration-300 hover:-translate-y-1 hover:border-cyan-400/30 hover:shadow-[0_22px_44px_rgba(8,47,73,0.28)]"
+            className="group relative overflow-hidden rounded-[22px] border border-white/10 bg-[linear-gradient(180deg,rgba(15,23,42,0.92),rgba(5,10,22,0.96))] shadow-[0_14px_30px_rgba(2,6,23,0.24)] transition duration-300 hover:-translate-y-1 hover:border-[#d4a940]/30 hover:shadow-[0_20px_40px_rgba(46,91,255,0.24)]"
           >
             <button
               type="button"
               onClick={() => handleProductSelect(card)}
-              className="absolute inset-0 z-10 rounded-[24px]"
-              aria-label={`Open ${card.name}`}
+              className="absolute inset-0 z-10 rounded-[22px]"
+              aria-label={`فتح ${card.name}`}
             />
             <div className="absolute right-2 top-2 z-20">
               <FavoriteButton slug={card.slug} />
@@ -360,15 +315,15 @@ export default function HomeCompactDashboard() {
               <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/30 to-transparent" />
               <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black/40 to-transparent opacity-70" />
               <div className="absolute left-3 top-3 rounded-full border border-white/20 bg-black/35 px-3 py-1 text-[10px] font-bold tracking-[0.2em] text-white">
-                {index === 0 ? 'HOT' : index === 1 ? 'TOP' : index === 2 ? 'FAST' : 'TREND'}
+                {index === 0 ? 'الأكثر طلباً' : index === 1 ? 'الأعلى' : index === 2 ? 'سريع' : 'رائج'}
               </div>
             </div>
             <div className="p-3.5">
               <div className="mb-2.5 flex items-center justify-between gap-2">
                 <span className="rounded-full border border-cyan-400/15 bg-cyan-500/10 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-cyan-300">
-                  Game Store
+                  متجر رقمي
                 </span>
-                <span className="text-xs font-semibold text-slate-400">Instant</span>
+                <span className="text-xs font-semibold text-slate-400">فوري</span>
               </div>
               <h3 className="line-clamp-2 min-h-[44px] text-sm font-semibold text-white">{card.name}</h3>
               <div className="mt-3 rounded-2xl bg-gradient-to-r from-cyan-500 to-sky-600 py-2.5 text-center text-sm font-bold text-white shadow-[0_14px_30px_rgba(14,165,233,0.22)]">
@@ -461,8 +416,8 @@ export default function HomeCompactDashboard() {
       </div>
 
       <main className="mx-auto max-w-[1480px] px-4 pb-12 pt-0 sm:px-5 lg:px-6">
-        <section className="space-y-4 md:hidden">
-          <MobilePanel className="overflow-hidden p-3" tone="accent">
+        <section className="space-y-3 md:hidden">
+          <MobilePanel className="overflow-hidden p-2.5" tone="accent">
             <div className="relative h-[172px] overflow-hidden rounded-[22px]">
               <Image
                 src={mobileBannerSlides[mobileBannerIndex]}
@@ -492,62 +447,21 @@ export default function HomeCompactDashboard() {
                         className={`h-2.5 rounded-full transition-all ${
                           mobileBannerIndex === index ? 'w-6 bg-cyan-300' : 'w-2.5 bg-white/45'
                         }`}
-                        aria-label={`Go to banner ${index + 1}`}
+                        aria-label={`الانتقال إلى البانر ${index + 1}`}
                       />
                     ))}
                   </div>
                   <span className="rounded-full border border-cyan-300/18 bg-cyan-500/10 px-3 py-1 text-[11px] font-semibold text-cyan-100">
-                    Instant Digital Store
+                    متجر رقمي فوري
                   </span>
                 </div>
               </div>
             </div>
-
-            <Link
-              href="/wallet"
-              className="group relative mt-3 block overflow-hidden rounded-[24px] border border-cyan-300/16 bg-[linear-gradient(145deg,rgba(8,31,54,0.98),rgba(7,18,33,0.99))] p-4 shadow-[0_18px_42px_rgba(2,6,23,0.24)]"
-            >
-              <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(34,211,238,0.24),transparent_34%),radial-gradient(circle_at_bottom_right,rgba(59,130,246,0.18),transparent_34%)]" />
-              <div className="relative z-10">
-                <div className="flex items-start justify-between gap-3">
-                  <div className="text-right">
-                    <p className="text-[11px] font-black uppercase tracking-[0.22em] text-cyan-200/90">
-                      USD Wallet
-                    </p>
-                    <div className="mt-2 text-[1.9rem] font-black leading-none text-white">
-                      ${walletUsd.toFixed(2)}
-                    </div>
-                    <p className="mt-2 text-xs leading-5 text-slate-300">
-                      رصيدك الجاهز للشراء الفوري وإدارة الإيداعات من نفس الواجهة.
-                    </p>
-                  </div>
-
-                  <span className="flex h-14 w-14 items-center justify-center rounded-[20px] border border-white/10 bg-white/[0.06] shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
-                    <WalletCards className="h-6 w-6 text-cyan-100" />
-                  </span>
-                </div>
-
-                <div className="mt-4 flex items-center justify-between gap-3">
-                  <div className="flex items-center gap-2">
-                    <span className="rounded-full border border-cyan-300/18 bg-cyan-500/10 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.16em] text-cyan-100">
-                      Secure
-                    </span>
-                    <span className="rounded-full border border-emerald-300/18 bg-emerald-500/10 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.16em] text-emerald-100">
-                      Ready
-                    </span>
-                  </div>
-                  <span className="inline-flex items-center gap-1 text-sm font-semibold text-cyan-100 transition group-hover:text-white">
-                    افتح المحفظة
-                    <ChevronRight className="h-4 w-4" />
-                  </span>
-                </div>
-              </div>
-            </Link>
           </MobilePanel>
 
           <MobilePanel tone="soft">
             <MobileSectionHeading
-              eyebrow="Quick Access"
+              eyebrow="وصول سريع"
               title="الأقسام السريعة"
               description="ادخل مباشرة إلى أهم أقسام المتجر من نفس الواجهة."
             />
@@ -586,20 +500,20 @@ export default function HomeCompactDashboard() {
 
           <MobilePanel tone="soft">
             <MobileSectionHeading
-              eyebrow="Popular Now"
+              eyebrow="الأكثر مبيعاً"
               title="الأكثر طلباً"
               description="منتجات مختارة بسرعة، بتصميم أخف ومظهر أوضح على الهاتف."
             />
 
-            <div className="mt-4 grid grid-cols-2 gap-3">
-              {mobileFeaturedProducts.map((product) => (
+            <div className="mt-4 grid grid-cols-3 gap-2">
+              {mobileFeaturedProducts.slice(0, 6).map((product) => (
                 <button
                   key={`mobile-home-${product.id}`}
                   type="button"
                   onClick={() => handleProductSelect(product)}
-                  className="group overflow-hidden rounded-[24px] border border-white/10 bg-[linear-gradient(180deg,rgba(10,19,35,0.96),rgba(7,13,26,0.98))] text-right shadow-[0_18px_36px_rgba(2,6,23,0.22)]"
+                  className="group overflow-hidden rounded-[20px] border border-white/10 bg-[linear-gradient(180deg,rgba(10,19,35,0.96),rgba(7,13,26,0.98))] text-right shadow-[0_18px_36px_rgba(2,6,23,0.22)]"
                 >
-                  <div className="relative h-[176px] overflow-hidden">
+                  <div className="relative h-[118px] overflow-hidden">
                     <Image
                       src={product.image}
                       alt={product.name}
@@ -607,19 +521,58 @@ export default function HomeCompactDashboard() {
                       className="object-cover transition duration-500 group-hover:scale-105"
                     />
                     <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(7,16,30,0.08),rgba(7,16,30,0.86))]" />
-                    <div className="absolute left-2 top-2 rounded-full border border-cyan-300/18 bg-cyan-500/12 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.14em] text-cyan-100">
-                      Fast
+                    <div className="absolute left-2 top-2 rounded-full border border-cyan-300/18 bg-cyan-500/12 px-2 py-0.5 text-[9px] font-bold uppercase tracking-[0.14em] text-cyan-100">
+                      فوري
                     </div>
 
-                    <div className="absolute inset-x-0 bottom-0 p-3.5">
-                      <div className="mb-2 flex items-center justify-between">
-                        <ArrowLeft className="h-4 w-4 text-cyan-100" />
-                        <span className="rounded-full border border-white/10 bg-black/25 px-2.5 py-1 text-xs font-semibold text-sky-100">
-                          ${Number(product.price || 0).toFixed(2)}
-                        </span>
+                    <div className="absolute inset-x-0 bottom-0 p-2.5">
+                      <div className="mb-1.5 flex items-center justify-between">
+                        <ArrowLeft className="h-3.5 w-3.5 text-cyan-100" />
                       </div>
-                      <h3 className="line-clamp-1 text-[1rem] font-bold text-white">{product.name}</h3>
-                      <p className="mt-1.5 line-clamp-2 text-[11px] leading-5 text-slate-200/90">
+                      <h3 className="line-clamp-1 text-[13px] font-bold text-white">{product.name}</h3>
+                      <p className="mt-1 line-clamp-2 text-[10px] leading-4 text-slate-200/90">
+                        {product.shortDescription || 'منتجات رقمية سريعة وآمنة ضمن تجربة شراء مرتبة.'}
+                      </p>
+                    </div>
+                  </div>
+                </button>
+              ))}
+            </div>
+          </MobilePanel>
+
+          <MobilePanel tone="soft">
+            <MobileSectionHeading
+              eyebrow="الأكثر مبيعاً"
+              title="الباقات الأكثر مبيعاً"
+              description="منتجات الباقات الأعلى طلباً بعرض سريع ومباشر."
+            />
+
+            <div className="mt-4 grid grid-cols-3 gap-2">
+              {mostSoldPackages.slice(0, 6).map((product) => (
+                <button
+                  key={`mobile-packages-${product.id}`}
+                  type="button"
+                  onClick={() => handleProductSelect(product)}
+                  className="group overflow-hidden rounded-[20px] border border-white/10 bg-[linear-gradient(180deg,rgba(10,19,35,0.96),rgba(7,13,26,0.98))] text-right shadow-[0_18px_36px_rgba(2,6,23,0.22)]"
+                >
+                  <div className="relative h-[118px] overflow-hidden">
+                    <Image
+                      src={product.image}
+                      alt={product.name}
+                      fill
+                      className="object-cover transition duration-500 group-hover:scale-105"
+                    />
+                    <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(7,16,30,0.08),rgba(7,16,30,0.86))]" />
+                    <div className="absolute left-2 top-2 rounded-full border border-cyan-300/18 bg-cyan-500/12 px-2 py-0.5 text-[9px] font-bold uppercase tracking-[0.14em] text-cyan-100">
+                      فوري
+                    </div>
+
+                    <div className="absolute inset-x-0 bottom-0 p-2.5">
+                      <div className="mb-1.5 flex items-center justify-between">
+                        <ArrowLeft className="h-3.5 w-3.5 text-cyan-100" />
+                      </div>
+                      <h3 className="line-clamp-1 text-[13px] font-bold text-white">{product.name}</h3>
+                      <p className="mt-1 line-clamp-2 text-[10px] leading-4 text-slate-200/90">
                         {product.shortDescription || 'منتجات رقمية سريعة وآمنة ضمن تجربة شراء مرتبة.'}
                       </p>
                     </div>
@@ -631,7 +584,7 @@ export default function HomeCompactDashboard() {
         </section>
 
         <div className="relative lg:pr-[372px]">
-          <section className="hidden space-y-4 md:block">
+          <section className="hidden space-y-3 md:block">
             <TopPromoCarousel showQuickTabs={false} />
 
             <div className="grid gap-4 xl:grid-cols-[260px_minmax(0,1fr)]">
@@ -676,7 +629,7 @@ export default function HomeCompactDashboard() {
                 <h3 className="text-lg font-semibold text-white">{t('home.quick.title')}</h3>
               </div>
               <Link href="/products" className="inline-flex items-center gap-2 text-sm font-semibold text-slate-300 transition hover:text-white">
-                View all categories
+                عرض كل التصنيفات
                 <ChevronRight className="h-4 w-4" />
               </Link>
             </div>
@@ -756,7 +709,7 @@ export default function HomeCompactDashboard() {
               type="button"
               onClick={handleCloseModal}
               className="absolute right-3 top-3 z-20 rounded-full border border-white/10 bg-slate-950/75 p-2.5 text-slate-300 shadow-[0_12px_30px_rgba(2,6,23,0.35)] transition hover:border-cyan-400/30 hover:bg-slate-900 hover:text-white sm:right-4 sm:top-4"
-              aria-label="Close product popup"
+              aria-label="إغلاق نافذة المنتج"
             >
               <X className="h-5 w-5" />
             </button>

@@ -1,55 +1,82 @@
+﻿'use client'
+
+import { memo } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { Lock, Zap } from 'lucide-react'
-import { Badge } from './Badge'
 import FavoriteButton from './FavoriteButton'
-import type { Product } from '@/lib/data'
+import { premiumBadgeBase, premiumBadgeTone } from './badgeSystem'
+import type { ProductListItem } from '@/lib/data'
 
 interface ProductCardProps {
-  product: Product
+  product: ProductListItem
   className?: string
-  onProductSelect?: (product: Product) => void
+  onProductSelect?: (product: ProductListItem) => void
 }
 
-export function ProductCard({ product, className = '', onProductSelect }: ProductCardProps) {
-  const isOutOfStock = product.stockStatus === 'out_of_stock'
+const getSafeImageSrc = (value: unknown) => {
+  const raw = typeof value === 'string' ? value.trim() : ''
+  if (!raw || raw === '.' || raw === 'null' || raw === 'undefined') return '/placeholder.png'
+  if (raw.startsWith('/')) return raw
+
+  try {
+    const parsed = new URL(raw)
+    if (!['http:', 'https:'].includes(parsed.protocol)) return '/placeholder.png'
+    if (parsed.hostname === 'dailycard-media.s3.amazonaws.com') return raw
+    return '/placeholder.png'
+  } catch {
+    return '/placeholder.png'
+  }
+}
+
+export const ProductCard = memo(function ProductCard({
+  product,
+  className = '',
+  onProductSelect,
+}: ProductCardProps) {
+  const normalizedStockStatus = String(product.stockStatus || '').trim().toLowerCase()
+  const isOutOfStock =
+    normalizedStockStatus === 'out_of_stock' ||
+    normalizedStockStatus === 'paused' ||
+    normalizedStockStatus === 'unavailable'
 
   const accentByCategory: Record<string, string> = {
-    cards: 'border-blue-400/18 bg-blue-500/10 text-blue-200',
-    applications: 'border-cyan-400/18 bg-cyan-500/10 text-cyan-200',
-    games: 'border-emerald-400/18 bg-emerald-500/10 text-emerald-200',
-    wallets: 'border-indigo-400/18 bg-indigo-500/10 text-indigo-200',
-    balance: 'border-sky-400/18 bg-sky-500/10 text-sky-200',
+    cards: 'border-[#d4a940]/28 bg-[#d4a940]/14 text-[#f6d88d]',
+    applications: 'border-[#9b78ff]/26 bg-[#9b78ff]/12 text-[#ddd0ff]',
+    games: 'border-[#3a7bff]/24 bg-[#3a7bff]/12 text-[#bfccff]',
+    wallets: 'border-[#7e57ff]/24 bg-[#7e57ff]/12 text-[#d7c7ff]',
+    balance: 'border-[#46a0ff]/24 bg-[#46a0ff]/12 text-[#c4ddff]',
   }
 
-  const stockColorByStatus: Record<Product['stockStatus'], string> = {
-    in_stock: 'border-emerald-400/22 bg-emerald-500/12 text-emerald-200',
-    limited: 'border-amber-400/22 bg-amber-500/12 text-amber-200',
-    out_of_stock: 'border-rose-300/22 bg-rose-500/12 text-rose-200',
-  }
-
-  const stockLabelByStatus: Record<Product['stockStatus'], string> = {
-    in_stock: 'Ready',
-    limited: 'Limited',
-    out_of_stock: 'Closed',
-  }
-
-  const deliveryBadge =
-    String(product.deliveryTime || '').toLowerCase().includes('instant') ||
-    String(product.deliveryTime || '').toLowerCase().includes('auto')
-      ? 'Instant'
-      : product.deliveryTime
+  const deliveryBadgeRaw = String(product.deliveryTime || '').toLowerCase()
+  const deliveryLabel =
+    deliveryBadgeRaw.includes('instant') || deliveryBadgeRaw.includes('auto')
+      ? 'فوري'
+      : deliveryBadgeRaw
+        ? 'سريع'
+        : 'سريع'
+  const safeImageSrc = getSafeImageSrc(product.image)
+  const useUnoptimizedImage = safeImageSrc.startsWith('http://') || safeImageSrc.startsWith('https://')
 
   const accentClass =
     accentByCategory[String(product.category || '').toLowerCase()] ||
-    'border-cyan-400/18 bg-cyan-500/10 text-cyan-200'
+    'border-[#46a0ff]/24 bg-[#46a0ff]/12 text-[#c4ddff]'
+  const hasFeatured = Boolean((product as ProductListItem & { featured?: boolean }).featured)
+
+  const primaryBadge = product.bestSeller
+    ? { label: 'الأكثر مبيعاً', className: premiumBadgeTone.offer, icon: <Zap className="h-3 w-3" /> }
+    : hasFeatured
+      ? { label: 'عرض خاص', className: premiumBadgeTone.offer, icon: null }
+      : { label: 'تسليم فوري', className: premiumBadgeTone.instant, icon: null }
+
+  const ctaLabel = isOutOfStock ? 'غير متوفر' : 'اشحن الآن'
 
   return (
     <article
-      className={`group relative overflow-hidden rounded-[20px] border border-white/10 bg-[linear-gradient(180deg,rgba(8,18,34,0.98),rgba(6,13,26,0.98))] shadow-[0_16px_38px_rgba(2,6,23,0.18)] ring-1 ring-white/[0.025] transition-all duration-300 sm:rounded-[26px] sm:shadow-[0_24px_60px_rgba(2,6,23,0.22)] ${
+      className={`group relative flex h-full min-h-[11.8rem] flex-col overflow-hidden rounded-[22px] border border-white/10 bg-[linear-gradient(180deg,rgba(15,23,42,0.92),rgba(5,10,22,0.96))] shadow-[0_14px_30px_rgba(2,6,23,0.24)] transition-all duration-300 ${
         isOutOfStock
           ? 'cursor-not-allowed opacity-80'
-          : 'hover:-translate-y-1 hover:border-cyan-300/24 hover:shadow-[0_24px_60px_rgba(14,165,233,0.12)]'
+          : 'active:scale-[0.99] md:hover:-translate-y-1 md:hover:border-[#d4a940]/30 md:hover:shadow-[0_20px_40px_rgba(46,91,255,0.24)]'
       } ${className}`}
     >
       {!isOutOfStock &&
@@ -57,84 +84,83 @@ export function ProductCard({ product, className = '', onProductSelect }: Produc
           <button
             type="button"
             onClick={() => onProductSelect(product)}
-            className="absolute inset-0 z-10 rounded-[20px] sm:rounded-[26px]"
-            aria-label={`Open ${product.name}`}
+            className="absolute inset-0 z-10 rounded-[22px]"
+            aria-label={`فتح ${product.name}`}
           >
-            <span className="sr-only">{`Open ${product.name}`}</span>
+            <span className="sr-only">{`فتح ${product.name}`}</span>
           </button>
         ) : (
           <Link
             href={`/products/${product.slug}`}
-            className="absolute inset-0 z-10 rounded-[20px] sm:rounded-[26px]"
-            aria-label={`Open ${product.name}`}
+            className="absolute inset-0 z-10 rounded-[22px]"
+            aria-label={`فتح ${product.name}`}
           >
-            <span className="sr-only">{`Open ${product.name}`}</span>
+            <span className="sr-only">{`فتح ${product.name}`}</span>
           </Link>
         ))}
 
-      <div className="absolute left-2 top-2 z-20 flex items-center gap-1.5 sm:left-3 sm:top-3">
-        {product.bestSeller ? (
-          <Badge
-            variant="primary"
-            className="hidden items-center gap-1 px-2.5 py-1 text-[10px] font-bold shadow-lg sm:inline-flex"
-          >
-            <Zap className="h-3 w-3" />
-            Best Seller
-          </Badge>
-        ) : null}
-        <span className={`inline-flex rounded-full border px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.14em] sm:hidden ${stockColorByStatus[product.stockStatus]}`}>
-          {stockLabelByStatus[product.stockStatus]}
+      <div className="absolute left-2 top-2 z-20 flex items-center gap-1">
+        <span
+          className={`hidden items-center gap-1 sm:inline-flex ${premiumBadgeBase} px-2 py-1 text-[10px] ${primaryBadge.className}`}
+        >
+          {primaryBadge.icon}
+          {primaryBadge.label}
+        </span>
+        <span
+          className={`inline-flex rounded-full border px-1.5 py-[2px] text-[9px] font-semibold sm:hidden ${primaryBadge.className}`}
+        >
+          {primaryBadge.label}
         </span>
       </div>
 
-      <div className="absolute right-2 top-2 z-20 sm:right-3 sm:top-3">
-        <FavoriteButton slug={product.slug} className="scale-90 sm:scale-100" />
+      <div className="absolute right-2 top-2 z-20">
+        <FavoriteButton slug={product.slug} className="scale-[0.9]" />
       </div>
 
-      <div className="relative h-24 overflow-hidden border-b border-white/6 bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.06),transparent_55%),linear-gradient(180deg,rgba(11,17,31,0.96),rgba(8,14,26,1))] sm:h-40">
+      <div className="relative h-28 w-full overflow-hidden sm:h-32 md:h-36 lg:h-40">
         <Image
-          src={product.image}
+          src={safeImageSrc}
           alt={product.name}
           fill
-          className={`${isOutOfStock ? 'object-cover grayscale' : 'object-contain p-2 transition duration-500 group-hover:scale-[1.03] sm:p-4'}`}
+          unoptimized={useUnoptimizedImage}
+          sizes="(max-width: 640px) 33vw, (max-width: 1024px) 25vw, (max-width: 1440px) 20vw, 15vw"
+          className={`${
+            isOutOfStock
+              ? 'object-cover grayscale opacity-40'
+              : 'object-cover transition duration-500 group-hover:scale-105'
+          }`}
         />
-        <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(8,15,29,0.06),rgba(8,15,29,0.34))]" />
+        <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/30 to-transparent" />
+        <div className="absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-black/40 to-transparent opacity-70" />
 
         {isOutOfStock ? (
           <div className="absolute inset-0 z-10 flex items-center justify-center bg-slate-950/58">
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-rose-300/28 bg-rose-500/14 px-3 py-1 text-xs font-semibold text-rose-100">
-              <Lock className="h-3.5 w-3.5" />
-              Locked
+            <span className="inline-flex items-center gap-1 rounded-full border border-rose-300/28 bg-rose-500/14 px-2 py-0.5 text-[10px] font-semibold text-rose-100">
+              <Lock className="h-3 w-3" />
+              غير متاح
             </span>
           </div>
         ) : null}
       </div>
 
-      <div className="space-y-2 p-2.5 sm:space-y-3 sm:p-4">
-        <div className="flex items-center justify-between gap-2">
-          <span className={`inline-flex max-w-full truncate rounded-full border px-2 py-0.5 text-[8px] font-bold uppercase tracking-[0.12em] sm:px-2.5 sm:py-1 sm:text-[10px] ${accentClass}`}>
+      <div className="p-3 sm:p-3.5">
+        <div className="mb-2.5 flex items-center justify-between gap-2">
+          <span
+            className={`inline-flex max-w-full truncate rounded-full border px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.14em] ${accentClass}`}
+          >
             {product.platform}
           </span>
-          <span className="hidden text-[11px] font-medium text-slate-400 sm:inline">
-            {deliveryBadge || 'Fast'}
-          </span>
+          <span className="text-xs font-semibold text-slate-400">{deliveryLabel}</span>
         </div>
 
-        <h3 className="line-clamp-2 min-h-[2rem] text-[0.76rem] font-bold leading-snug text-white sm:min-h-[3rem] sm:text-[1.1rem] sm:font-extrabold">
-          {product.name}
-        </h3>
+        <h3 className="line-clamp-2 min-h-[44px] text-sm font-semibold text-white">{product.name}</h3>
 
-        <div className="flex items-center justify-between gap-2 pt-0.5">
-          <span className="text-[0.84rem] font-black text-cyan-200 sm:text-lg">
-            ${Number(product.startingPrice ?? product.price ?? 0).toFixed(2)}
-          </span>
-          <span className="rounded-full border border-cyan-400/18 bg-cyan-500/10 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.14em] text-cyan-100 sm:hidden">
-            Open
-          </span>
-        </div>
+        <span className="mt-3 inline-flex w-full items-center justify-center rounded-2xl bg-gradient-to-r from-cyan-500 to-sky-600 py-2.5 text-center text-sm font-bold text-white shadow-[0_14px_30px_rgba(14,165,233,0.22)] transition md:group-hover:from-cyan-400 md:group-hover:to-sky-500">
+          {ctaLabel}
+        </span>
       </div>
 
-      <div className="pointer-events-none absolute right-0 top-0 h-24 w-24 rounded-full bg-cyan-400/6 blur-3xl transition-all duration-500 group-hover:bg-cyan-400/10" />
+      <div className="pointer-events-none absolute right-0 top-0 h-24 w-24 rounded-full bg-[#9b78ff]/12 blur-3xl transition-all duration-500 group-hover:bg-[#d4a940]/14" />
     </article>
   )
-}
+})

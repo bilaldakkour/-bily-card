@@ -1,6 +1,22 @@
 import type { ProductProviderMode } from '@/lib/products/providerMode';
 import { enrichProductDescriptions } from './productDescriptions';
 
+export type ProductRoutingMode = 'cheapest' | 'priority';
+
+export interface ProductProviderLink {
+  providerCode: string;
+  providerProductId: string;
+  enabled?: boolean;
+  priority?: number;
+  priceSource?: 'provider' | 'manual';
+  manualCost?: number;
+  lastKnownCost?: number;
+  providerAvailability?: 'unknown' | 'available' | 'unavailable';
+  fallbackEnabled?: boolean;
+  providerProductName?: string;
+  lastSyncAt?: string;
+}
+
 export interface Product {
   id: string;
   slug: string;
@@ -9,12 +25,15 @@ export interface Product {
   fullDescription: string;
   price: number;
   startingPrice?: number;
+  hideCardPrice?: boolean;
   category: string;
   image: string;
   featured: boolean;
   bestSeller: boolean;
   inputFields: InputField[];
+  stockQuantity?: number;
   stockStatus: 'in_stock' | 'out_of_stock' | 'limited';
+  saleEnabled?: boolean;
   platform: string;
   deliveryTime: string;
   tags: string[];
@@ -25,7 +44,38 @@ export interface Product {
   groupChildren?: Product[];
   isGroupedParent?: boolean;
   providerMode?: ProductProviderMode;
+  providerLinks?: ProductProviderLink[];
+  routingMode?: ProductRoutingMode;
 }
+
+export type ProductListChild = Pick<Product, 'slug' | 'name'>;
+
+export type ProductListItem = Pick<
+  Product,
+  | 'id'
+  | 'slug'
+  | 'name'
+  | 'shortDescription'
+  | 'price'
+  | 'startingPrice'
+  | 'category'
+  | 'image'
+  | 'featured'
+  | 'bestSeller'
+  | 'stockQuantity'
+  | 'stockStatus'
+  | 'saleEnabled'
+  | 'platform'
+  | 'deliveryTime'
+  | 'groupKey'
+  | 'groupSlug'
+  | 'childCount'
+  | 'childSlugs'
+  | 'isGroupedParent'
+> & {
+  hasPackageOptions?: boolean;
+  groupChildren?: ProductListChild[];
+};
 
 export interface InputField {
   name: string;

@@ -9,6 +9,7 @@ import UserSidebar from './UserSidebar'
 interface UserPageLayoutProps {
   title: string
   mobileTitle?: string
+  mobileShellShowTopPanel?: boolean
   subtitle?: string
   breadcrumbs?: Array<{
     label: string
@@ -28,6 +29,7 @@ interface UserPageLayoutProps {
 export default function UserPageLayout({
   title,
   mobileTitle,
+  mobileShellShowTopPanel = true,
   subtitle,
   breadcrumbs,
   action,
@@ -48,8 +50,8 @@ export default function UserPageLayout({
         </div>
 
         <div className="md:hidden">
-          <div className="mx-auto max-w-[1480px] px-4 pb-0 pt-3 sm:px-5">
-            <MobileUserShell title={mobileTitle || title} />
+          <div className="mx-auto max-w-[1480px] px-4 pb-0 pt-1 sm:px-5">
+            <MobileUserShell title={mobileTitle || title} showTopPanel={mobileShellShowTopPanel} />
           </div>
         </div>
 
@@ -64,10 +66,10 @@ export default function UserPageLayout({
           </div>
         )}
 
-        <div className={`relative mx-auto ${maxWidthClass} px-4 sm:px-5 lg:px-6 ${showHeader ? 'py-8 md:py-8' : 'pb-28 pt-0 md:pb-8 md:pt-3'} ${bodyClassName}`.trim()}>
+        <div className={`relative mx-auto ${maxWidthClass} px-4 sm:px-5 lg:px-6 ${showHeader ? 'py-3 md:py-4' : 'pb-[4.5rem] pt-0 md:pb-4 md:pt-2'} ${bodyClassName}`.trim()}>
           {fixedSidebarDesktop ? (
             <div className="relative">
-              <section className="min-w-0 space-y-3 md:space-y-4 lg:pr-[372px]">{children}</section>
+              <section className="min-w-0 space-y-1.5 md:space-y-2 lg:pr-[372px]">{children}</section>
 
               <aside className="lg:contents">
                 <div className={`hidden lg:block lg:fixed lg:top-[88px] lg:h-[calc(100vh-108px)] lg:w-[352px] ${fixedSidebarRightClass}`.trim()}>
@@ -80,8 +82,8 @@ export default function UserPageLayout({
               </aside>
             </div>
           ) : (
-            <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_352px] lg:items-start">
-              <section className="min-w-0 space-y-3 md:space-y-4">{children}</section>
+            <div className="grid gap-2.5 lg:grid-cols-[minmax(0,1fr)_352px] lg:items-start">
+              <section className="min-w-0 space-y-1.5 md:space-y-2">{children}</section>
 
               <aside className="lg:w-[352px] lg:min-w-[352px] lg:self-start lg:pt-0">
                 <div className={`hidden lg:block ${sidebarSticky ? 'lg:sticky lg:top-[88px]' : ''}`.trim()}>

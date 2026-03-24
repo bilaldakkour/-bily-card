@@ -6,6 +6,7 @@ import { BadgeCheck, Mail, Shield, Wallet } from 'lucide-react'
 import { MobileMetricTile, MobilePanel } from '@/components/shared/MobileDesignSystem'
 import UserPageLayout from '@/components/shared/UserPageLayout'
 import { useLanguage } from '@/hooks/useLanguage'
+import { fetchAuthUser } from '@/lib/utils/authClient'
 
 interface ProfileData {
   id?: string
@@ -13,6 +14,7 @@ interface ProfileData {
   displayName?: string
   username?: string
   name?: string
+  avatar?: string
   role?: string
   isVerified?: boolean
   walletBalance?: {
@@ -36,21 +38,8 @@ export default function ProfilePage() {
       }
 
       try {
-        const res = await fetch('/api/auth/me', {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-          cache: 'no-store',
-        })
-
-        const data = await res.json()
-
-        if (res.ok && data?.success) {
-          setUser(data.data || data.user || null)
-        } else {
-          router.push('/login')
-          return
-        }
+        const data = await fetchAuthUser(token)
+        setUser((data as ProfileData) || null)
       } catch {
         router.push('/login')
         return
@@ -160,7 +149,7 @@ export default function ProfilePage() {
         { label: pageCopy.breadcrumbProfile, href: '/profile' },
       ]}
     >
-      <div className="space-y-4 md:hidden">
+      <div className="space-y-3 md:hidden">
         <MobilePanel>
           <div className="mb-5 flex items-center justify-between gap-4">
             <div className="min-w-0 text-right">
@@ -169,9 +158,17 @@ export default function ProfilePage() {
             </div>
 
             <div className="flex h-20 w-20 items-center justify-center rounded-full border border-cyan-300/18 bg-[linear-gradient(135deg,rgba(34,211,238,0.18),rgba(37,99,235,0.24))]">
-              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-[linear-gradient(135deg,rgba(125,211,252,0.96),rgba(59,130,246,0.98))] text-3xl font-bold text-slate-950">
-                {displayName.charAt(0).toUpperCase()}
-              </div>
+              {user.avatar ? (
+                <img
+                  src={user.avatar}
+                  alt="User avatar"
+                  className="h-16 w-16 rounded-full object-cover"
+                />
+              ) : (
+                <div className="flex h-16 w-16 items-center justify-center rounded-full bg-[linear-gradient(135deg,rgba(125,211,252,0.96),rgba(59,130,246,0.98))] text-3xl font-bold text-slate-950">
+                  {displayName.charAt(0).toUpperCase()}
+                </div>
+              )}
             </div>
           </div>
 
@@ -187,7 +184,7 @@ export default function ProfilePage() {
               </div>
             </div>
 
-            <div className="grid grid-cols-3 gap-2.5">
+            <div className="grid grid-cols-3 gap-2">
               <MobileMetricTile
                 label={pageCopy.roleLabel}
                 value={
@@ -220,7 +217,7 @@ export default function ProfilePage() {
         </MobilePanel>
       </div>
 
-      <div className="hidden gap-3 md:grid md:grid-cols-2 xl:grid-cols-3">
+      <div className="hidden gap-2.5 md:grid md:grid-cols-2 xl:grid-cols-3">
         {profileCards.map((card) => (
           <MobilePanel key={card.label} className="p-4" tone="soft">
             <p className="text-xs uppercase tracking-[0.16em] text-slate-500">{card.label}</p>

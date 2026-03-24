@@ -11,25 +11,44 @@ import {
   History,
   WalletCards,
   Package,
+  List,
   Users,
+  GitMerge,
+  PlugZap,
+  ClipboardList,
+  Images,
   LogOut
 } from 'lucide-react'
 
 const navigation = [
   { name: 'Dashboard', href: '/admin', icon: LayoutDashboard },
   { name: 'Orders', href: '/admin/orders', icon: ShoppingCart },
+  { name: 'Manual Orders', href: '/admin/manual-orders', icon: ClipboardList },
+  { name: 'Home Banners', href: '/admin/home-banners', icon: Images },
   { name: 'Deposits', href: '/admin/deposits', icon: CreditCard },
   { name: 'Payment Methods', href: '/admin/payment-methods', icon: WalletCards },
   { name: 'Transactions', href: '/admin/transactions', icon: Receipt },
   { name: 'Audit Logs', href: '/admin/audit-logs', icon: History },
   { name: 'Products', href: '/admin/products', icon: Package },
+  { name: 'Provider Products', href: '/admin/provider-products', icon: List },
+  { name: 'Provider Matrix', href: '/admin/provider-matrix', icon: GitMerge },
+  { name: 'Providers', href: '/admin/providers', icon: PlugZap },
   { name: 'Users', href: '/admin/users', icon: Users },
 ]
 
 export default function AdminSidebar() {
   const pathname = usePathname()
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    const token = localStorage.getItem('adminToken') || ''
+    try {
+      await fetch('/api/auth/logout', {
+        method: 'POST',
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+      })
+    } catch {
+      // Keep local logout flow working even if request fails.
+    }
     localStorage.removeItem('adminToken')
     window.location.href = '/admin/login'
   }

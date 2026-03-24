@@ -11,6 +11,7 @@ interface AppChromeProps {
 export default function AppChrome({ children }: AppChromeProps) {
   const pathname = usePathname() || ''
   const isAdminRoute = pathname.startsWith('/admin')
+  const isLegalPage = ['/about', '/privacy-policy', '/terms'].includes(pathname)
   const usesMobileUserShell =
     [
       '/',
@@ -29,7 +30,7 @@ export default function AppChrome({ children }: AppChromeProps) {
 
   return (
     <>
-      {!isAdminRoute && (
+      {!isAdminRoute && !isLegalPage && (
         usesMobileUserShell ? (
           <div className="hidden md:block">
             <Navbar />
@@ -43,6 +44,8 @@ export default function AppChrome({ children }: AppChromeProps) {
         className={
           isAdminRoute
             ? 'relative'
+            : isLegalPage
+              ? 'relative'
             : usesMobileUserShell
               ? 'relative md:pt-[84px]'
               : 'relative pt-[108px] md:pt-[84px]'

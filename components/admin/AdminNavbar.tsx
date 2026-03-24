@@ -6,13 +6,18 @@ import { useRouter } from 'next/navigation'
 import {
   ArrowLeft,
   CreditCard,
+  GitMerge,
   History,
   LayoutDashboard,
   LogOut,
   Menu,
   Package,
+  List,
+  PlugZap,
   Receipt,
   ShoppingCart,
+  ClipboardList,
+  Images,
   Users,
   WalletCards,
   X,
@@ -27,11 +32,16 @@ interface User {
 const navigation = [
   { name: 'Dashboard', href: '/admin', icon: LayoutDashboard },
   { name: 'Orders', href: '/admin/orders', icon: ShoppingCart },
+  { name: 'Manual Orders', href: '/admin/manual-orders', icon: ClipboardList },
+  { name: 'Home Banners', href: '/admin/home-banners', icon: Images },
   { name: 'Deposits', href: '/admin/deposits', icon: CreditCard },
   { name: 'Payment Methods', href: '/admin/payment-methods', icon: WalletCards },
   { name: 'Transactions', href: '/admin/transactions', icon: Receipt },
   { name: 'Audit Logs', href: '/admin/audit-logs', icon: History },
   { name: 'Products', href: '/admin/products', icon: Package },
+  { name: 'Provider Products', href: '/admin/provider-products', icon: List },
+  { name: 'Provider Matrix', href: '/admin/provider-matrix', icon: GitMerge },
+  { name: 'Providers', href: '/admin/providers', icon: PlugZap },
   { name: 'Users', href: '/admin/users', icon: Users },
 ]
 
@@ -44,25 +54,34 @@ export default function AdminNavbar() {
   useEffect(() => {
     setToday(new Intl.DateTimeFormat('en-US').format(new Date()))
 
-    const token = localStorage.getItem('adminToken')
-    if (!token) {
-      router.push('/admin/login')
-      return
-    }
+    const token = localStorage.getItem('adminToken') || undefined
 
     fetchAuthUser(token)
       .then((data) => {
         setUser(data)
       })
-      .catch(() => {
-        clearAuthUserCache(token)
-        localStorage.removeItem('adminToken')
-        router.push('/admin/login')
+      .catch(async () => {
+        try {
+          const data = await fetchAuthUser(undefined, true)
+          setUser(data)
+        } catch {
+          clearAuthUserCache(token)
+          localStorage.removeItem('adminToken')
+          router.push('/admin/login')
+        }
       })
   }, [router])
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
     const token = localStorage.getItem('adminToken') || undefined
+    try {
+      await fetch('/api/auth/logout', {
+        method: 'POST',
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+      })
+    } catch {
+      // Keep logout flow resilient even if network call fails.
+    }
     clearAuthUserCache(token)
     localStorage.removeItem('adminToken')
     setIsMenuOpen(false)

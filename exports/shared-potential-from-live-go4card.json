@@ -1,0 +1,1807 @@
+{
+  "source": "primary mappings + live go4card products",
+  "threshold": 0.86,
+  "count": 200,
+  "rows": [
+    {
+      "slug": "1star-chat",
+      "productName": "1Star Chat",
+      "primaryProductId": "463",
+      "primaryProductName": "1Star Chat",
+      "go4cardProductId": "452",
+      "go4cardProductName": "1star chat",
+      "confidence": 1
+    },
+    {
+      "slug": "4fun",
+      "productName": "4Fun",
+      "primaryProductId": "47",
+      "primaryProductName": "4Fun",
+      "go4cardProductId": "73",
+      "go4cardProductName": "4Fun",
+      "confidence": 1
+    },
+    {
+      "slug": "allo",
+      "productName": "Allo",
+      "primaryProductId": "76",
+      "primaryProductName": "Allo",
+      "go4cardProductId": "152",
+      "go4cardProductName": "Allo",
+      "confidence": 1
+    },
+    {
+      "slug": "amo-chat",
+      "productName": "Amo Chat",
+      "primaryProductId": "385",
+      "primaryProductName": "Amo Chat",
+      "go4cardProductId": "180",
+      "go4cardProductName": "Amo Chat",
+      "confidence": 1
+    },
+    {
+      "slug": "asha-live",
+      "productName": "Asha Live",
+      "primaryProductId": "386",
+      "primaryProductName": "Asha Live",
+      "go4cardProductId": "174",
+      "go4cardProductName": "Asha Live",
+      "confidence": 1
+    },
+    {
+      "slug": "ayome",
+      "productName": "Ayome",
+      "primaryProductId": "74",
+      "primaryProductName": "Ayome",
+      "go4cardProductId": "66",
+      "go4cardProductName": "Ayome",
+      "confidence": 1
+    },
+    {
+      "slug": "azal",
+      "productName": "Azal",
+      "primaryProductId": "58",
+      "primaryProductName": "Azal",
+      "go4cardProductId": "88",
+      "go4cardProductName": "Azal",
+      "confidence": 1
+    },
+    {
+      "slug": "baat-live",
+      "productName": "Baat Live",
+      "primaryProductId": "781",
+      "primaryProductName": "Baat Live",
+      "go4cardProductId": "616",
+      "go4cardProductName": "baat live",
+      "confidence": 1
+    },
+    {
+      "slug": "beela",
+      "productName": "Beela",
+      "primaryProductId": "52",
+      "primaryProductName": "Beela",
+      "go4cardProductId": "870",
+      "go4cardProductName": "beela",
+      "confidence": 1
+    },
+    {
+      "slug": "boli",
+      "productName": "Boli",
+      "primaryProductId": "583",
+      "primaryProductName": "Boli",
+      "go4cardProductId": "617",
+      "go4cardProductName": "boli",
+      "confidence": 1
+    },
+    {
+      "slug": "carni-live",
+      "productName": "Carni Live",
+      "primaryProductId": "449",
+      "primaryProductName": "Carni Live",
+      "go4cardProductId": "96",
+      "go4cardProductName": "Carni live",
+      "confidence": 1
+    },
+    {
+      "slug": "chillchat",
+      "productName": "ChillChat",
+      "primaryProductId": "687",
+      "primaryProductName": "ChillChat",
+      "go4cardProductId": "542",
+      "go4cardProductName": "chillchat",
+      "confidence": 1
+    },
+    {
+      "slug": "dika-live",
+      "productName": "Dika Live",
+      "primaryProductId": "768",
+      "primaryProductName": "Dika Live",
+      "go4cardProductId": "396",
+      "go4cardProductName": "dika live",
+      "confidence": 1
+    },
+    {
+      "slug": "fofo-chat",
+      "productName": "Fofo Chat",
+      "primaryProductId": "411",
+      "primaryProductName": "Fofo Chat",
+      "go4cardProductId": "181",
+      "go4cardProductName": "Fofo Chat",
+      "confidence": 1
+    },
+    {
+      "slug": "fomi-party",
+      "productName": "FOMI PARTY",
+      "primaryProductId": "767",
+      "primaryProductName": "FOMI PARTY",
+      "go4cardProductId": "161",
+      "go4cardProductName": "fomi party",
+      "confidence": 1
+    },
+    {
+      "slug": "fun-up",
+      "productName": "Fun Up",
+      "primaryProductId": "514",
+      "primaryProductName": "Fun Up",
+      "go4cardProductId": "624",
+      "go4cardProductName": "fun up",
+      "confidence": 1
+    },
+    {
+      "slug": "gamet-live",
+      "productName": "Gamet Live",
+      "primaryProductId": "440",
+      "primaryProductName": "Gamet Live",
+      "go4cardProductId": "201",
+      "go4cardProductName": "Gamet Live",
+      "confidence": 1
+    },
+    {
+      "slug": "gimme",
+      "productName": "Gimme",
+      "primaryProductId": "41",
+      "primaryProductName": "Gimme",
+      "go4cardProductId": "83",
+      "go4cardProductName": "Gimme",
+      "confidence": 1
+    },
+    {
+      "slug": "hago",
+      "productName": "Hago",
+      "primaryProductId": "472",
+      "primaryProductName": "Hago",
+      "go4cardProductId": "521",
+      "go4cardProductName": "hago",
+      "confidence": 1
+    },
+    {
+      "slug": "halo-star",
+      "productName": "Halo star",
+      "primaryProductId": "587",
+      "primaryProductName": "Halo star",
+      "go4cardProductId": "563",
+      "go4cardProductName": "halo star",
+      "confidence": 1
+    },
+    {
+      "slug": "hami-party",
+      "productName": "Hami Party",
+      "primaryProductId": "380",
+      "primaryProductName": "Hami Party",
+      "go4cardProductId": "163",
+      "go4cardProductName": "Hami Party",
+      "confidence": 1
+    },
+    {
+      "slug": "hart-live",
+      "productName": "Hart live",
+      "primaryProductId": "654",
+      "primaryProductName": "Hart live",
+      "go4cardProductId": "397",
+      "go4cardProductName": "hart live",
+      "confidence": 1
+    },
+    {
+      "slug": "hati",
+      "productName": "Hati",
+      "primaryProductId": "588",
+      "primaryProductName": "Hati",
+      "go4cardProductId": "611",
+      "go4cardProductName": "hati",
+      "confidence": 1
+    },
+    {
+      "slug": "hayuki",
+      "productName": "Hayuki",
+      "primaryProductId": "492",
+      "primaryProductName": "Hayuki",
+      "go4cardProductId": "560",
+      "go4cardProductName": "hayuki",
+      "confidence": 1
+    },
+    {
+      "slug": "hi-party",
+      "productName": "Hi Party",
+      "primaryProductId": "381",
+      "primaryProductName": "Hi Party",
+      "go4cardProductId": "159",
+      "go4cardProductName": "Hi Party",
+      "confidence": 1
+    },
+    {
+      "slug": "higo-chat",
+      "productName": "Higo Chat",
+      "primaryProductId": "378",
+      "primaryProductName": "Higo Chat",
+      "go4cardProductId": "189",
+      "go4cardProductName": "Higo Chat",
+      "confidence": 1
+    },
+    {
+      "slug": "honey-jar",
+      "productName": "Honey Jar",
+      "primaryProductId": "66",
+      "primaryProductName": "Honey Jar",
+      "go4cardProductId": "84",
+      "go4cardProductName": "Honey Jar",
+      "confidence": 1
+    },
+    {
+      "slug": "hopi-star",
+      "productName": "Hopi Star",
+      "primaryProductId": "678",
+      "primaryProductName": "Hopi Star",
+      "go4cardProductId": "270",
+      "go4cardProductName": "hopi star",
+      "confidence": 1
+    },
+    {
+      "slug": "infun",
+      "productName": "Infun",
+      "primaryProductId": "680",
+      "primaryProductName": "Infun",
+      "go4cardProductId": "549",
+      "go4cardProductName": "infun",
+      "confidence": 1
+    },
+    {
+      "slug": "junko",
+      "productName": "junko",
+      "primaryProductId": "403",
+      "primaryProductName": "junko",
+      "go4cardProductId": "63",
+      "go4cardProductName": "Junko",
+      "confidence": 1
+    },
+    {
+      "slug": "karak-chat",
+      "productName": "KARAK CHAT",
+      "primaryProductId": "766",
+      "primaryProductName": "KARAK CHAT",
+      "go4cardProductId": "399",
+      "go4cardProductName": "karak chat",
+      "confidence": 1
+    },
+    {
+      "slug": "kwai",
+      "productName": "Kwai",
+      "primaryProductId": "56",
+      "primaryProductName": "Kwai",
+      "go4cardProductId": "128",
+      "go4cardProductName": "Kwai",
+      "confidence": 1
+    },
+    {
+      "slug": "laki-chat",
+      "productName": "Laki Chat",
+      "primaryProductId": "489",
+      "primaryProductName": "Laki Chat",
+      "go4cardProductId": "562",
+      "go4cardProductName": "laki chat",
+      "confidence": 1
+    },
+    {
+      "slug": "layla",
+      "productName": "Layla",
+      "primaryProductId": "29",
+      "primaryProductName": "Layla",
+      "go4cardProductId": "155",
+      "go4cardProductName": "Layla",
+      "confidence": 1
+    },
+    {
+      "slug": "light-chat",
+      "productName": "Light Chat",
+      "primaryProductId": "78",
+      "primaryProductName": "Light Chat",
+      "go4cardProductId": "111",
+      "go4cardProductName": "Light Chat",
+      "confidence": 1
+    },
+    {
+      "slug": "likee",
+      "productName": "Likee",
+      "primaryProductId": "11",
+      "primaryProductName": "Likee",
+      "go4cardProductId": "47",
+      "go4cardProductName": "Likee",
+      "confidence": 1
+    },
+    {
+      "slug": "matemet",
+      "productName": "MateMet",
+      "primaryProductId": "686",
+      "primaryProductName": "MateMet",
+      "go4cardProductId": "540",
+      "go4cardProductName": "MateMet",
+      "confidence": 1
+    },
+    {
+      "slug": "moli-star",
+      "productName": "Moli Star",
+      "primaryProductId": "479",
+      "primaryProductName": "Moli Star",
+      "go4cardProductId": "76",
+      "go4cardProductName": "Moli Star",
+      "confidence": 1
+    },
+    {
+      "slug": "nahki",
+      "productName": "Nahki",
+      "primaryProductId": "581",
+      "primaryProductName": "Nahki",
+      "go4cardProductId": "573",
+      "go4cardProductName": "nahki",
+      "confidence": 1
+    },
+    {
+      "slug": "nawa-live",
+      "productName": "Nawa Live",
+      "primaryProductId": "446",
+      "primaryProductName": "Nawa Live",
+      "go4cardProductId": "188",
+      "go4cardProductName": "Nawa Live",
+      "confidence": 1
+    },
+    {
+      "slug": "olamet",
+      "productName": "Olamet",
+      "primaryProductId": "60",
+      "primaryProductName": "Olamet",
+      "go4cardProductId": "184",
+      "go4cardProductName": "Olamet",
+      "confidence": 1
+    },
+    {
+      "slug": "party-star",
+      "productName": "Party Star",
+      "primaryProductId": "18",
+      "primaryProductName": "Party Star",
+      "go4cardProductId": "58",
+      "go4cardProductName": "Party Star",
+      "confidence": 1
+    },
+    {
+      "slug": "pawa-live",
+      "productName": "Pawa Live",
+      "primaryProductId": "435",
+      "primaryProductName": "Pawa Live",
+      "go4cardProductId": "194",
+      "go4cardProductName": "pawa live",
+      "confidence": 1
+    },
+    {
+      "slug": "perfect-money",
+      "productName": "Perfect Money",
+      "primaryProductId": "238",
+      "primaryProductName": "Perfect Money",
+      "go4cardProductId": "236",
+      "go4cardProductName": "Perfect Money",
+      "confidence": 1
+    },
+    {
+      "slug": "pk-star",
+      "productName": "PK Star",
+      "primaryProductId": "619",
+      "primaryProductName": "PK Star",
+      "go4cardProductId": "148",
+      "go4cardProductName": "PK star",
+      "confidence": 1
+    },
+    {
+      "slug": "poppo-live",
+      "productName": "Poppo Live",
+      "primaryProductId": "17",
+      "primaryProductName": "Poppo Live",
+      "go4cardProductId": "61",
+      "go4cardProductName": "Poppo live",
+      "confidence": 1
+    },
+    {
+      "slug": "pota-live",
+      "productName": "Pota live",
+      "primaryProductId": "511",
+      "primaryProductName": "Pota live",
+      "go4cardProductId": "112",
+      "go4cardProductName": "pota live",
+      "confidence": 1
+    },
+    {
+      "slug": "psn-uae",
+      "productName": "PSN UAE 100$",
+      "primaryProductId": "284",
+      "primaryProductName": "PSN UAE 100$",
+      "go4cardProductId": "679",
+      "go4cardProductName": "psn uae 100$",
+      "confidence": 1
+    },
+    {
+      "slug": "psn-uae",
+      "productName": "PSN UAE 50$",
+      "primaryProductId": "283",
+      "primaryProductName": "PSN UAE 50$",
+      "go4cardProductId": "678",
+      "go4cardProductName": "psn uae 50$",
+      "confidence": 1
+    },
+    {
+      "slug": "psn-uae",
+      "productName": "PSN UAE 20$",
+      "primaryProductId": "282",
+      "primaryProductName": "PSN UAE 20$",
+      "go4cardProductId": "677",
+      "go4cardProductName": "psn uae 20$",
+      "confidence": 1
+    },
+    {
+      "slug": "psn-uae",
+      "productName": "PSN UAE 10$",
+      "primaryProductId": "281",
+      "primaryProductName": "PSN UAE 10$",
+      "go4cardProductId": "676",
+      "go4cardProductName": "psn uae 10$",
+      "confidence": 1
+    },
+    {
+      "slug": "psn-usa",
+      "productName": "PSN USA 50$",
+      "primaryProductId": "275",
+      "primaryProductName": "PSN USA 50$",
+      "go4cardProductId": "680",
+      "go4cardProductName": "psn usa 50$",
+      "confidence": 1
+    },
+    {
+      "slug": "psn-usa",
+      "productName": "PSN USA 25$",
+      "primaryProductId": "274",
+      "primaryProductName": "PSN USA 25$",
+      "go4cardProductId": "149",
+      "go4cardProductName": "PSN USA 25$",
+      "confidence": 1
+    },
+    {
+      "slug": "psn-usa",
+      "productName": "PSN USA 10$",
+      "primaryProductId": "273",
+      "primaryProductName": "PSN USA 10$",
+      "go4cardProductId": "147",
+      "go4cardProductName": "PSN USA 10$",
+      "confidence": 1
+    },
+    {
+      "slug": "sama-chat",
+      "productName": "Sama Chat",
+      "primaryProductId": "432",
+      "primaryProductName": "Sama Chat",
+      "go4cardProductId": "186",
+      "go4cardProductName": "Sama Chat",
+      "confidence": 1
+    },
+    {
+      "slug": "sawalfna",
+      "productName": "Sawalfna",
+      "primaryProductId": "484",
+      "primaryProductName": "Sawalfna",
+      "go4cardProductId": "467",
+      "go4cardProductName": "sawalfna",
+      "confidence": 1
+    },
+    {
+      "slug": "soul-star",
+      "productName": "Soul Star",
+      "primaryProductId": "379",
+      "primaryProductName": "Soul Star",
+      "go4cardProductId": "179",
+      "go4cardProductName": "soul Star",
+      "confidence": 1
+    },
+    {
+      "slug": "soyo",
+      "productName": "Soyo",
+      "primaryProductId": "49",
+      "primaryProductName": "Soyo",
+      "go4cardProductId": "137",
+      "go4cardProductName": "Soyo",
+      "confidence": 1
+    },
+    {
+      "slug": "steam-usa",
+      "productName": "STEAM USA 20",
+      "primaryProductId": "634",
+      "primaryProductName": "STEAM USA 20",
+      "go4cardProductId": "655",
+      "go4cardProductName": "steam usa 20$",
+      "confidence": 1
+    },
+    {
+      "slug": "steam-usa",
+      "productName": "STEAM USA 10",
+      "primaryProductId": "633",
+      "primaryProductName": "STEAM USA 10",
+      "go4cardProductId": "653",
+      "go4cardProductName": "steam usa 10$",
+      "confidence": 1
+    },
+    {
+      "slug": "sugo",
+      "productName": "Sugo",
+      "primaryProductId": "27",
+      "primaryProductName": "Sugo",
+      "go4cardProductId": "65",
+      "go4cardProductName": "Sugo",
+      "confidence": 1
+    },
+    {
+      "slug": "sugo-tr",
+      "productName": "SUGO TR",
+      "primaryProductId": "487",
+      "primaryProductName": "SUGO TR",
+      "go4cardProductId": "584",
+      "go4cardProductName": "sugo tr",
+      "confidence": 1
+    },
+    {
+      "slug": "super-live",
+      "productName": "Super Live",
+      "primaryProductId": "68",
+      "primaryProductName": "Super Live",
+      "go4cardProductId": "91",
+      "go4cardProductName": "Super Live",
+      "confidence": 1
+    },
+    {
+      "slug": "tango",
+      "productName": "Tango",
+      "primaryProductId": "26",
+      "primaryProductName": "Tango",
+      "go4cardProductId": "173",
+      "go4cardProductName": "Tango",
+      "confidence": 1
+    },
+    {
+      "slug": "tomohi",
+      "productName": "Tomohi",
+      "primaryProductId": "677",
+      "primaryProductName": "Tomohi",
+      "go4cardProductId": "308",
+      "go4cardProductName": "TOMOHI",
+      "confidence": 1
+    },
+    {
+      "slug": "up-fun",
+      "productName": "Up Fun",
+      "primaryProductId": "486",
+      "primaryProductName": "Up Fun",
+      "go4cardProductId": "570",
+      "go4cardProductName": "up fun",
+      "confidence": 1
+    },
+    {
+      "slug": "vova",
+      "productName": "Vova",
+      "primaryProductId": "522",
+      "primaryProductName": "Vova",
+      "go4cardProductId": "648",
+      "go4cardProductName": "vova",
+      "confidence": 1
+    },
+    {
+      "slug": "waaw-chat",
+      "productName": "Waaw Chat",
+      "primaryProductId": "523",
+      "primaryProductName": "Waaw Chat",
+      "go4cardProductId": "571",
+      "go4cardProductName": "waaw chat",
+      "confidence": 1
+    },
+    {
+      "slug": "wadi-chat",
+      "productName": "WADI CHAT",
+      "primaryProductId": "693",
+      "primaryProductName": "WADI CHAT",
+      "go4cardProductId": "871",
+      "go4cardProductName": "wadi chat",
+      "confidence": 1
+    },
+    {
+      "slug": "waho",
+      "productName": "Waho",
+      "primaryProductId": "53",
+      "primaryProductName": "Waho",
+      "go4cardProductId": "109",
+      "go4cardProductName": "Waho",
+      "confidence": 1
+    },
+    {
+      "slug": "waki-star",
+      "productName": "Waki Star",
+      "primaryProductId": "439",
+      "primaryProductName": "Waki Star",
+      "go4cardProductId": "203",
+      "go4cardProductName": "waki star",
+      "confidence": 1
+    },
+    {
+      "slug": "wasla-chat",
+      "productName": "Wasla Chat",
+      "primaryProductId": "405",
+      "primaryProductName": "Wasla Chat",
+      "go4cardProductId": "176",
+      "go4cardProductName": "Wasla Chat",
+      "confidence": 1
+    },
+    {
+      "slug": "wego",
+      "productName": "Wego",
+      "primaryProductId": "35",
+      "primaryProductName": "Wego",
+      "go4cardProductId": "75",
+      "go4cardProductName": "Wego",
+      "confidence": 1
+    },
+    {
+      "slug": "westar",
+      "productName": "Westar",
+      "primaryProductId": "525",
+      "primaryProductName": "Westar",
+      "go4cardProductId": "166",
+      "go4cardProductName": "westar",
+      "confidence": 1
+    },
+    {
+      "slug": "yaahlan",
+      "productName": "Yaahlan",
+      "primaryProductId": "28",
+      "primaryProductName": "Yaahlan",
+      "go4cardProductId": "62",
+      "go4cardProductName": "Yaahlan",
+      "confidence": 1
+    },
+    {
+      "slug": "yami-star",
+      "productName": "Yami Star",
+      "primaryProductId": "412",
+      "primaryProductName": "Yami Star",
+      "go4cardProductId": "193",
+      "go4cardProductName": "Yami Star",
+      "confidence": 1
+    },
+    {
+      "slug": "yaza",
+      "productName": "Yaza",
+      "primaryProductId": "477",
+      "primaryProductName": "Yaza",
+      "go4cardProductId": "395",
+      "go4cardProductName": "yaza",
+      "confidence": 1
+    },
+    {
+      "slug": "yo2",
+      "productName": "YO2",
+      "primaryProductId": "714",
+      "primaryProductName": "YO2",
+      "go4cardProductId": "339",
+      "go4cardProductName": "yo2",
+      "confidence": 1
+    },
+    {
+      "slug": "yoho",
+      "productName": "Yoho",
+      "primaryProductId": "45",
+      "primaryProductName": "Yoho",
+      "go4cardProductId": "138",
+      "go4cardProductName": "yoho",
+      "confidence": 1
+    },
+    {
+      "slug": "yohoo-star",
+      "productName": "Yohoo star",
+      "primaryProductId": "586",
+      "primaryProductName": "Yohoo star",
+      "go4cardProductId": "526",
+      "go4cardProductName": "yohoo star",
+      "confidence": 1
+    },
+    {
+      "slug": "yoyo",
+      "productName": "Yoyo",
+      "primaryProductId": "42",
+      "primaryProductName": "Yoyo",
+      "go4cardProductId": "69",
+      "go4cardProductName": "Yoyo",
+      "confidence": 1
+    },
+    {
+      "slug": "zaar",
+      "productName": "Zaar",
+      "primaryProductId": "625",
+      "primaryProductName": "Zaar",
+      "go4cardProductId": "556",
+      "go4cardProductName": "ِzaar",
+      "confidence": 1
+    },
+    {
+      "slug": "4fun",
+      "productName": "Daily Sim - 4fun",
+      "primaryProductId": "556",
+      "primaryProductName": "Daily Sim - 4fun",
+      "go4cardProductId": "73",
+      "go4cardProductName": "4Fun",
+      "confidence": 0.93
+    },
+    {
+      "slug": "ahlan",
+      "productName": "Ahlan",
+      "primaryProductId": "46",
+      "primaryProductName": "Ahlan",
+      "go4cardProductId": "520",
+      "go4cardProductName": "ahlan chat",
+      "confidence": 0.93
+    },
+    {
+      "slug": "amar-chat",
+      "productName": "Amar chat",
+      "primaryProductId": "347",
+      "primaryProductName": "Amar chat",
+      "go4cardProductId": "43",
+      "go4cardProductName": "Amar",
+      "confidence": 0.93
+    },
+    {
+      "slug": "bigo",
+      "productName": "Bigo",
+      "primaryProductId": "37",
+      "primaryProductName": "Bigo",
+      "go4cardProductId": "57",
+      "go4cardProductName": "Bigo Live",
+      "confidence": 0.93
+    },
+    {
+      "slug": "binmo",
+      "productName": "Binmo",
+      "primaryProductId": "43",
+      "primaryProductName": "Binmo",
+      "go4cardProductId": "116",
+      "go4cardProductName": "Binmo Chat",
+      "confidence": 0.93
+    },
+    {
+      "slug": "bobo",
+      "productName": "Bobo",
+      "primaryProductId": "84",
+      "primaryProductName": "Bobo",
+      "go4cardProductId": "146",
+      "go4cardProductName": "Bobo Chat",
+      "confidence": 0.93
+    },
+    {
+      "slug": "chamet-live",
+      "productName": "Chamet Live",
+      "primaryProductId": "350",
+      "primaryProductName": "Chamet Live",
+      "go4cardProductId": "77",
+      "go4cardProductName": "Chamet",
+      "confidence": 0.93
+    },
+    {
+      "slug": "cloz",
+      "productName": "Cloz",
+      "primaryProductId": "617",
+      "primaryProductName": "Cloz",
+      "go4cardProductId": "544",
+      "go4cardProductName": "cloz chat",
+      "confidence": 0.93
+    },
+    {
+      "slug": "cocco",
+      "productName": "Cocco",
+      "primaryProductId": "30",
+      "primaryProductName": "Cocco",
+      "go4cardProductId": "68",
+      "go4cardProductName": "Cocco Live2",
+      "confidence": 0.93
+    },
+    {
+      "slug": "dana-chat",
+      "productName": "Dana Chat",
+      "primaryProductId": "434",
+      "primaryProductName": "Dana Chat",
+      "go4cardProductId": "185",
+      "go4cardProductName": "Dana",
+      "confidence": 0.93
+    },
+    {
+      "slug": "dawa",
+      "productName": "Dawa",
+      "primaryProductId": "684",
+      "primaryProductName": "Dawa",
+      "go4cardProductId": "175",
+      "go4cardProductName": "dawa chat",
+      "confidence": 0.93
+    },
+    {
+      "slug": "dimo",
+      "productName": "Dimo",
+      "primaryProductId": "39",
+      "primaryProductName": "Dimo",
+      "go4cardProductId": "72",
+      "go4cardProductName": "Wanasa (Dimo)",
+      "confidence": 0.93
+    },
+    {
+      "slug": "ditto",
+      "productName": "Ditto",
+      "primaryProductId": "36",
+      "primaryProductName": "Ditto",
+      "go4cardProductId": "630",
+      "go4cardProductName": "Ditto Chat",
+      "confidence": 0.93
+    },
+    {
+      "slug": "doli-live",
+      "productName": "DOLI LIVE",
+      "primaryProductId": "672",
+      "primaryProductName": "DOLI LIVE",
+      "go4cardProductId": "554",
+      "go4cardProductName": "doli",
+      "confidence": 0.93
+    },
+    {
+      "slug": "fancy",
+      "productName": "Fancy",
+      "primaryProductId": "85",
+      "primaryProductName": "Fancy",
+      "go4cardProductId": "120",
+      "go4cardProductName": "Fancy Live",
+      "confidence": 0.93
+    },
+    {
+      "slug": "gold",
+      "productName": "RAZER GOLD 100$ GLOBAL",
+      "primaryProductId": "303",
+      "primaryProductName": "RAZER GOLD 100$ GLOBAL",
+      "go4cardProductId": "862",
+      "go4cardProductName": "razer gold 1$",
+      "confidence": 0.93
+    },
+    {
+      "slug": "gold",
+      "productName": "RAZER GOLD 50$ GLOBAL",
+      "primaryProductId": "302",
+      "primaryProductName": "RAZER GOLD 50$ GLOBAL",
+      "go4cardProductId": "864",
+      "go4cardProductName": "razer gold 5$",
+      "confidence": 0.93
+    },
+    {
+      "slug": "gold",
+      "productName": "RAZER GOLD 20$ GLOBAL",
+      "primaryProductId": "301",
+      "primaryProductName": "RAZER GOLD 20$ GLOBAL",
+      "go4cardProductId": "863",
+      "go4cardProductName": "razer gold 2$",
+      "confidence": 0.93
+    },
+    {
+      "slug": "gold",
+      "productName": "RAZER GOLD 10$ GLOBAL",
+      "primaryProductId": "300",
+      "primaryProductName": "RAZER GOLD 10$ GLOBAL",
+      "go4cardProductId": "862",
+      "go4cardProductName": "razer gold 1$",
+      "confidence": 0.93
+    },
+    {
+      "slug": "habi-chat",
+      "productName": "Habi Chat",
+      "primaryProductId": "346",
+      "primaryProductName": "Habi Chat",
+      "go4cardProductId": "178",
+      "go4cardProductName": "Habi",
+      "confidence": 0.93
+    },
+    {
+      "slug": "haki",
+      "productName": "Haki",
+      "primaryProductId": "59",
+      "primaryProductName": "Haki",
+      "go4cardProductId": "85",
+      "go4cardProductName": "Haki Chat",
+      "confidence": 0.93
+    },
+    {
+      "slug": "hawa",
+      "productName": "Hawa",
+      "primaryProductId": "69",
+      "primaryProductName": "Hawa",
+      "go4cardProductId": "104",
+      "go4cardProductName": "Hawa Chat",
+      "confidence": 0.93
+    },
+    {
+      "slug": "hiya",
+      "productName": "Hiya",
+      "primaryProductId": "51",
+      "primaryProductName": "Hiya",
+      "go4cardProductId": "90",
+      "go4cardProductName": "Hiya chat",
+      "confidence": 0.93
+    },
+    {
+      "slug": "hoby-chat",
+      "productName": "Hoby Chat",
+      "primaryProductId": "344",
+      "primaryProductName": "Hoby Chat",
+      "go4cardProductId": "165",
+      "go4cardProductName": "Hoby",
+      "confidence": 0.93
+    },
+    {
+      "slug": "ifun",
+      "productName": "Ifun",
+      "primaryProductId": "32",
+      "primaryProductName": "Ifun",
+      "go4cardProductId": "619",
+      "go4cardProductName": "Ifun Chat",
+      "confidence": 0.93
+    },
+    {
+      "slug": "imo-coins",
+      "productName": "imo 100 Coins",
+      "primaryProductId": "124",
+      "primaryProductName": "imo 100 Coins",
+      "go4cardProductId": "195",
+      "go4cardProductName": "Imo 100",
+      "confidence": 0.93
+    },
+    {
+      "slug": "itunes-us",
+      "productName": "ITUNES 5$ US",
+      "primaryProductId": "290",
+      "primaryProductName": "ITUNES 5$ US",
+      "go4cardProductId": "471",
+      "go4cardProductName": "itunes 5$",
+      "confidence": 0.93
+    },
+    {
+      "slug": "jawaker-unit",
+      "productName": "Jawaker Unit",
+      "primaryProductId": "91",
+      "primaryProductName": "Jawaker Unit",
+      "go4cardProductId": "2",
+      "go4cardProductName": "Jawaker",
+      "confidence": 0.93
+    },
+    {
+      "slug": "joyo-live",
+      "productName": "Joyo Live",
+      "primaryProductId": "517",
+      "primaryProductName": "Joyo Live",
+      "go4cardProductId": "580",
+      "go4cardProductName": "joyo",
+      "confidence": 0.93
+    },
+    {
+      "slug": "kiti",
+      "productName": "Kiti",
+      "primaryProductId": "491",
+      "primaryProductName": "Kiti",
+      "go4cardProductId": "646",
+      "go4cardProductName": "kiti live",
+      "confidence": 0.93
+    },
+    {
+      "slug": "kiyo",
+      "productName": "Kiyo",
+      "primaryProductId": "71",
+      "primaryProductName": "Kiyo",
+      "go4cardProductId": "78",
+      "go4cardProductName": "Kiyo Live",
+      "confidence": 0.93
+    },
+    {
+      "slug": "lama",
+      "productName": "Lama",
+      "primaryProductId": "70",
+      "primaryProductName": "Lama",
+      "go4cardProductId": "103",
+      "go4cardProductName": "Lama Chat",
+      "confidence": 0.93
+    },
+    {
+      "slug": "layam-chat",
+      "productName": "Layam Chat",
+      "primaryProductId": "413",
+      "primaryProductName": "Layam Chat",
+      "go4cardProductId": "183",
+      "go4cardProductName": "Layam",
+      "confidence": 0.93
+    },
+    {
+      "slug": "ligo",
+      "productName": "Ligo",
+      "primaryProductId": "64",
+      "primaryProductName": "Ligo",
+      "go4cardProductId": "102",
+      "go4cardProductName": "Ligo live",
+      "confidence": 0.93
+    },
+    {
+      "slug": "lions-chat",
+      "productName": "Lions chat",
+      "primaryProductId": "349",
+      "primaryProductName": "Lions chat",
+      "go4cardProductId": "167",
+      "go4cardProductName": "Lions",
+      "confidence": 0.93
+    },
+    {
+      "slug": "lklk",
+      "productName": "Lklk",
+      "primaryProductId": "585",
+      "primaryProductName": "Lklk",
+      "go4cardProductId": "126",
+      "go4cardProductName": "LkLk chat",
+      "confidence": 0.93
+    },
+    {
+      "slug": "majlis",
+      "productName": "Majlis/مجلس",
+      "primaryProductId": "377",
+      "primaryProductName": "Majlis/مجلس",
+      "go4cardProductId": "187",
+      "go4cardProductName": "Majlis",
+      "confidence": 0.93
+    },
+    {
+      "slug": "maza-chat",
+      "productName": "Maza Chat",
+      "primaryProductId": "512",
+      "primaryProductName": "Maza Chat",
+      "go4cardProductId": "602",
+      "go4cardProductName": "maza",
+      "confidence": 0.93
+    },
+    {
+      "slug": "mazag",
+      "productName": "Mazag",
+      "primaryProductId": "618",
+      "primaryProductName": "Mazag",
+      "go4cardProductId": "602",
+      "go4cardProductName": "maza",
+      "confidence": 0.93
+    },
+    {
+      "slug": "mico-live",
+      "productName": "Mico Live",
+      "primaryProductId": "57",
+      "primaryProductName": "Mico Live",
+      "go4cardProductId": "71",
+      "go4cardProductName": "Mico",
+      "confidence": 0.93
+    },
+    {
+      "slug": "migo",
+      "productName": "Migo",
+      "primaryProductId": "67",
+      "primaryProductName": "Migo",
+      "go4cardProductId": "86",
+      "go4cardProductName": "Migo Live",
+      "confidence": 0.93
+    },
+    {
+      "slug": "mtn",
+      "productName": "MTN 7200",
+      "primaryProductId": "733",
+      "primaryProductName": "MTN 7200",
+      "go4cardProductId": "744",
+      "go4cardProductName": "MtN",
+      "confidence": 0.93
+    },
+    {
+      "slug": "mtn",
+      "productName": "MTN 6000",
+      "primaryProductId": "732",
+      "primaryProductName": "MTN 6000",
+      "go4cardProductId": "744",
+      "go4cardProductName": "MtN",
+      "confidence": 0.93
+    },
+    {
+      "slug": "mtn",
+      "productName": "MTN 5000",
+      "primaryProductId": "731",
+      "primaryProductName": "MTN 5000",
+      "go4cardProductId": "744",
+      "go4cardProductName": "MtN",
+      "confidence": 0.93
+    },
+    {
+      "slug": "mtn",
+      "productName": "MTN 4500",
+      "primaryProductId": "730",
+      "primaryProductName": "MTN 4500",
+      "go4cardProductId": "744",
+      "go4cardProductName": "MtN",
+      "confidence": 0.93
+    },
+    {
+      "slug": "mtn",
+      "productName": "MTN 3500",
+      "primaryProductId": "729",
+      "primaryProductName": "MTN 3500",
+      "go4cardProductId": "744",
+      "go4cardProductName": "MtN",
+      "confidence": 0.93
+    },
+    {
+      "slug": "mtn",
+      "productName": "MTN3000",
+      "primaryProductId": "728",
+      "primaryProductName": "MTN3000",
+      "go4cardProductId": "744",
+      "go4cardProductName": "MtN",
+      "confidence": 0.93
+    },
+    {
+      "slug": "mtn",
+      "productName": "MTN 2500",
+      "primaryProductId": "727",
+      "primaryProductName": "MTN 2500",
+      "go4cardProductId": "744",
+      "go4cardProductName": "MtN",
+      "confidence": 0.93
+    },
+    {
+      "slug": "mtn",
+      "productName": "MTN 2000",
+      "primaryProductId": "726",
+      "primaryProductName": "MTN 2000",
+      "go4cardProductId": "744",
+      "go4cardProductName": "MtN",
+      "confidence": 0.93
+    },
+    {
+      "slug": "mtn",
+      "productName": "MTN 1000",
+      "primaryProductId": "725",
+      "primaryProductName": "MTN 1000",
+      "go4cardProductId": "744",
+      "go4cardProductName": "MtN",
+      "confidence": 0.93
+    },
+    {
+      "slug": "mtn",
+      "productName": "MTN 700",
+      "primaryProductId": "724",
+      "primaryProductName": "MTN 700",
+      "go4cardProductId": "744",
+      "go4cardProductName": "MtN",
+      "confidence": 0.93
+    },
+    {
+      "slug": "mtn",
+      "productName": "MTN 600",
+      "primaryProductId": "723",
+      "primaryProductName": "MTN 600",
+      "go4cardProductId": "744",
+      "go4cardProductName": "MtN",
+      "confidence": 0.93
+    },
+    {
+      "slug": "mtn",
+      "productName": "MTN 500",
+      "primaryProductId": "722",
+      "primaryProductName": "MTN 500",
+      "go4cardProductId": "744",
+      "go4cardProductName": "MtN",
+      "confidence": 0.93
+    },
+    {
+      "slug": "mtn",
+      "productName": "MTN 400",
+      "primaryProductId": "721",
+      "primaryProductName": "MTN 400",
+      "go4cardProductId": "744",
+      "go4cardProductName": "MtN",
+      "confidence": 0.93
+    },
+    {
+      "slug": "mtn",
+      "productName": "MTN 300",
+      "primaryProductId": "720",
+      "primaryProductName": "MTN 300",
+      "go4cardProductId": "744",
+      "go4cardProductName": "MtN",
+      "confidence": 0.93
+    },
+    {
+      "slug": "mtn",
+      "productName": "MTN 280",
+      "primaryProductId": "719",
+      "primaryProductName": "MTN 280",
+      "go4cardProductId": "744",
+      "go4cardProductName": "MtN",
+      "confidence": 0.93
+    },
+    {
+      "slug": "mtn",
+      "productName": "MTN 260",
+      "primaryProductId": "718",
+      "primaryProductName": "MTN 260",
+      "go4cardProductId": "744",
+      "go4cardProductName": "MtN",
+      "confidence": 0.93
+    },
+    {
+      "slug": "mtn",
+      "productName": "MTN 230",
+      "primaryProductId": "717",
+      "primaryProductName": "MTN 230",
+      "go4cardProductId": "744",
+      "go4cardProductName": "MtN",
+      "confidence": 0.93
+    },
+    {
+      "slug": "mtn",
+      "productName": "MTN 200",
+      "primaryProductId": "716",
+      "primaryProductName": "MTN 200",
+      "go4cardProductId": "744",
+      "go4cardProductName": "MtN",
+      "confidence": 0.93
+    },
+    {
+      "slug": "mtn",
+      "productName": "MTN 190",
+      "primaryProductId": "715",
+      "primaryProductName": "MTN 190",
+      "go4cardProductId": "744",
+      "go4cardProductName": "MtN",
+      "confidence": 0.93
+    },
+    {
+      "slug": "mtn",
+      "productName": "MTN 170",
+      "primaryProductId": "401",
+      "primaryProductName": "MTN 170",
+      "go4cardProductId": "744",
+      "go4cardProductName": "MtN",
+      "confidence": 0.93
+    },
+    {
+      "slug": "mtn",
+      "productName": "MTN 110",
+      "primaryProductId": "399",
+      "primaryProductName": "MTN 110",
+      "go4cardProductId": "744",
+      "go4cardProductName": "MtN",
+      "confidence": 0.93
+    },
+    {
+      "slug": "mtn",
+      "productName": "MTN 100",
+      "primaryProductId": "398",
+      "primaryProductName": "MTN 100",
+      "go4cardProductId": "744",
+      "go4cardProductName": "MtN",
+      "confidence": 0.93
+    },
+    {
+      "slug": "mtn",
+      "productName": "MTN 90",
+      "primaryProductId": "397",
+      "primaryProductName": "MTN 90",
+      "go4cardProductId": "744",
+      "go4cardProductName": "MtN",
+      "confidence": 0.93
+    },
+    {
+      "slug": "mtn",
+      "productName": "85 MTN",
+      "primaryProductId": "230",
+      "primaryProductName": "85 MTN",
+      "go4cardProductId": "744",
+      "go4cardProductName": "MtN",
+      "confidence": 0.93
+    },
+    {
+      "slug": "mtn",
+      "productName": "70 MTN",
+      "primaryProductId": "229",
+      "primaryProductName": "70 MTN",
+      "go4cardProductId": "744",
+      "go4cardProductName": "MtN",
+      "confidence": 0.93
+    },
+    {
+      "slug": "mtn",
+      "productName": "60 MTN",
+      "primaryProductId": "228",
+      "primaryProductName": "60 MTN",
+      "go4cardProductId": "744",
+      "go4cardProductName": "MtN",
+      "confidence": 0.93
+    },
+    {
+      "slug": "mtn",
+      "productName": "50 MTN",
+      "primaryProductId": "226",
+      "primaryProductName": "50 MTN",
+      "go4cardProductId": "744",
+      "go4cardProductName": "MtN",
+      "confidence": 0.93
+    },
+    {
+      "slug": "oohla",
+      "productName": "Oohla",
+      "primaryProductId": "48",
+      "primaryProductName": "Oohla",
+      "go4cardProductId": "522",
+      "go4cardProductName": "oohla live",
+      "confidence": 0.93
+    },
+    {
+      "slug": "psn-usa",
+      "productName": "PSN USA 100$",
+      "primaryProductId": "276",
+      "primaryProductName": "PSN USA 100$",
+      "go4cardProductId": "147",
+      "go4cardProductName": "PSN USA 10$",
+      "confidence": 0.93
+    },
+    {
+      "slug": "roka-live",
+      "productName": "Roka Live",
+      "primaryProductId": "691",
+      "primaryProductName": "Roka Live",
+      "go4cardProductId": "156",
+      "go4cardProductName": "Roka",
+      "confidence": 0.93
+    },
+    {
+      "slug": "rooh",
+      "productName": "Rooh",
+      "primaryProductId": "685",
+      "primaryProductName": "Rooh",
+      "go4cardProductId": "150",
+      "go4cardProductName": "rooh Chat",
+      "confidence": 0.93
+    },
+    {
+      "slug": "saada-chat",
+      "productName": "Saada Chat",
+      "primaryProductId": "437",
+      "primaryProductName": "Saada Chat",
+      "go4cardProductId": "171",
+      "go4cardProductName": "saada",
+      "confidence": 0.93
+    },
+    {
+      "slug": "sahra-chat",
+      "productName": "Sahra Chat",
+      "primaryProductId": "488",
+      "primaryProductName": "Sahra Chat",
+      "go4cardProductId": "588",
+      "go4cardProductName": "sahra",
+      "confidence": 0.93
+    },
+    {
+      "slug": "sala-live",
+      "productName": "Sala Live",
+      "primaryProductId": "519",
+      "primaryProductName": "Sala Live",
+      "go4cardProductId": "651",
+      "go4cardProductName": "sala",
+      "confidence": 0.93
+    },
+    {
+      "slug": "salam",
+      "productName": "Salam",
+      "primaryProductId": "87",
+      "primaryProductName": "Salam",
+      "go4cardProductId": "105",
+      "go4cardProductName": "Salam Chat",
+      "confidence": 0.93
+    },
+    {
+      "slug": "saya-likee",
+      "productName": "Saya Likee",
+      "primaryProductId": "495",
+      "primaryProductName": "Saya Likee",
+      "go4cardProductId": "47",
+      "go4cardProductName": "Likee",
+      "confidence": 0.93
+    },
+    {
+      "slug": "sodfa-chat",
+      "productName": "Sodfa Chat",
+      "primaryProductId": "438",
+      "primaryProductName": "Sodfa Chat",
+      "go4cardProductId": "118",
+      "go4cardProductName": "sodfa",
+      "confidence": 0.93
+    },
+    {
+      "slug": "star-maker-unit",
+      "productName": "Star Maker unit",
+      "primaryProductId": "351",
+      "primaryProductName": "Star Maker unit",
+      "go4cardProductId": "191",
+      "go4cardProductName": "Star Maker",
+      "confidence": 0.93
+    },
+    {
+      "slug": "syriatel",
+      "productName": "syriatel 951.92",
+      "primaryProductId": "754",
+      "primaryProductName": "syriatel 951.92",
+      "go4cardProductId": "788",
+      "go4cardProductName": "Syriatel",
+      "confidence": 0.93
+    },
+    {
+      "slug": "syriatel",
+      "productName": "syriatel 769.23",
+      "primaryProductId": "753",
+      "primaryProductName": "syriatel 769.23",
+      "go4cardProductId": "788",
+      "go4cardProductName": "Syriatel",
+      "confidence": 0.93
+    },
+    {
+      "slug": "syriatel",
+      "productName": "syriatel 721.15",
+      "primaryProductId": "752",
+      "primaryProductName": "syriatel 721.15",
+      "go4cardProductId": "788",
+      "go4cardProductName": "Syriatel",
+      "confidence": 0.93
+    },
+    {
+      "slug": "syriatel",
+      "productName": "syriatel 625",
+      "primaryProductId": "751",
+      "primaryProductName": "syriatel 625",
+      "go4cardProductId": "788",
+      "go4cardProductName": "Syriatel",
+      "confidence": 0.93
+    },
+    {
+      "slug": "syriatel",
+      "productName": "syriatel 576.92",
+      "primaryProductId": "750",
+      "primaryProductName": "syriatel 576.92",
+      "go4cardProductId": "788",
+      "go4cardProductName": "Syriatel",
+      "confidence": 0.93
+    },
+    {
+      "slug": "syriatel",
+      "productName": "syriatel 432.69",
+      "primaryProductId": "748",
+      "primaryProductName": "syriatel 432.69",
+      "go4cardProductId": "788",
+      "go4cardProductName": "Syriatel",
+      "confidence": 0.93
+    },
+    {
+      "slug": "syriatel",
+      "productName": "syriatel 370.19",
+      "primaryProductId": "747",
+      "primaryProductName": "syriatel 370.19",
+      "go4cardProductId": "788",
+      "go4cardProductName": "Syriatel",
+      "confidence": 0.93
+    },
+    {
+      "slug": "syriatel",
+      "productName": "syriatel 288.46",
+      "primaryProductId": "745",
+      "primaryProductName": "syriatel 288.46",
+      "go4cardProductId": "788",
+      "go4cardProductName": "Syriatel",
+      "confidence": 0.93
+    },
+    {
+      "slug": "syriatel",
+      "productName": "syriatel 240.38",
+      "primaryProductId": "744",
+      "primaryProductName": "syriatel 240.38",
+      "go4cardProductId": "788",
+      "go4cardProductName": "Syriatel",
+      "confidence": 0.93
+    },
+    {
+      "slug": "syriatel",
+      "productName": "syriatel 183.65",
+      "primaryProductId": "741",
+      "primaryProductName": "syriatel 183.65",
+      "go4cardProductId": "788",
+      "go4cardProductName": "Syriatel",
+      "confidence": 0.93
+    },
+    {
+      "slug": "syriatel",
+      "productName": "syriatel 163.46",
+      "primaryProductId": "739",
+      "primaryProductName": "syriatel 163.46",
+      "go4cardProductId": "788",
+      "go4cardProductName": "Syriatel",
+      "confidence": 0.93
+    },
+    {
+      "slug": "syriatel",
+      "productName": "syriatel 144.23",
+      "primaryProductId": "737",
+      "primaryProductName": "syriatel 144.23",
+      "go4cardProductId": "788",
+      "go4cardProductName": "Syriatel",
+      "confidence": 0.93
+    },
+    {
+      "slug": "syriatel",
+      "productName": "syriatel 125",
+      "primaryProductId": "735",
+      "primaryProductName": "syriatel 125",
+      "go4cardProductId": "788",
+      "go4cardProductName": "Syriatel",
+      "confidence": 0.93
+    },
+    {
+      "slug": "syriatel",
+      "productName": "100.96  syriatel",
+      "primaryProductId": "516",
+      "primaryProductName": "100.96  syriatel",
+      "go4cardProductId": "788",
+      "go4cardProductName": "Syriatel",
+      "confidence": 0.93
+    },
+    {
+      "slug": "syriatel",
+      "productName": "96.15 syriatel",
+      "primaryProductId": "515",
+      "primaryProductName": "96.15 syriatel",
+      "go4cardProductId": "788",
+      "go4cardProductName": "Syriatel",
+      "confidence": 0.93
+    },
+    {
+      "slug": "syriatel",
+      "productName": "81.73  Syriatel",
+      "primaryProductId": "224",
+      "primaryProductName": "81.73  Syriatel",
+      "go4cardProductId": "788",
+      "go4cardProductName": "Syriatel",
+      "confidence": 0.93
+    },
+    {
+      "slug": "syriatel",
+      "productName": "77.88 Syriatel",
+      "primaryProductId": "223",
+      "primaryProductName": "77.88 Syriatel",
+      "go4cardProductId": "788",
+      "go4cardProductName": "Syriatel",
+      "confidence": 0.93
+    },
+    {
+      "slug": "syriatel",
+      "productName": "115.38 Syriatel",
+      "primaryProductId": "221",
+      "primaryProductName": "115.38 Syriatel",
+      "go4cardProductId": "788",
+      "go4cardProductName": "Syriatel",
+      "confidence": 0.93
+    },
+    {
+      "slug": "syriatel",
+      "productName": "62.5 Syriatel",
+      "primaryProductId": "219",
+      "primaryProductName": "62.5 Syriatel",
+      "go4cardProductId": "788",
+      "go4cardProductName": "Syriatel",
+      "confidence": 0.93
+    },
+    {
+      "slug": "syriatel",
+      "productName": "52.88 Syriatel",
+      "primaryProductId": "218",
+      "primaryProductName": "52.88 Syriatel",
+      "go4cardProductId": "788",
+      "go4cardProductName": "Syriatel",
+      "confidence": 0.93
+    },
+    {
+      "slug": "tada",
+      "productName": "Tada",
+      "primaryProductId": "54",
+      "primaryProductName": "Tada",
+      "go4cardProductId": "134",
+      "go4cardProductName": "Tada Chat",
+      "confidence": 0.93
+    },
+    {
+      "slug": "taka",
+      "productName": "Taka",
+      "primaryProductId": "65",
+      "primaryProductName": "Taka",
+      "go4cardProductId": "130",
+      "go4cardProductName": "Taka Chat",
+      "confidence": 0.93
+    },
+    {
+      "slug": "tami",
+      "productName": "Tami",
+      "primaryProductId": "33",
+      "primaryProductName": "Tami",
+      "go4cardProductId": "557",
+      "go4cardProductName": "tami 2",
+      "confidence": 0.93
+    },
+    {
+      "slug": "tango",
+      "productName": "Daily Sim - tango",
+      "primaryProductId": "548",
+      "primaryProductName": "Daily Sim - tango",
+      "go4cardProductId": "173",
+      "go4cardProductName": "Tango",
+      "confidence": 0.93
+    },
+    {
+      "slug": "tayyb-chat",
+      "productName": "Tayyb Chat",
+      "primaryProductId": "689",
+      "primaryProductName": "Tayyb Chat",
+      "go4cardProductId": "428",
+      "go4cardProductName": "Tayyb",
+      "confidence": 0.93
+    },
+    {
+      "slug": "tumile-coins",
+      "productName": "tumile 360 coins",
+      "primaryProductId": "193",
+      "primaryProductName": "tumile 360 coins",
+      "go4cardProductId": "319",
+      "go4cardProductName": "Tumile 360",
+      "confidence": 0.93
+    },
+    {
+      "slug": "vilaa",
+      "productName": "Vilaa",
+      "primaryProductId": "620",
+      "primaryProductName": "Vilaa",
+      "go4cardProductId": "631",
+      "go4cardProductName": "vilaa chat",
+      "confidence": 0.93
+    },
+    {
+      "slug": "whiteout-survival-d",
+      "productName": "Whiteout Survival 99 D",
+      "primaryProductId": "666",
+      "primaryProductName": "Whiteout Survival 99 D",
+      "go4cardProductId": "527",
+      "go4cardProductName": "Whiteout Survival 99",
+      "confidence": 0.93
+    },
+    {
+      "slug": "wyak",
+      "productName": "Wyak",
+      "primaryProductId": "72",
+      "primaryProductName": "Wyak",
+      "go4cardProductId": "341",
+      "go4cardProductName": "wyak lite",
+      "confidence": 0.93
+    },
+    {
+      "slug": "xena",
+      "productName": "Xena",
+      "primaryProductId": "24",
+      "primaryProductName": "Xena",
+      "go4cardProductId": "70",
+      "go4cardProductName": "Xena Live",
+      "confidence": 0.93
+    },
+    {
+      "slug": "yoki",
+      "productName": "Yoki",
+      "primaryProductId": "679",
+      "primaryProductName": "Yoki",
+      "go4cardProductId": "543",
+      "go4cardProductName": "Yoki Chat",
+      "confidence": 0.93
+    },
+    {
+      "slug": "yooy",
+      "productName": "Yooy",
+      "primaryProductId": "38",
+      "primaryProductName": "Yooy",
+      "go4cardProductId": "154",
+      "go4cardProductName": "Yooy Chat",
+      "confidence": 0.93
+    },
+    {
+      "slug": "yoppo-chat",
+      "productName": "Yoppo Chat",
+      "primaryProductId": "690",
+      "primaryProductName": "Yoppo Chat",
+      "go4cardProductId": "524",
+      "go4cardProductName": "yoppo",
+      "confidence": 0.93
+    },
+    {
+      "slug": "yudo-chat",
+      "productName": "Yudo Chat",
+      "primaryProductId": "460",
+      "primaryProductName": "Yudo Chat",
+      "go4cardProductId": "451",
+      "go4cardProductName": "yudo",
+      "confidence": 0.93
+    },
+    {
+      "slug": "diamond",
+      "productName": "Yalla Ludo 55800 Diamond",
+      "primaryProductId": "135",
+      "primaryProductName": "Yalla Ludo 55800 Diamond",
+      "go4cardProductId": "258",
+      "go4cardProductName": "Yalla Ludo Diamond 55800",
+      "confidence": 0.9
+    },
+    {
+      "slug": "diamond",
+      "productName": "Yalla Ludo 27640 Diamond",
+      "primaryProductId": "134",
+      "primaryProductName": "Yalla Ludo 27640 Diamond",
+      "go4cardProductId": "257",
+      "go4cardProductName": "Yalla Ludo Diamond 27640",
+      "confidence": 0.9
+    },
+    {
+      "slug": "diamond",
+      "productName": "Yalla Ludo 13580 Diamond",
+      "primaryProductId": "133",
+      "primaryProductName": "Yalla Ludo 13580 Diamond",
+      "go4cardProductId": "256",
+      "go4cardProductName": "Yalla Ludo Diamond 13580",
+      "confidence": 0.9
+    },
+    {
+      "slug": "diamond",
+      "productName": "Yalla Ludo 5150 Diamond",
+      "primaryProductId": "132",
+      "primaryProductName": "Yalla Ludo 5150 Diamond",
+      "go4cardProductId": "255",
+      "go4cardProductName": "Yalla Ludo Diamond 5150",
+      "confidence": 0.9
+    },
+    {
+      "slug": "diamond",
+      "productName": "Yalla Ludo 2320 Diamond",
+      "primaryProductId": "131",
+      "primaryProductName": "Yalla Ludo 2320 Diamond",
+      "go4cardProductId": "254",
+      "go4cardProductName": "Yalla Ludo Diamond 2320",
+      "confidence": 0.9
+    }
+  ]
+}

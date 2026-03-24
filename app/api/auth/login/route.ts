@@ -3,6 +3,10 @@ import { connectDB } from '@/lib/db/mongodb';
 import User from '@/lib/models/User';
 import { LoginSchema } from '@/lib/utils/validation';
 import { generateToken } from '@/lib/auth/jwt';
+import { AUTH_COOKIE_NAME, getAuthCookieOptions } from '@/lib/auth/cookies'
+import { issueEmailVerificationOtp } from '@/lib/auth/emailVerification';
+import { isEmailReverificationRequired } from '@/lib/auth/reverification';
+import { sendOtpEmail } from '@/lib/email';
 import { handleError } from '@/lib/utils/errors';
 import { enforceRateLimit } from '@/lib/utils/rateLimit';
 import { isTestModeEnabled, logTestMode } from '@/lib/utils/testMode';
@@ -30,7 +34,7 @@ export async function POST(req: NextRequest) {
         role: mockUser.role,
       })
 
-      return NextResponse.json(
+      const response = NextResponse.json(
         {
           success: true,
           token,
@@ -47,6 +51,8 @@ export async function POST(req: NextRequest) {
         },
         { status: 200 }
       );
+      response.cookies.set(AUTH_COOKIE_NAME, token, getAuthCookieOptions())
+      return response
     }
 
     await connectDB();
@@ -84,6 +90,46 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    if (!user.isVerified) {
+      return NextResponse.json(
+        {
+          success: false,
+          requiresVerification: true,
+          verificationType: 'signup',
+          message: 'Please verify your email before signing in.',
+          data: {
+            email: user.email,
+          },
+        },
+        { status: 403 }
+      );
+    }
+
+    if (
+      isEmailReverificationRequired({
+        role: user.role,
+        isVerified: user.isVerified,
+        lastEmailVerificationAt: user.lastEmailVerificationAt,
+        forceEmailReauth: user.forceEmailReauth,
+      })
+    ) {
+      const otp = await issueEmailVerificationOtp(user.email)
+      await sendOtpEmail(user.email, otp)
+
+      return NextResponse.json(
+        {
+          success: false,
+          requiresVerification: true,
+          verificationType: 'reauth',
+          message: 'For your security, please verify your email again before signing in.',
+          data: {
+            email: user.email,
+          },
+        },
+        { status: 403 }
+      )
+    }
+
     // Generate token
     const token = generateToken({
       userId: user._id.toString(),
@@ -91,7 +137,7 @@ export async function POST(req: NextRequest) {
       role: user.role,
     });
 
-    return NextResponse.json(
+    const response = NextResponse.json(
       {
         success: true,
         token,
@@ -107,6 +153,8 @@ export async function POST(req: NextRequest) {
       },
       { status: 200 }
     );
+    response.cookies.set(AUTH_COOKIE_NAME, token, getAuthCookieOptions())
+    return response
   } catch (error: any) {
     const { statusCode, message } = handleError(error);
     return NextResponse.json(

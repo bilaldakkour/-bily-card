@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import axios from 'axios'
 import { connectDB } from '@/lib/db/mongodb'
 import { extractToken, verifyToken } from '@/lib/auth/jwt'
+import { AUTH_COOKIE_NAME } from '@/lib/auth/cookies'
 import {
   applyPricingMapToProducts,
   getEffectivePriceForProduct,
@@ -229,7 +230,10 @@ async function getLocalStoredPriceByProviderProductId(
 export async function GET(request: NextRequest) {
   try {
     if (isTestModeEnabled()) {
-      const token = extractToken(request.headers.get('authorization'))
+      const token =
+        extractToken(request.headers.get('authorization')) ||
+        request.cookies.get(AUTH_COOKIE_NAME)?.value ||
+        null
       const user = token ? verifyToken(token) : null
       const userId = user?.userId || null
       const { searchParams } = new URL(request.url)
@@ -282,7 +286,10 @@ export async function GET(request: NextRequest) {
 
     await connectDB()
 
-    const token = extractToken(request.headers.get('authorization'))
+    const token =
+      extractToken(request.headers.get('authorization')) ||
+      request.cookies.get(AUTH_COOKIE_NAME)?.value ||
+      null
     const user = token ? verifyToken(token) : null
     const userId = user?.userId || null
 

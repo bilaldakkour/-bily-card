@@ -1,26 +1,51 @@
-import { NextRequest, NextResponse } from 'next/server'
+﻿import { NextRequest, NextResponse } from 'next/server'
 import axios from 'axios'
+import { randomUUID } from 'crypto'
 import mongoose from 'mongoose'
 import { connectDB } from '@/lib/db/mongodb'
+import CustomProduct from '@/lib/models/CustomProduct'
 import Order from '@/lib/models/Order'
+import ProductOverride from '@/lib/models/ProductOverride'
 import User from '@/lib/models/User'
 import Wallet from '@/lib/models/Wallet'
 import WalletTransaction from '@/lib/models/WalletTransaction'
+import BlockedPlayerId from '@/lib/models/BlockedPlayerId'
 import { extractToken, verifyToken } from '@/lib/auth/jwt'
+import { AUTH_COOKIE_NAME } from '@/lib/auth/cookies'
+import { isEmailReverificationRequired } from '@/lib/auth/reverification'
+import { restoreManagedStockBySlug } from '@/lib/orders/managedStock'
+import {
+  mapProviderStatusToLocal,
+  resolveProviderOrderSync,
+} from '@/lib/orders/providerSync'
+import { refundOrderAndRestoreStock } from '@/lib/orders/refundRecovery'
+import {
+  calculateManualCountTotalRounded,
+  calculateManualInternalCostTotal,
+  calculateManualInternalCostUnitPrice,
+  calculateManualInternalProfitTotal,
+  isManualCountProduct,
+} from '@/lib/pricing/manualCount'
 import { getEffectivePriceForProduct } from '@/lib/pricing/engine'
-import { getCatalogProductBySlug, getCatalogProducts } from '@/lib/data/catalogProducts'
+import {
+  getCatalogProductBySlug,
+  getCatalogProducts,
+  invalidateCatalogProductsCache,
+} from '@/lib/data/catalogProducts'
 import { generateOrderId } from '@/lib/utils/helpers'
 import {
-  getProviderApiConfig,
   providerHeaders,
   type ProviderApiConfig,
   type ProviderSlot,
 } from '@/lib/providers/providerConfig'
+import { createRoutedOrder } from '@/lib/orders/providerRoutingService'
 import {
   normalizeProductProviderMode,
   type ProductProviderMode,
 } from '@/lib/products/providerMode'
+import { isProductAvailable } from '@/lib/products/stock'
 import { sendAdminNotification } from '@/lib/services/adminNotificationService'
+import { enforceRateLimit } from '@/lib/utils/rateLimit'
 import { isTestModeEnabled, logTestMode } from '@/lib/utils/testMode'
 import { createTestModeOrder, getTestModeOrders, getTestModeUser } from '@/lib/utils/testModeStore'
 
@@ -48,10 +73,117 @@ interface NotificationUserProfile {
   email?: string
 }
 
+type ProviderSubmissionError = Error & {
+  providerBalanceIssue?: boolean
+  providerMessage?: string
+  providerPayload?: unknown
+}
+
+type ManagedStockTarget =
+  | {
+      kind: 'custom'
+      slug: string
+    }
+  | {
+      kind: 'override'
+      slug: string
+    }
+
+type ManagedStockReservation =
+  | {
+      status: 'reserved'
+      target: ManagedStockTarget
+      remainingQuantity: number
+    }
+  | {
+      status: 'insufficient'
+      target: ManagedStockTarget
+    }
+  | {
+      status: 'not_managed'
+    }
+
+async function ensureActiveSessionUser(userId: string) {
+  const authUser = (await User.findById(userId)
+    .select('email role isBlocked isVerified lastEmailVerificationAt forceEmailReauth')
+    .lean()) as {
+      email?: string
+      role?: string
+      isBlocked?: boolean
+      isVerified?: boolean
+      lastEmailVerificationAt?: Date | string | null
+      forceEmailReauth?: boolean | null
+    } | null
+
+  if (!authUser || authUser.isBlocked) {
+    return NextResponse.json(
+      { success: false, message: 'Account is inactive' },
+      { status: 403 }
+    )
+  }
+
+  if (authUser.role !== 'admin' && !authUser.isVerified) {
+    return NextResponse.json(
+      { success: false, message: 'Please verify your email first' },
+      { status: 403 }
+    )
+  }
+
+  if (
+    isEmailReverificationRequired({
+      role: authUser.role,
+      isVerified: authUser.isVerified,
+      lastEmailVerificationAt: authUser.lastEmailVerificationAt,
+      forceEmailReauth: authUser.forceEmailReauth,
+    })
+  ) {
+    return NextResponse.json(
+      {
+        success: false,
+        requiresVerification: true,
+        verificationType: 'reauth',
+        message: 'Email verification expired. Please sign in again and verify your email.',
+        data: {
+          email: authUser.email || '',
+        },
+      },
+      { status: 403 }
+    )
+  }
+
+  return null
+}
+
+const PROVIDER_SUPPORT_MESSAGE_AR = 'الرجاء المتابعة مع BilyCard Support.'
+const PROVIDER_SUPPORT_MESSAGE_EN = 'Please follow up with BilyCard Support.'
+const PROVIDER_SUPPORT_MESSAGES = [PROVIDER_SUPPORT_MESSAGE_AR, PROVIDER_SUPPORT_MESSAGE_EN]
+
+function resolveRequestLanguage(request: NextRequest): 'ar' | 'en' {
+  const custom = String(request.headers.get('x-bilycard-language') || '')
+    .trim()
+    .toLowerCase()
+  if (custom.startsWith('ar')) return 'ar'
+  if (custom.startsWith('en')) return 'en'
+
+  const acceptLanguage = String(request.headers.get('accept-language') || '').toLowerCase()
+  return acceptLanguage.includes('ar') ? 'ar' : 'en'
+}
+
+function getProviderSupportMessage(language: 'ar' | 'en') {
+  return language === 'ar' ? PROVIDER_SUPPORT_MESSAGE_AR : PROVIDER_SUPPORT_MESSAGE_EN
+}
+
 function toPositiveNumber(value: unknown): number {
   const parsed = Number(value)
   if (!Number.isFinite(parsed) || parsed <= 0) return 0
   return parsed
+}
+
+function normalizePlayerIdForBlock(value: unknown) {
+  return String(value || '')
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, '')
 }
 
 function resolveNotificationUserName(
@@ -88,6 +220,25 @@ function getProductProviderMode(
 function getProviderSlotForMode(mode: ProductProviderMode): ProviderSlot | null {
   if (mode === 'manual') return null
   return mode === 'secondary' ? 'secondary' : 'primary'
+}
+
+async function getExplicitManualCustomCostPrice(slug: string): Promise<number | null> {
+  const normalizedSlug = String(slug || '').trim().toLowerCase()
+  if (!normalizedSlug) return null
+
+  const manualProduct = (await CustomProduct.findOne({
+    slug: normalizedSlug,
+    active: true,
+  })
+    .select('costPrice')
+    .lean()) as { costPrice?: number } | null
+
+  const costPrice = Number(manualProduct?.costPrice)
+  if (!Number.isFinite(costPrice) || costPrice < 0) {
+    return null
+  }
+
+  return costPrice
 }
 
 function normalizeText(value: string) {
@@ -174,12 +325,284 @@ function findMatchingProviderProduct(
   return null
 }
 
-function mapProviderStatusToLocal(status?: string) {
-  const value = String(status || '').toLowerCase()
-  if (value === 'completed') return 'completed'
-  if (value === 'cancelled') return 'refunded'
-  if (value === 'pending') return 'pending'
-  return 'pending'
+function flattenProviderPayload(value: unknown, depth = 0): string[] {
+  if (depth > 3 || value == null) return []
+
+  if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
+    const text = String(value).trim()
+    return text ? [text] : []
+  }
+
+  if (Array.isArray(value)) {
+    return value.flatMap((entry) => flattenProviderPayload(entry, depth + 1))
+  }
+
+  if (typeof value === 'object') {
+    return Object.values(value as Record<string, unknown>).flatMap((entry) =>
+      flattenProviderPayload(entry, depth + 1)
+    )
+  }
+
+  return []
+}
+
+function extractProviderMessage(source: unknown) {
+  return flattenProviderPayload(source)
+    .join(' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+
+function isProviderBalanceIssue(source: unknown) {
+  const haystack = extractProviderMessage(source).toLowerCase()
+  if (!haystack) return false
+
+  return [
+    'insufficient balance',
+    'insufficient funds',
+    'insufficient credit',
+    'not enough balance',
+    'not enough funds',
+    'no enough balance',
+    'not sufficient balance',
+    'low balance',
+    'low credit',
+    'credit is not enough',
+    'balance is not enough',
+    'balance too low',
+    'wallet balance is low',
+    'out of balance',
+    'no balance',
+    'رصيد',
+    'الرصيد',
+    'غير كاف',
+    'غير متوفر',
+  ].some((token) => haystack.includes(token))
+}
+
+function createProviderSubmissionError(source: unknown, fallback = 'Provider submission failed') {
+  const providerMessage = extractProviderMessage(source) || fallback
+  const error = new Error(providerMessage) as ProviderSubmissionError
+
+  error.providerBalanceIssue = isProviderBalanceIssue(source)
+  error.providerMessage = providerMessage
+  error.providerPayload = source
+
+  return error
+}
+
+function getWalletBalanceField(currency?: string) {
+  return currency === 'LBP' ? 'balance_lbp' : 'balance_usd'
+}
+
+function buildManagedStockUpdatePipeline(quantityDelta: number) {
+  const safeDelta = Math.max(0, Math.floor(Math.abs(Number(quantityDelta) || 0)))
+
+  if (safeDelta === 0) {
+    return [
+      {
+        $set: {
+          stockQuantity: '$stockQuantity',
+        },
+      },
+      {
+        $set: {
+          stockStatus: {
+            $cond: [{ $gt: ['$stockQuantity', 0] }, 'in_stock', 'out_of_stock'],
+          },
+        },
+      },
+    ]
+  }
+
+  const quantityExpression =
+    quantityDelta >= 0
+      ? { $add: ['$stockQuantity', safeDelta] }
+      : { $subtract: ['$stockQuantity', safeDelta] }
+
+  return [
+    {
+      $set: {
+        stockQuantity: quantityExpression,
+      },
+    },
+    {
+      $set: {
+        stockStatus: {
+          $cond: [{ $gt: ['$stockQuantity', 0] }, 'in_stock', 'out_of_stock'],
+        },
+      },
+    },
+  ]
+}
+
+async function reserveManagedStock(params: {
+  slug: string
+  quantity: number
+  session: mongoose.ClientSession
+}): Promise<ManagedStockReservation> {
+  const normalizedSlug = String(params.slug || '').trim().toLowerCase()
+  const requestedQuantity = Math.max(0, Math.floor(Number(params.quantity) || 0))
+
+  if (!normalizedSlug || requestedQuantity <= 0) {
+    return { status: 'not_managed' }
+  }
+
+  const customProduct = await CustomProduct.findOneAndUpdate(
+    {
+      slug: normalizedSlug,
+      active: true,
+      saleEnabled: { $ne: false },
+      stockQuantity: { $gte: requestedQuantity },
+    },
+    buildManagedStockUpdatePipeline(-requestedQuantity),
+    {
+      new: true,
+      session: params.session,
+    }
+  )
+    .select('slug stockQuantity')
+    .lean()
+
+  if (customProduct) {
+    return {
+      status: 'reserved',
+      target: {
+        kind: 'custom',
+        slug: normalizedSlug,
+      },
+      remainingQuantity: Math.max(0, Number(customProduct.stockQuantity || 0)),
+    }
+  }
+
+  const customExists = await CustomProduct.exists({
+    slug: normalizedSlug,
+    active: true,
+  }).session(params.session)
+
+  if (customExists) {
+    return {
+      status: 'insufficient',
+      target: {
+        kind: 'custom',
+        slug: normalizedSlug,
+      },
+    }
+  }
+
+  const overrideProduct = await ProductOverride.findOneAndUpdate(
+    {
+      slug: normalizedSlug,
+      active: { $ne: false },
+      saleEnabled: { $ne: false },
+      stockQuantity: {
+        $exists: true,
+        $gte: requestedQuantity,
+      },
+    },
+    buildManagedStockUpdatePipeline(-requestedQuantity),
+    {
+      new: true,
+      session: params.session,
+    }
+  )
+    .select('slug stockQuantity')
+    .lean()
+
+  if (overrideProduct) {
+    return {
+      status: 'reserved',
+      target: {
+        kind: 'override',
+        slug: normalizedSlug,
+      },
+      remainingQuantity: Math.max(0, Number(overrideProduct.stockQuantity || 0)),
+    }
+  }
+
+  const overrideExists = await ProductOverride.exists({
+    slug: normalizedSlug,
+    active: { $ne: false },
+    stockQuantity: { $exists: true },
+  }).session(params.session)
+
+  if (overrideExists) {
+    return {
+      status: 'insufficient',
+      target: {
+        kind: 'override',
+        slug: normalizedSlug,
+      },
+    }
+  }
+
+  return { status: 'not_managed' }
+}
+
+async function refundOrderForProviderBalanceIssue(params: {
+  order: any
+  userId: string
+  refundAmount: number
+  message: string
+  providerPayload?: unknown
+  providerStatusOverride?: string
+}) {
+  const session = await mongoose.startSession()
+
+  try {
+    session.startTransaction()
+
+    const balanceField = getWalletBalanceField(params.order.currency)
+    const balanceBefore = Number(params.order.walletBalanceAfter || 0)
+
+    const updatedWallet = await Wallet.findOneAndUpdate(
+      { userId: params.userId },
+      {
+        $inc: { [balanceField]: params.refundAmount },
+        $set: { lastUpdated: new Date() },
+      },
+      { new: true, session }
+    )
+
+    if (!updatedWallet) {
+      throw new Error('Wallet refund failed')
+    }
+
+    const balanceAfter = Number((updatedWallet as any)?.[balanceField] || 0)
+
+    params.order.status = 'refunded'
+    params.order.providerStatus = String(params.providerStatusOverride || 'provider_balance_unavailable')
+    params.order.notes = params.message
+    params.order.failureReason = params.message
+    params.order.walletBalanceAfter = balanceAfter
+    params.order.providerResponse = params.providerPayload || params.order.providerResponse
+
+    await params.order.save({ session })
+
+    await WalletTransaction.create(
+      [
+        {
+          userId: params.userId,
+          type: 'refund',
+          amount: params.refundAmount,
+          currency: params.order.currency === 'LBP' ? 'LBP' : 'USD',
+          balanceBefore,
+          balanceAfter,
+          orderId: params.order._id,
+          notes: `Refund: ${params.message}`,
+        },
+      ],
+      { session }
+    )
+
+    await session.commitTransaction()
+    return balanceAfter
+  } catch (error) {
+    await session.abortTransaction()
+    throw error
+  } finally {
+    session.endSession()
+  }
 }
 
 function isLikelyProviderBackedProduct(productId: string) {
@@ -209,6 +632,20 @@ function getProductCountRules(product: Awaited<ReturnType<typeof getCatalogProdu
 }
 
 function buildOrderResponse(order: any, productImage?: string) {
+  const rawStatus = String(order.status || 'pending')
+  const preservedSupportMessage = [order.failureReason, order.notes]
+    .map((value) => String(value || '').trim())
+    .find((value) => PROVIDER_SUPPORT_MESSAGES.includes(value))
+  const customerMessage =
+    preservedSupportMessage ||
+    (rawStatus === 'failed' || rawStatus === 'rejected'
+      ? 'We could not complete this order.'
+      : rawStatus === 'refunded'
+        ? 'This order was refunded.'
+        : rawStatus === 'completed'
+          ? 'Order completed successfully.'
+          : 'Your order is being processed.')
+
   return {
     _id: String(order._id),
     orderId: String(order.orderId || ''),
@@ -221,11 +658,12 @@ function buildOrderResponse(order: any, productImage?: string) {
     total: Number(order.total || 0),
     walletBalanceBefore: Number(order.walletBalanceBefore || 0),
     walletBalanceAfter: Number(order.walletBalanceAfter || 0),
-    status: String(order.status || 'pending'),
-    providerStatus: String(order.providerStatus || ''),
+    status: rawStatus,
+    providerStatus: '',
     selectedPackageOption: String(order.selectedPackageOption || ''),
-    notes: String(order.notes || ''),
-    failureReason: String(order.failureReason || ''),
+    notes: customerMessage,
+    failureReason:
+      rawStatus === 'failed' || rawStatus === 'rejected' || preservedSupportMessage ? customerMessage : '',
     createdAt: order.createdAt,
   }
 }
@@ -392,45 +830,47 @@ async function createProviderOrder(params: {
   quantity: number
   clientOrderId: string
 }) {
-  const response = await axios.post(
-    `${params.providerConfig.base}/orders/create/`,
-    {
-      product: params.providerProductId,
-      account_id: params.playerId,
-      quantity: params.quantity,
-      client_order_id: params.clientOrderId,
-    },
-    {
-      headers: providerHeaders(params.providerConfig),
-      timeout: 20000,
+  try {
+    const response = await axios.post(
+      `${params.providerConfig.base}/orders/create/`,
+      {
+        product: params.providerProductId,
+        account_id: params.playerId,
+        quantity: params.quantity,
+        client_order_id: params.clientOrderId,
+      },
+      {
+        headers: providerHeaders(params.providerConfig),
+        timeout: 20000,
+      }
+    )
+
+    const payload = response.data
+    const providerStatus = String(
+      payload?.status || payload?.order_status || payload?.data?.status || payload?.details?.status || ''
+    ).toLowerCase()
+
+    const hasExplicitFailure =
+      payload?.success === false ||
+      payload?.ok === false ||
+      Boolean(payload?.error) ||
+      Boolean(payload?.errors) ||
+      ['failed', 'error', 'rejected', 'cancelled'].includes(providerStatus) ||
+      (isProviderBalanceIssue(payload) && providerStatus !== 'completed')
+
+    if (hasExplicitFailure) {
+      throw createProviderSubmissionError(payload)
     }
-  )
 
-  return response.data
-}
+    return payload
+  } catch (error: any) {
+    if (error?.providerPayload) throw error
 
-async function fetchProviderOrderStatus(order: {
-  providerConfig: ProviderApiConfig
-  orderId: string
-  providerOrderId?: string
-  providerResponse?: Record<string, unknown>
-}) {
-  const query: Record<string, string> = {
-    client_order_id: order.orderId,
+    throw createProviderSubmissionError(
+      error?.response?.data || error?.message || error,
+      'Provider submission failed'
+    )
   }
-
-  const transactionId = String(order.providerResponse?.transaction_id || '')
-  if (transactionId) query.transaction_id = transactionId
-
-  if (order.providerOrderId) query.order_id = String(order.providerOrderId)
-
-  const response = await axios.get(`${order.providerConfig.base}/orders/status/`, {
-    headers: providerHeaders(order.providerConfig),
-    params: query,
-    timeout: 15000,
-  })
-
-  return response.data
 }
 
 async function sendTelegramMessage(orderId: string, orderData: OrderRequest) {
@@ -442,7 +882,7 @@ async function sendTelegramMessage(orderId: string, orderData: OrderRequest) {
     return false
   }
 
-  const message = `🛒 New Order - Bily Card
+  const message = `ًں›’ New Order - Bily Card
 
 Order ID: ${orderId}
 Product: ${orderData.name}
@@ -486,7 +926,10 @@ Total: $${orderData.total.toFixed(2)}`
 
 export async function GET(request: NextRequest) {
   try {
-    const token = extractToken(request.headers.get('authorization'))
+    const token =
+      extractToken(request.headers.get('authorization')) ||
+      request.cookies.get(AUTH_COOKIE_NAME)?.value ||
+      null
 
     if (!token) {
       return NextResponse.json(
@@ -522,60 +965,53 @@ export async function GET(request: NextRequest) {
     }
 
     await connectDB()
+    const inactiveUserResponse = await ensureActiveSessionUser(user.userId)
+    if (inactiveUserResponse) {
+      return inactiveUserResponse
+    }
 
     const orderDocs = await Order.find({ userId: user.userId })
       .sort({ createdAt: -1 })
       .lean()
 
     for (const order of orderDocs) {
-      const hasProviderReference = Boolean(
-        order.providerOrderId ||
-          order.providerResponse?.transaction_id ||
-          order.providerResponse?.order_id
-      )
-      const needsSync = ['pending', 'processing'].includes(String(order.status || '').toLowerCase())
-      const providerSlot =
-        order.providerSlot === 'secondary'
-          ? 'secondary'
-          : order.providerSlot === 'manual'
-            ? 'manual'
-            : 'primary'
-
-      if (!hasProviderReference || !needsSync || providerSlot === 'manual') continue
-
-      const providerConfig = getProviderApiConfig(providerSlot)
-      if (!providerConfig.enabled) continue
-
       try {
-        const statusPayload = await fetchProviderOrderStatus({
-          providerConfig,
-          orderId: String(order.orderId),
-          providerOrderId: order.providerOrderId,
-          providerResponse: order.providerResponse,
-        })
+        const providerSync = await resolveProviderOrderSync(order as any)
+        if (!providerSync) continue
 
-        const providerStatus = String(
-          statusPayload?.status ||
-            statusPayload?.order_status ||
-            statusPayload?.data?.status ||
-            statusPayload?.details?.status ||
-            order.providerStatus ||
-            'pending'
-        ).toLowerCase()
-
-        const mappedStatus = mapProviderStatusToLocal(providerStatus)
+        const { mappedStatus, providerStatus, statusPayload } = providerSync
 
         if (mappedStatus === 'refunded' && order.status !== 'refunded') {
           const refundAmount = Number(order.total || 0)
           if (refundAmount > 0) {
-            await Wallet.updateOne(
-              { userId: order.userId },
-              {
-                $inc: { balance_usd: refundAmount },
-                $set: { lastUpdated: new Date() },
-              }
-            )
+            const refundResult = await refundOrderAndRestoreStock({
+              orderId: String(order._id),
+              refundAmount,
+              currency: order.currency === 'LBP' ? 'LBP' : 'USD',
+              nextStatus: 'refunded',
+              refundNote: 'Refund: Provider cancelled order',
+              providerStatus,
+              providerResponse: statusPayload,
+              notes: 'Auto refunded after provider cancellation',
+              failureReason:
+                providerStatus === 'cancelled'
+                  ? 'Provider cancelled order and refunded balance at source'
+                  : String(order.failureReason || ''),
+            })
+
+            if (refundResult.stockRestored) {
+              invalidateCatalogProductsCache()
+            }
+
+            order.status = refundResult.order.status
+            order.providerStatus = refundResult.order.providerStatus
+            order.providerResponse = refundResult.order.providerResponse
+            order.notes = refundResult.order.notes
+            order.failureReason = refundResult.order.failureReason
+            order.walletBalanceAfter = refundResult.order.walletBalanceAfter
           }
+
+          continue
         }
 
         if (mappedStatus !== order.status || providerStatus !== order.providerStatus) {
@@ -631,6 +1067,8 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    const requestLanguage = resolveRequestLanguage(request)
+    const providerSupportMessage = getProviderSupportMessage(requestLanguage)
     const body = (await request.json()) as Partial<OrderRequest>
 
     const productId = typeof body.productId === 'string' ? body.productId.trim() : ''
@@ -665,6 +1103,7 @@ export async function POST(request: NextRequest) {
     }
 
     const catalogProduct = catalogBySlug || catalogById
+    const managedStockSlug = String(catalogProduct?.slug || normalizedSlug || '').trim().toLowerCase()
     const name = providedName || String(catalogProduct?.name || '').trim()
     const price = Number.isFinite(providedPrice) && providedPrice > 0
       ? providedPrice
@@ -673,6 +1112,20 @@ export async function POST(request: NextRequest) {
     if (!name) {
       return NextResponse.json(
         { success: false, message: 'Product name is required' },
+        { status: 400 }
+      )
+    }
+
+    if (
+      catalogProduct &&
+      !isProductAvailable({
+        stockQuantityValue: catalogProduct.stockQuantity,
+        legacyStatusValue: catalogProduct.stockStatus,
+        saleEnabledValue: catalogProduct.saleEnabled,
+      })
+    ) {
+      return NextResponse.json(
+        { success: false, message: 'This product is currently out of stock' },
         { status: 400 }
       )
     }
@@ -751,8 +1204,12 @@ export async function POST(request: NextRequest) {
     }
 
     const orderId = generateOrderId()
+    const routingRequestUuid = randomUUID()
 
-    const token = extractToken(request.headers.get('authorization'))
+    const token =
+      extractToken(request.headers.get('authorization')) ||
+      request.cookies.get(AUTH_COOKIE_NAME)?.value ||
+      null
     const user = token ? verifyToken(token) : null
 
     if (!user?.userId) {
@@ -762,6 +1219,37 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    const limitResponse = await enforceRateLimit(
+      request,
+      `orders-create:${String(user.userId)}`,
+      8,
+      60 * 1000
+    )
+    if (limitResponse) {
+      return limitResponse
+    }
+
+    const blockCheckSlug = String(managedStockSlug || normalizedSlug || '').trim().toLowerCase()
+    const normalizedPlayerId = normalizePlayerIdForBlock(cleanPlayerId)
+    if (blockCheckSlug && normalizedPlayerId) {
+      await connectDB()
+      const blocked = await BlockedPlayerId.findOne({
+        productSlug: blockCheckSlug,
+        playerId: normalizedPlayerId,
+        active: true,
+      })
+        .select('productSlug playerId')
+        .lean()
+
+      if (blocked) {
+        return NextResponse.json(
+          { success: false, message: 'ID blocked' },
+          { status: 403 }
+        )
+      }
+    }
+
+    const usesManualCountPricing = isManualCountProduct(catalogProduct)
     const pricing = await getEffectivePriceForProduct({
       slug,
       fallbackPrice: price,
@@ -770,13 +1258,21 @@ export async function POST(request: NextRequest) {
 
     const baseUnitPrice = Number(pricing.basePrice || 0)
     const effectiveUnitPrice = Number(pricing.effectivePrice || 0)
-    const effectiveTotal = Number(
-      (effectiveUnitPrice * quantity).toFixed(6)
-    )
-    const estimatedProviderTotalCost = Number((baseUnitPrice * quantity).toFixed(6))
-    const estimatedGrossProfit = Number(
-      (effectiveTotal - estimatedProviderTotalCost).toFixed(6)
-    )
+    const manualInternalPercent = usesManualCountPricing
+      ? Number(pricing.productPercent || 0)
+      : 0
+    const effectiveTotal = usesManualCountPricing
+      ? calculateManualCountTotalRounded(quantity, effectiveUnitPrice, 6)
+      : Number((effectiveUnitPrice * quantity).toFixed(6))
+    const estimatedProviderTotalCost = usesManualCountPricing
+      ? calculateManualInternalCostTotal(effectiveTotal, manualInternalPercent, 6)
+      : Number((baseUnitPrice * quantity).toFixed(6))
+    const estimatedBaseUnitPrice = usesManualCountPricing
+      ? calculateManualInternalCostUnitPrice(effectiveUnitPrice, manualInternalPercent, 12)
+      : baseUnitPrice
+    const estimatedGrossProfit = usesManualCountPricing
+      ? calculateManualInternalProfitTotal(effectiveTotal, manualInternalPercent, 6)
+      : Number((effectiveTotal - estimatedProviderTotalCost).toFixed(6))
 
     if (!Number.isFinite(effectiveTotal) || effectiveTotal <= 0) {
       return NextResponse.json(
@@ -786,8 +1282,7 @@ export async function POST(request: NextRequest) {
     }
 
     const productProviderMode = getProductProviderMode(catalogProduct, productId)
-    const providerSlot = getProviderSlotForMode(productProviderMode)
-    const providerConfig = providerSlot ? getProviderApiConfig(providerSlot) : null
+    const preferredProviderSlot = getProviderSlotForMode(productProviderMode)
 
     if (isTestModeEnabled()) {
       const mockUser = getTestModeUser()
@@ -843,18 +1338,58 @@ export async function POST(request: NextRequest) {
     }
 
     await connectDB()
+    const inactiveUserResponse = await ensureActiveSessionUser(user.userId)
+    if (inactiveUserResponse) {
+      return inactiveUserResponse
+    }
+
+    const explicitManualCostUnitPrice =
+      productProviderMode === 'manual'
+        ? await getExplicitManualCustomCostPrice(managedStockSlug)
+        : null
+    const hasExplicitManualCostUnitPrice =
+      typeof explicitManualCostUnitPrice === 'number' &&
+      Number.isFinite(explicitManualCostUnitPrice) &&
+      explicitManualCostUnitPrice >= 0
+    const resolvedProviderTotalCost = hasExplicitManualCostUnitPrice
+      ? calculateManualCountTotalRounded(quantity, explicitManualCostUnitPrice, 6)
+      : estimatedProviderTotalCost
+    const resolvedBaseUnitPrice = hasExplicitManualCostUnitPrice
+      ? Number(explicitManualCostUnitPrice.toFixed(12))
+      : estimatedBaseUnitPrice
+    const resolvedGrossProfit = Number((effectiveTotal - resolvedProviderTotalCost).toFixed(6))
 
     const orderUserProfile = (await User.findById(user.userId)
       .select('displayName username email')
       .lean()) as NotificationUserProfile | null
 
-    let resolvedProviderProduct: ProviderProduct | null = null
+    let reservedManagedStock: ManagedStockTarget | null = null
+    let shouldInvalidateCatalogCache = false
 
     const session = await mongoose.startSession()
     let order: any = null
 
     try {
       session.startTransaction()
+
+      const stockReservation = await reserveManagedStock({
+        slug: managedStockSlug,
+        quantity,
+        session,
+      })
+
+      if (stockReservation.status === 'insufficient') {
+        await session.abortTransaction()
+        return NextResponse.json(
+          { success: false, message: 'This product is currently out of stock' },
+          { status: 400 }
+        )
+      }
+
+      if (stockReservation.status === 'reserved') {
+        reservedManagedStock = stockReservation.target
+        shouldInvalidateCatalogCache = true
+      }
 
       const updatedWallet = await Wallet.findOneAndUpdate(
         {
@@ -891,18 +1426,21 @@ export async function POST(request: NextRequest) {
             playerId: cleanPlayerId,
             quantity,
             price: effectiveUnitPrice,
-            baseUnitPrice,
-            providerUnitCost: baseUnitPrice,
-            providerTotalCost: estimatedProviderTotalCost,
-            grossProfit: estimatedGrossProfit,
+            baseUnitPrice: resolvedBaseUnitPrice,
+            providerUnitCost: resolvedBaseUnitPrice,
+            providerTotalCost: resolvedProviderTotalCost,
+            grossProfit: resolvedGrossProfit,
             total: effectiveTotal,
             walletBalanceBefore,
             walletBalanceAfter,
             currency: 'USD',
             status: 'pending',
-            providerSlot: providerSlot || 'manual',
-            providerStatus: providerSlot ? 'pending' : 'local_only',
-            notes: providerSlot ? 'Order created locally' : 'Order created locally for manual processing',
+            providerSlot: preferredProviderSlot || 'manual',
+            providerStatus: preferredProviderSlot ? 'pending' : 'local_only',
+            routingRequestUuid,
+            notes: preferredProviderSlot
+              ? 'Order created locally'
+              : 'Order created locally for manual processing',
           },
         ],
         { session }
@@ -934,77 +1472,200 @@ export async function POST(request: NextRequest) {
       session.endSession()
     }
 
-    if (providerSlot && providerConfig?.enabled) {
-      try {
-        const providerProduct =
-          resolvedProviderProduct ||
-          (await resolveProviderProduct({
-            productId,
-            name,
-            packageOption,
-            providerConfig,
-          }))
+    if (preferredProviderSlot) {
+      const routed = await createRoutedOrder({
+        productSlug: slug,
+        productId,
+        productName: name,
+        packageOption: packageOption || undefined,
+        providerMode: productProviderMode,
+        providerLinks: Array.isArray(catalogProduct?.providerLinks) ? catalogProduct?.providerLinks : [],
+        routingMode: catalogProduct?.routingMode === 'priority' ? 'priority' : 'cheapest',
+        orderId,
+        playerId: cleanPlayerId,
+        quantity,
+        sellTotal: effectiveTotal,
+        fallbackUnitCost: baseUnitPrice,
+        routingRequestUuid,
+      })
 
-        if (providerProduct?.id) {
-          const providerResult = await createProviderOrder({
-            providerConfig,
-            providerProductId: Number(providerProduct.id),
-            playerId: cleanPlayerId,
+      if (routed.kind === 'submitted') {
+        order.providerProductId = routed.providerProductId
+        order.selectedProviderCode = routed.providerAdapterKey
+        order.selectedProviderId = routed.providerAdapterKey
+        order.providerMatchedProductName = routed.providerMatchedProductName
+        order.providerMatchMode = routed.providerMatchMode
+        order.providerOrderId = routed.providerOrderId || undefined
+        order.providerSlot = routed.providerSlot
+        order.providerStatus = routed.providerStatus
+        order.providerUnitCost = routed.providerUnitCost
+        order.providerEffectiveCost = routed.providerEffectiveTotalCost
+        order.providerTotalCost = routed.providerTotalCost
+        order.grossProfit = routed.grossProfit
+        order.providerAttempts = routed.attempts.map((attempt) => ({
+          providerId: attempt.providerAdapterKey,
+          providerCode: attempt.providerAdapterKey,
+          providerProductId: attempt.providerProductId,
+          status: attempt.outcome,
+          message: attempt.reason || '',
+          attemptedAt: new Date(),
+          rawCost: Number(attempt.unitCost || 0),
+          effectiveCost: Number(attempt.effectiveUnitCost || attempt.unitCost || 0),
+        }))
+        order.providerResponse = {
+          ...(typeof routed.providerResponse === 'object' && routed.providerResponse
+            ? (routed.providerResponse as Record<string, unknown>)
+            : {}),
+          _providerAdapter: routed.providerAdapterKey,
+          _routingAttempts: routed.attempts,
+        }
+        order.status = mapProviderStatusToLocal(routed.providerStatus, routed.providerAdapterKey)
+        order.notes = routed.fallbackUsed
+          ? 'Order submitted with automatic fallback routing'
+          : 'Order submitted successfully'
+      } else if (routed.kind === 'already_submitted') {
+        order.providerSlot = routed.existing.providerSlot
+        order.providerOrderId = routed.existing.providerOrderId || undefined
+        order.providerStatus = routed.existing.providerStatus || 'pending'
+        order.notes = 'Order already submitted previously'
+        order.providerResponse = {
+          ...(typeof order.providerResponse === 'object' && order.providerResponse
+            ? (order.providerResponse as Record<string, unknown>)
+            : {}),
+          _providerAdapter: routed.existing.providerAdapterKey,
+          _routingAttempts: routed.attempts,
+          _routingMeta: {
+            deduplicatedByRoutingUuid: true,
+            routingRequestUuid,
+          },
+        }
+        order.providerAttempts = routed.attempts.map((attempt) => ({
+          providerId: attempt.providerAdapterKey,
+          providerCode: attempt.providerAdapterKey,
+          providerProductId: attempt.providerProductId,
+          status: attempt.outcome,
+          message: attempt.reason || '',
+          attemptedAt: new Date(),
+          rawCost: Number(attempt.unitCost || 0),
+          effectiveCost: Number(attempt.effectiveUnitCost || attempt.unitCost || 0),
+        }))
+      } else if (routed.kind === 'provider_balance_unavailable') {
+        await refundOrderForProviderBalanceIssue({
+          order,
+          userId: user.userId,
+          refundAmount: effectiveTotal,
+          message: providerSupportMessage,
+          providerPayload: routed.providerPayload,
+        })
+
+        if (reservedManagedStock) {
+          const restored = await restoreManagedStockBySlug({
+            slug: reservedManagedStock.slug,
             quantity,
-            clientOrderId: orderId,
           })
 
-          const providerStatus = String(
-            providerResult?.status ||
-              providerResult?.order_status ||
-              providerResult?.data?.status ||
-              'pending'
-          ).toLowerCase()
-
-          const providerOrderId = String(
-            providerResult?.order_id || providerResult?.id || providerResult?.data?.order_id || ''
-          )
-
-          const providerUnitCost = extractProviderUnitCost(
-            providerResult,
-            toPositiveNumber(providerProduct.price) || baseUnitPrice
-          )
-          const providerTotalCost = Number((providerUnitCost * quantity).toFixed(6))
-          const grossProfit = Number((effectiveTotal - providerTotalCost).toFixed(6))
-
-          order.providerProductId = String(providerProduct.id)
-          order.providerMatchedProductName = String(providerProduct.name || '')
-          order.providerMatchMode = packageOption ? 'package-option' : 'product-id-or-name'
-          order.providerOrderId = providerOrderId || undefined
-          order.providerSlot = providerSlot
-          order.providerStatus = providerStatus
-          order.providerUnitCost = providerUnitCost
-          order.providerTotalCost = providerTotalCost
-          order.grossProfit = grossProfit
-          order.providerResponse = providerResult
-          order.status = mapProviderStatusToLocal(providerStatus)
-          order.notes = `Submitted to ${providerConfig.label}`
-        } else {
-          order.providerSlot = providerSlot
-          order.providerStatus = 'local_only'
-          order.providerMatchMode = packageOption ? 'package-option-no-match' : 'unresolved'
-          order.notes = `${providerConfig.label} product not found, kept for local/manual processing`
+          if (restored) {
+            invalidateCatalogProductsCache()
+            shouldInvalidateCatalogCache = false
+          }
         }
-      } catch (error: any) {
-        order.providerSlot = providerSlot
+
+        await sendAdminNotification({
+          title: 'Provider Balance Issue - Bily Card',
+          lines: [
+            `Customer: ${resolveNotificationUserName(orderUserProfile, user.username)}`,
+            `Order ID: ${orderId}`,
+            `Product: ${name}`,
+            packageOption ? `Package: ${packageOption}` : null,
+            `Player ID: ${cleanPlayerId}`,
+            `Quantity: ${quantity}`,
+            `Refunded: $${effectiveTotal.toFixed(2)}`,
+            'Action: Order was stopped before fulfillment because provider balance was unavailable.',
+          ],
+        })
+
+        return NextResponse.json(
+          {
+            success: false,
+            orderId,
+            providerStatus: 'provider_balance_unavailable',
+            message: providerSupportMessage,
+          },
+          { status: 503 }
+        )
+      } else if (routed.kind === 'blocked_no_profit') {
+        await refundOrderForProviderBalanceIssue({
+          order,
+          userId: user.userId,
+          refundAmount: effectiveTotal,
+          message: 'Order blocked (no profit)',
+          providerStatusOverride: 'blocked_no_profit',
+          providerPayload: {
+            _routingAttempts: routed.attempts,
+            _routingReason: 'blocked_no_profit',
+          },
+        })
+
+        if (reservedManagedStock) {
+          const restored = await restoreManagedStockBySlug({
+            slug: reservedManagedStock.slug,
+            quantity,
+          })
+
+          if (restored) {
+            invalidateCatalogProductsCache()
+            shouldInvalidateCatalogCache = false
+          }
+        }
+
+        return NextResponse.json(
+          {
+            success: false,
+            orderId,
+            providerStatus: 'blocked_no_profit',
+            message: 'Order blocked (no profit)',
+          },
+          { status: 409 }
+        )
+      } else if (routed.kind === 'submit_failed') {
+        order.providerSlot = preferredProviderSlot
         order.providerStatus = 'submit_failed'
         order.providerMatchMode = packageOption ? 'package-option-submit-failed' : 'submit-failed'
-        order.notes = `${providerConfig.label} submission failed, kept for local/manual processing`
-        order.failureReason =
-          error?.response?.data?.error ||
-          error?.response?.data?.message ||
-          error?.message ||
-          'Provider submission failed'
+        order.notes = 'Order submission failed, kept for local/manual processing'
+        order.failureReason = routed.message || 'Provider submission failed'
+        order.providerResponse = {
+          _routingAttempts: routed.attempts,
+        }
+        order.providerAttempts = routed.attempts.map((attempt) => ({
+          providerId: attempt.providerAdapterKey,
+          providerCode: attempt.providerAdapterKey,
+          providerProductId: attempt.providerProductId,
+          status: attempt.outcome,
+          message: attempt.reason || '',
+          attemptedAt: new Date(),
+          rawCost: Number(attempt.unitCost || 0),
+          effectiveCost: Number(attempt.effectiveUnitCost || attempt.unitCost || 0),
+        }))
+      } else {
+        order.providerSlot = preferredProviderSlot
+        order.providerStatus = 'local_only'
+        order.providerMatchMode = packageOption ? 'package-option-no-match' : 'unresolved'
+        order.notes = 'No provider mapping available, kept for local/manual processing'
+        order.providerResponse = {
+          _routingAttempts: routed.attempts,
+          _routingReason: routed.reason,
+        }
+        order.providerAttempts = routed.attempts.map((attempt) => ({
+          providerId: attempt.providerAdapterKey,
+          providerCode: attempt.providerAdapterKey,
+          providerProductId: attempt.providerProductId,
+          status: attempt.outcome,
+          message: attempt.reason || '',
+          attemptedAt: new Date(),
+          rawCost: Number(attempt.unitCost || 0),
+          effectiveCost: Number(attempt.effectiveUnitCost || attempt.unitCost || 0),
+        }))
       }
-    } else if (providerSlot && !providerConfig?.enabled) {
-      order.providerSlot = providerSlot
-      order.providerStatus = 'local_only'
-      order.notes = `${providerSlot === 'secondary' ? 'Secondary' : 'Primary'} API is not configured, kept for local/manual processing`
     } else {
       order.providerSlot = 'manual'
       order.providerStatus = 'local_only'
@@ -1012,6 +1673,10 @@ export async function POST(request: NextRequest) {
     }
 
     await order.save()
+
+    if (shouldInvalidateCatalogCache) {
+      invalidateCatalogProductsCache()
+    }
 
     await sendAdminNotification({
       title: 'New Order - Bily Card',
@@ -1024,7 +1689,7 @@ export async function POST(request: NextRequest) {
         `Quantity: ${quantity}`,
         `Total: $${effectiveTotal.toFixed(2)}`,
         `Provider Mode: ${productProviderMode}`,
-        providerSlot ? `Provider Slot: ${providerSlot}` : 'Provider Slot: manual',
+        preferredProviderSlot ? `Provider Slot: ${preferredProviderSlot}` : 'Provider Slot: manual',
       ],
     })
 
@@ -1046,3 +1711,5 @@ export async function POST(request: NextRequest) {
     )
   }
 }
+
+

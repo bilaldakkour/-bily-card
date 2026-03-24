@@ -4,6 +4,7 @@ import Order from '@/lib/models/Order';
 import { isTestModeEnabled, logTestMode } from '@/lib/utils/testMode';
 import { getCatalogBestSellingProducts } from '@/lib/data/catalogProducts';
 import { getTestModeOrders } from '@/lib/utils/testModeStore';
+import { buildPublicCacheHeaders } from '@/lib/utils/httpCache';
 
 export async function GET() {
   try {
@@ -44,7 +45,12 @@ export async function GET() {
       }
 
       logTestMode('products/top-selling requested', { items: data.length });
-      return NextResponse.json({ success: true, data, testMode: true });
+      return NextResponse.json(
+        { success: true, data, testMode: true },
+        {
+          headers: buildPublicCacheHeaders(30, 120),
+        }
+      );
     }
 
     await connectDB();
@@ -74,7 +80,12 @@ export async function GET() {
       revenue: Number(row?.revenue || 0),
     }));
 
-    return NextResponse.json({ success: true, data });
+    return NextResponse.json(
+      { success: true, data },
+      {
+        headers: buildPublicCacheHeaders(30, 120),
+      }
+    );
   } catch (error) {
     console.error('Top selling fetch error:', error);
     return NextResponse.json(

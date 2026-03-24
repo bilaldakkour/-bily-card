@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import { buildAdminAuthHeaders, getAdminTokenOptional, isUnauthorizedStatus } from '@/lib/utils/adminAuth'
 
 interface Order {
   _id: string
@@ -16,8 +17,28 @@ interface Order {
   grossProfit: number
   status: string
   providerStatus?: string
+  providerSlot?: string
+  providerResponse?: {
+    _providerAdapter?: string
+    _routingMeta?: {
+      chosenBy?: string
+      fallbackUsed?: boolean
+      candidateUnitCost?: number
+    }
+    _routingAttempts?: Array<{
+      providerSlot?: string
+      providerAdapterKey?: string
+      providerProductId?: string
+      unitCost?: number
+      outcome?: string
+      reason?: string
+    }>
+  }
   selectedPackageOption?: string
   providerMatchedProductName?: string
+  providerProductId?: string
+  providerOrderId?: string
+  providerMatchMode?: string
   failureReason?: string
   createdAt: string
   userId?: {
@@ -37,22 +58,19 @@ export default function AdminOrdersPage() {
   const [message, setMessage] = useState('')
 
   useEffect(() => {
-    const token = localStorage.getItem('adminToken')
-    if (!token) {
-      router.push('/admin/login')
-      return
-    }
-
+    const token = getAdminTokenOptional()
     fetchOrders(token)
   }, [router])
 
   const fetchOrders = async (token: string) => {
     try {
       const res = await fetch('/api/admin/orders', {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+        headers: buildAdminAuthHeaders(token),
       })
+      if (isUnauthorizedStatus(res.status)) {
+        router.push('/admin/login')
+        return
+      }
       const data = await res.json()
       if (data.success) {
         setOrders(data.data)
@@ -68,18 +86,21 @@ export default function AdminOrdersPage() {
     setProcessingId(orderId)
     setMessage('')
 
-    const token = localStorage.getItem('adminToken')
-    if (!token) return
+    const token = getAdminTokenOptional()
 
     try {
       const res = await fetch(`/api/admin/orders/${orderId}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
+          ...(buildAdminAuthHeaders(token) || {}),
         },
         body: JSON.stringify({ action }),
       })
+      if (isUnauthorizedStatus(res.status)) {
+        router.push('/admin/login')
+        return
+      }
 
       const data = await res.json()
 
@@ -250,6 +271,11 @@ export default function AdminOrdersPage() {
 
                     <div className="mt-4 rounded-xl border border-white/8 bg-slate-800/40 p-3 text-xs text-slate-300">
                       <p><span className="text-slate-500">Provider:</span> <span className="text-cyan-300">{order.providerStatus || 'n/a'}</span></p>
+                      <p><span className="text-slate-500">Slot:</span> <span className="text-cyan-300">{order.providerSlot || 'manual'}</span></p>
+                      <p><span className="text-slate-500">Adapter:</span> <span className="text-cyan-300">{order.providerResponse?._providerAdapter || 'n/a'}</span></p>
+                      <p><span className="text-slate-500">Cheapest:</span> <span className="text-emerald-300">{order.providerResponse?._routingMeta?.chosenBy || 'n/a'}</span></p>
+                      <p><span className="text-slate-500">Fallback:</span> <span className="text-amber-300">{order.providerResponse?._routingMeta?.fallbackUsed ? 'yes' : 'no'}</span></p>
+                      <p><span className="text-slate-500">Attempts:</span> <span className="text-slate-200">{Array.isArray(order.providerResponse?._routingAttempts) ? order.providerResponse?._routingAttempts.length : 0}</span></p>
                       {order.selectedPackageOption && (
                         <p className="mt-1"><span className="text-slate-500">Selected:</span> {order.selectedPackageOption}</p>
                       )}
@@ -329,6 +355,26 @@ export default function AdminOrdersPage() {
                         <div>
                           <span className="text-slate-400">Provider:</span>{' '}
                           <span className="font-medium text-cyan-300">{order.providerStatus || 'n/a'}</span>
+                        </div>
+                        <div>
+                          <span className="text-slate-400">Slot:</span>{' '}
+                          <span className="text-cyan-300">{order.providerSlot || 'manual'}</span>
+                        </div>
+                        <div>
+                          <span className="text-slate-400">Adapter:</span>{' '}
+                          <span className="text-cyan-300">{order.providerResponse?._providerAdapter || 'n/a'}</span>
+                        </div>
+                        <div>
+                          <span className="text-slate-400">Cheapest:</span>{' '}
+                          <span className="text-emerald-300">{order.providerResponse?._routingMeta?.chosenBy || 'n/a'}</span>
+                        </div>
+                        <div>
+                          <span className="text-slate-400">Fallback:</span>{' '}
+                          <span className="text-amber-300">{order.providerResponse?._routingMeta?.fallbackUsed ? 'yes' : 'no'}</span>
+                        </div>
+                        <div>
+                          <span className="text-slate-400">Attempts:</span>{' '}
+                          <span className="text-slate-200">{Array.isArray(order.providerResponse?._routingAttempts) ? order.providerResponse?._routingAttempts.length : 0}</span>
                         </div>
                         {order.selectedPackageOption && (
                           <div>

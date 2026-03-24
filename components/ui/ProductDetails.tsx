@@ -8,6 +8,7 @@ import { Input } from './Input'
 import { Select } from './Select'
 import { Badge } from './Badge'
 import type { Product } from '@/lib/data'
+import { isProductAvailable } from '@/lib/products/stock'
 
 interface ProductDetailsProps {
   product: Product;
@@ -15,9 +16,29 @@ interface ProductDetailsProps {
   onBuyNow?: (productId: string, inputData: Record<string, string>) => void;
 }
 
+const getSafeImageSrc = (value: unknown) => {
+  const raw = typeof value === 'string' ? value.trim() : ''
+  if (!raw || raw === '.' || raw === 'null' || raw === 'undefined') return '/placeholder.png'
+  if (raw.startsWith('/')) return raw
+
+  try {
+    const parsed = new URL(raw)
+    if (!['http:', 'https:'].includes(parsed.protocol)) return '/placeholder.png'
+    if (parsed.hostname === 'dailycard-media.s3.amazonaws.com') return raw
+    return '/placeholder.png'
+  } catch {
+    return '/placeholder.png'
+  }
+}
+
 export function ProductDetails({ product, onAddToCart, onBuyNow }: ProductDetailsProps) {
   const [inputData, setInputData] = useState<Record<string, string>>({})
   const [selectedPackage, setSelectedPackage] = useState('')
+  const inStock = isProductAvailable({
+    stockQuantityValue: product.stockQuantity,
+    legacyStatusValue: product.stockStatus,
+    saleEnabledValue: product.saleEnabled,
+  })
 
   const handleInputChange = (fieldName: string, value: string) => {
     setInputData(prev => ({
@@ -77,9 +98,10 @@ export function ProductDetails({ product, onAddToCart, onBuyNow }: ProductDetail
       <div className="space-y-6">
         <div className="relative aspect-square rounded-3xl overflow-hidden bg-gradient-to-br from-slate-800 via-slate-900 to-slate-950 shadow-2xl border border-white/10 group">
           <Image
-            src={product.image || "/games/pubg.jpg"}
+            src={getSafeImageSrc(product.image)}
             alt={product.name}
             fill
+            unoptimized={String(getSafeImageSrc(product.image)).startsWith('http://') || String(getSafeImageSrc(product.image)).startsWith('https://')}
             className="object-cover transition-transform duration-700 group-hover:scale-105"
           />
           {/* Fallback */}
@@ -96,8 +118,8 @@ export function ProductDetails({ product, onAddToCart, onBuyNow }: ProductDetail
         <div className="flex flex-wrap gap-3">
           {product.featured && <Badge variant="primary" className="px-4 py-2">Featured</Badge>}
           {product.bestSeller && <Badge variant="secondary" className="px-4 py-2">Best Seller</Badge>}
-          <Badge variant={product.stockStatus === 'in_stock' ? 'success' : 'error'} className="px-4 py-2">
-            {product.stockStatus.replace('_', ' ').toUpperCase()}
+          <Badge variant={inStock ? 'success' : 'error'} className="px-4 py-2">
+            {inStock ? 'IN STOCK' : 'OUT OF STOCK'}
           </Badge>
         </div>
       </div>
@@ -180,15 +202,17 @@ export function ProductDetails({ product, onAddToCart, onBuyNow }: ProductDetail
             size="xl"
             className="w-full shadow-2xl hover:shadow-blue-500/30"
             onClick={() => handleSubmit('buy')}
+            disabled={!inStock}
           >
             <ShoppingCart className="h-6 w-6 mr-3" />
-            Buy Now - ${product.price.toFixed(2)}
+            {inStock ? `Buy Now - $${product.price.toFixed(2)}` : 'Out of Stock'}
           </Button>
           <Button
             variant="outline"
             size="lg"
             className="w-full"
             onClick={() => handleSubmit('cart')}
+            disabled={!inStock}
           >
             Add to Cart
           </Button>

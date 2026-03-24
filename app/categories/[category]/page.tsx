@@ -5,8 +5,9 @@ import MobileUserShell from '@/components/shared/MobileUserShell'
 import { MobilePageBackdrop, MobilePanel, MobileSectionHeading } from '@/components/shared/MobileDesignSystem'
 import UserSidebar from '@/components/shared/UserSidebar'
 import { getCategoryBySlug } from '@/lib/data'
-import { getCatalogDisplayProducts } from '@/lib/data/catalogProducts'
+import { getCatalogDisplayProducts, toProductListItem } from '@/lib/data/catalogProducts'
 import { normalizeCategory } from '@/lib/data/catalogNormalization'
+import { isProductAvailable } from '@/lib/products/stock'
 
 interface CategoryPageProps {
   params: {
@@ -42,6 +43,21 @@ export default async function CategoryPage({ params, searchParams }: CategoryPag
   }
 
   filteredProducts.sort((a, b) => {
+    const aAvailable = isProductAvailable({
+      stockQuantityValue: a.stockQuantity,
+      legacyStatusValue: a.stockStatus,
+      saleEnabledValue: a.saleEnabled,
+    })
+    const bAvailable = isProductAvailable({
+      stockQuantityValue: b.stockQuantity,
+      legacyStatusValue: b.stockStatus,
+      saleEnabledValue: b.saleEnabled,
+    })
+
+    if (aAvailable !== bAvailable) {
+      return aAvailable ? -1 : 1
+    }
+
     switch (sort) {
       case 'price-low':
         return a.price - b.price
@@ -56,6 +72,8 @@ export default async function CategoryPage({ params, searchParams }: CategoryPag
     }
   })
 
+  const listingProducts = filteredProducts.map((product) => toProductListItem(product))
+
   return (
     <div className="relative min-h-screen">
       <div className="md:hidden">
@@ -63,7 +81,7 @@ export default async function CategoryPage({ params, searchParams }: CategoryPag
       </div>
 
       <div className="md:hidden">
-        <div className="mx-auto max-w-[1480px] px-4 pb-0 pt-3 sm:px-5">
+        <div className="mx-auto max-w-[1480px] px-4 pb-0 pt-2 sm:px-5">
           <MobileUserShell title={category.name} />
         </div>
       </div>
@@ -73,30 +91,30 @@ export default async function CategoryPage({ params, searchParams }: CategoryPag
           title={category.name}
           subtitle={category.description}
           breadcrumbs={[
-            { label: 'Home', href: '/' },
-            { label: 'Products', href: '/products' },
+            { label: 'الرئيسية', href: '/' },
+            { label: 'المنتجات', href: '/products' },
             { label: category.name, href: `/categories/${category.slug}` },
           ]}
         />
       </div>
 
-      <div className="relative mx-auto max-w-[1480px] px-3 pb-12 pt-3 sm:px-5 lg:px-6">
-        <div className="absolute inset-x-4 top-0 -z-10 h-40 rounded-[32px] bg-[radial-gradient(circle_at_top,rgba(56,189,248,0.16),transparent_70%)] blur-3xl sm:inset-x-5 lg:inset-x-6" />
+      <div className="relative mx-auto max-w-[1480px] px-3 pb-9 pt-2 sm:px-5 lg:px-6">
+        <div className="absolute inset-x-4 top-0 -z-10 h-36 rounded-[28px] bg-[radial-gradient(circle_at_top,rgba(46,91,255,0.18),transparent_70%)] blur-3xl sm:inset-x-5 lg:inset-x-6" />
         <div className="relative lg:pr-[372px]">
-          <MobilePanel className="p-3 sm:p-6">
-            <div className="mb-4 md:hidden">
+          <MobilePanel className="p-2.5 sm:p-4">
+            <div className="mb-3 md:hidden">
               <MobileSectionHeading
-                eyebrow="Category"
+                eyebrow="التصنيف"
                 title={category.name}
                 description={category.description}
               />
             </div>
 
             <ProductGrid
-              products={filteredProducts}
+              products={listingProducts}
               emptyMessage={{
-                title: 'No products found',
-                description: `No products available in the ${category.name} category yet.`,
+                title: 'لا توجد منتجات حالياً',
+                description: `لا توجد منتجات متاحة حالياً ضمن تصنيف ${category.name}.`,
               }}
             />
           </MobilePanel>

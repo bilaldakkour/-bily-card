@@ -84,6 +84,8 @@ export async function POST(req: NextRequest) {
 
     // Update user
     user.isVerified = true;
+    user.lastEmailVerificationAt = new Date();
+    user.forceEmailReauth = false;
     await user.save();
 
     return NextResponse.json({ message: 'Email verified successfully' });

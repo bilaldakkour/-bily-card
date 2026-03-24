@@ -12,7 +12,7 @@ export default function NotFound() {
         <div className="space-y-2">
           <h1 className="text-4xl font-bold text-white">Category Not Found</h1>
           <p className="text-slate-400 max-w-md">
-            The category you're looking for doesn't exist or may have been moved.
+            The category you&apos;re looking for doesn&apos;t exist or may have been moved.
           </p>
         </div>
         <div className="flex gap-4 justify-center">

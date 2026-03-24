@@ -1,7 +1,8 @@
-'use client'
+﻿'use client'
 
 import { useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { buildAdminAuthHeaders, getAdminTokenOptional, isUnauthorizedStatus } from '@/lib/utils/adminAuth'
 
 interface User {
   _id: string
@@ -47,12 +48,7 @@ export default function AdminUsersPage() {
   const [discountSaving, setDiscountSaving] = useState(false)
 
   useEffect(() => {
-    const token = localStorage.getItem('adminToken')
-    if (!token) {
-      router.push('/admin/login')
-      return
-    }
-
+    const token = getAdminTokenOptional()
     fetchUsers(token, 1)
   }, [router])
 
@@ -66,8 +62,12 @@ export default function AdminUsersPage() {
       })
 
       const res = await fetch(`/api/admin/users?${params}`, {
-        headers: { Authorization: `Bearer ${token}` },
+        headers: buildAdminAuthHeaders(token),
       })
+      if (isUnauthorizedStatus(res.status)) {
+        router.push('/admin/login')
+        return
+      }
       const data = await res.json()
       if (data.success) {
         setUsers(data.data)
@@ -129,7 +129,7 @@ export default function AdminUsersPage() {
 
   const handleSearch = () => {
     setCurrentPage(1)
-    const token = localStorage.getItem('adminToken')
+    const token = getAdminTokenOptional()
     if (token) {
       fetchUsers(token, 1)
     }
@@ -137,7 +137,7 @@ export default function AdminUsersPage() {
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page)
-    const token = localStorage.getItem('adminToken')
+    const token = getAdminTokenOptional()
     if (token) {
       fetchUsers(token, page)
     }
@@ -147,20 +147,23 @@ export default function AdminUsersPage() {
     setProcessingId(userId)
     setMessage('')
 
-    const token = localStorage.getItem('adminToken')
-    if (!token) return
+    const token = getAdminTokenOptional()
 
     try {
       const res = await fetch(`/api/admin/users/${userId}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
+          ...(buildAdminAuthHeaders(token) || {}),
         },
         body: JSON.stringify({
           isBlocked: !currentlyBlocked
         }),
       })
+      if (isUnauthorizedStatus(res.status)) {
+        router.push('/admin/login')
+        return
+      }
 
       const data = await res.json()
 
@@ -182,8 +185,7 @@ export default function AdminUsersPage() {
     setProcessingId(userId)
     setMessage('')
 
-    const token = localStorage.getItem('adminToken')
-    if (!token) return
+    const token = getAdminTokenOptional()
 
     try {
       const percent = Number(pricingInputs[userId] || 0)
@@ -191,10 +193,14 @@ export default function AdminUsersPage() {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
+          ...(buildAdminAuthHeaders(token) || {}),
         },
         body: JSON.stringify({ pricingPercent: percent }),
       })
+      if (isUnauthorizedStatus(res.status)) {
+        router.push('/admin/login')
+        return
+      }
 
       const data = await res.json()
       if (data.success) {
@@ -214,8 +220,7 @@ export default function AdminUsersPage() {
     setProcessingId(userId)
     setMessage('')
 
-    const token = localStorage.getItem('adminToken')
-    if (!token) return
+    const token = getAdminTokenOptional()
 
     try {
       const amount = Number(walletAmountInputs[userId] || 0)
@@ -232,7 +237,7 @@ export default function AdminUsersPage() {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
+          ...(buildAdminAuthHeaders(token) || {}),
         },
         body: JSON.stringify({
           walletAdjustment: signedAmount,
@@ -240,6 +245,10 @@ export default function AdminUsersPage() {
           walletNotes,
         }),
       })
+      if (isUnauthorizedStatus(res.status)) {
+        router.push('/admin/login')
+        return
+      }
 
       const data = await res.json()
       if (data.success) {
@@ -258,8 +267,7 @@ export default function AdminUsersPage() {
   }
 
   const openProductDiscountEditor = async (user: User) => {
-    const token = localStorage.getItem('adminToken')
-    if (!token) return
+    const token = getAdminTokenOptional()
 
     setDiscountEditorUser(user)
     setDiscountSearch('')
@@ -270,14 +278,18 @@ export default function AdminUsersPage() {
     try {
       const [productsRes, discountsRes] = await Promise.all([
         fetch('/api/admin/pricing/products', {
-          headers: { Authorization: `Bearer ${token}` },
+          headers: buildAdminAuthHeaders(token),
           cache: 'no-store',
         }),
         fetch(`/api/admin/users/${user._id}/product-discounts`, {
-          headers: { Authorization: `Bearer ${token}` },
+          headers: buildAdminAuthHeaders(token),
           cache: 'no-store',
         }),
       ])
+      if (isUnauthorizedStatus(productsRes.status) || isUnauthorizedStatus(discountsRes.status)) {
+        router.push('/admin/login')
+        return
+      }
 
       const productsData = await productsRes.json()
       const discountsData = await discountsRes.json()
@@ -312,8 +324,7 @@ export default function AdminUsersPage() {
 
   const handleSaveProductDiscounts = async () => {
     if (!discountEditorUser) return
-    const token = localStorage.getItem('adminToken')
-    if (!token) return
+    const token = getAdminTokenOptional()
 
     setDiscountSaving(true)
     setMessage('')
@@ -334,10 +345,15 @@ export default function AdminUsersPage() {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
+          ...(buildAdminAuthHeaders(token) || {}),
         },
         body: JSON.stringify({ discounts }),
       })
+
+      if (isUnauthorizedStatus(res.status)) {
+        router.push('/admin/login')
+        return
+      }
 
       const data = await res.json()
       if (!res.ok || !data?.success) {
@@ -777,7 +793,7 @@ export default function AdminUsersPage() {
                     <div className="min-w-0">
                       <p className="truncate text-sm font-medium text-white">{item.name}</p>
                       <p className="truncate text-xs text-slate-400">
-                        {item.slug}{item.category ? ` • ${item.category}` : ''}
+                        {item.slug}{item.category ? ` â€¢ ${item.category}` : ''}
                       </p>
                     </div>
                     <input
@@ -821,3 +837,6 @@ export default function AdminUsersPage() {
     </div>
   )
 }
+
+
+

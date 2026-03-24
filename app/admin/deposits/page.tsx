@@ -2,47 +2,41 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import Link from 'next/link';
+import { buildAdminAuthHeaders, getAdminTokenOptional, isUnauthorizedStatus } from '@/lib/utils/adminAuth';
 
 export default function AdminDepositsPage() {
   const router = useRouter();
   const [deposits, setDeposits] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [token, setToken] = useState('');
   const [selectedStatus, setSelectedStatus] = useState('pending');
   const [rejectingId, setRejectingId] = useState('');
   const [rejectionReason, setRejectionReason] = useState('');
   const [actionLoadingId, setActionLoadingId] = useState('');
 
   useEffect(() => {
-    const storedToken = localStorage.getItem('adminToken');
-    if (!storedToken) {
-      router.push('/admin/login');
-      return;
-    }
-    setToken(storedToken);
+    const token = getAdminTokenOptional();
+    fetchDeposits(token, selectedStatus);
   }, [router]);
 
   useEffect(() => {
-    if (!token) return;
+    const token = getAdminTokenOptional();
     fetchDeposits(token, selectedStatus);
-  }, [token, selectedStatus]);
+  }, [selectedStatus]);
 
   const fetchDeposits = async (token: string, status = selectedStatus) => {
     try {
       setLoading(true);
       const limit = status === 'pending' ? 200 : 60;
       const res = await fetch(`/api/admin/deposits?status=${status}&limit=${limit}`, {
-        headers: { Authorization: `Bearer ${token}` },
+        headers: buildAdminAuthHeaders(token),
       });
+      if (isUnauthorizedStatus(res.status)) {
+        router.push('/admin/login');
+        return;
+      }
       const data = await res.json();
       if (!res.ok) {
-        if (res.status === 401 || res.status === 403) {
-          localStorage.removeItem('adminToken');
-          router.push('/admin/login');
-          return;
-        }
         throw new Error(data?.message || 'Failed to fetch deposits');
       }
       setDeposits(data.deposits || []);
@@ -54,6 +48,7 @@ export default function AdminDepositsPage() {
   };
 
   const handleApprove = async (depositId: string) => {
+    const token = getAdminTokenOptional();
     if (!token) return;
     try {
       setActionLoadingId(depositId);
@@ -61,10 +56,14 @@ export default function AdminDepositsPage() {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
+          ...(buildAdminAuthHeaders(token) || {}),
         },
         body: JSON.stringify({ action: 'approve' }),
       });
+      if (isUnauthorizedStatus(res.status)) {
+        router.push('/admin/login');
+        return;
+      }
       const data = await res.json();
       if (!res.ok) throw new Error(data?.message || 'Failed to approve deposit');
       await fetchDeposits(token, selectedStatus);
@@ -76,6 +75,7 @@ export default function AdminDepositsPage() {
   };
 
   const handleReject = async (depositId: string) => {
+    const token = getAdminTokenOptional();
     if (!token) return;
     const reason = rejectionReason.trim();
     if (!reason) {
@@ -89,10 +89,14 @@ export default function AdminDepositsPage() {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
+          ...(buildAdminAuthHeaders(token) || {}),
         },
         body: JSON.stringify({ action: 'reject', reason }),
       });
+      if (isUnauthorizedStatus(res.status)) {
+        router.push('/admin/login');
+        return;
+      }
       const data = await res.json();
       if (!res.ok) throw new Error(data?.message || 'Failed to reject deposit');
       setRejectingId('');

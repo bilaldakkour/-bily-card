@@ -2,56 +2,407 @@ import { NextRequest, NextResponse } from 'next/server';
 import { withAdminAuth } from '@/lib/auth/middleware';
 import { connectDB } from '@/lib/db/mongodb';
 import Product from '@/lib/models/Product';
-import providerService from '@/lib/services/providerService';
+import CustomProduct from '@/lib/models/CustomProduct';
+import ProductProviderMapping from '@/lib/models/ProductProviderMapping';
+import ProviderProductReview from '@/lib/models/ProviderProductReview';
+import { getCatalogProducts } from '@/lib/data/catalogProducts';
+import { getEnabledProviderAdapters } from '@/lib/providers/registry';
+import { classifyProviderProduct, buildUniqueSlugBase } from '@/lib/providers/classification';
 import { JWTPayload } from '@/lib/types';
 import { handleError } from '@/lib/utils/errors';
+
+let syncInFlightUntil = 0
+
+function normalizeText(value: unknown) {
+  return String(value || '').toLowerCase().replace(/\s+/g, ' ').trim();
+}
+
+function buildProviderProductSlug(input: { slot: string; providerProductId: string; productName?: string }) {
+  const slot = String(input.slot || 'provider').toLowerCase()
+  const providerId = String(input.providerProductId || '').trim().toLowerCase()
+  const name = String(input.productName || '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 48)
+  const idPart = providerId.replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'unknown'
+  return `${slot}-${name || 'product'}-${idPart}`.replace(/-+/g, '-').slice(0, 95)
+}
+
+function deriveStockNumber(status: string) {
+  if (status === 'out_of_stock' || status === 'paused') return 0;
+  if (status === 'low_stock') return 5;
+  return 100;
+}
 
 async function handler(
   req: NextRequest,
   user: JWTPayload
 ): Promise<NextResponse> {
   try {
-    await connectDB();
-
-    // Fetch from provider
-    const providerProducts = await providerService.fetchProducts();
-
-    if (!Array.isArray(providerProducts)) {
+    if (Date.now() < syncInFlightUntil) {
       return NextResponse.json(
-        { success: false, message: 'Invalid provider response' },
+        { success: false, message: 'Sync already running, please retry shortly' },
+        { status: 429 }
+      )
+    }
+    syncInFlightUntil = Date.now() + 20_000
+
+    const startedAt = Date.now();
+    const body = await req.json().catch(() => ({}));
+    const mode = String(body?.mode || 'all').trim().toLowerCase();
+    const providerSlot = String(body?.providerSlot || '').trim().toLowerCase();
+
+    await connectDB();
+    const catalogProducts = await getCatalogProducts();
+    const catalogItems = catalogProducts.map((product) => ({
+      slug: String(product.slug || '').trim().toLowerCase(),
+      name: String(product.name || '').trim(),
+      category: String(product.category || '').trim().toLowerCase(),
+    }))
+    const byId = new Map(
+      catalogProducts.map((product) => [String(product.id || '').trim().toLowerCase(), product])
+    );
+    const byName = new Map(
+      catalogProducts.map((product) => [normalizeText(product.name), product])
+    );
+    const adapters = getEnabledProviderAdapters().filter((adapter) =>
+      providerSlot ? adapter.slot === providerSlot : true
+    );
+
+    if (!adapters.length) {
+      return NextResponse.json(
+        { success: false, message: 'No enabled provider configured' },
         { status: 400 }
       );
     }
 
     let syncedCount = 0;
     let updatedCount = 0;
+    let mappedCount = 0;
+    let classifiedMatched = 0;
+    let classifiedUnique = 0;
+    let classifiedAmbiguous = 0;
+    let classifiedInvalid = 0;
+    let createdUniqueProducts = 0;
+    let preventedDuplicates = 0;
+    let syncErrors = 0;
+    const syncErrorSamples: Array<{ slot: string; providerProductId: string; message: string }> = [];
 
-    for (const prod of providerProducts) {
-      const existingProduct = await Product.findOne({
-        providerProductId: prod.id,
-      });
+    const existingMappings = await ProductProviderMapping.find({})
+      .select('internalSlug providerSlot providerProductId')
+      .lean();
+    const existingMappedSlugByProviderProductId = new Map<string, string>();
+    for (const row of existingMappings as any[]) {
+      if (String(row?.providerSlot || '') !== 'secondary') continue;
+      const productId = String(row?.providerProductId || '').trim().toLowerCase();
+      const slug = String(row?.internalSlug || '').trim().toLowerCase();
+      if (productId && slug) existingMappedSlugByProviderProductId.set(productId, slug);
+    }
 
-      if (existingProduct) {
-        // Update existing
-        existingProduct.productName = prod.name;
-        existingProduct.costPrice = prod.costPrice;
-        existingProduct.category = prod.category;
-        await existingProduct.save();
-        updatedCount++;
-      } else {
-        // Create new
-        const newProduct = new Product({
-          providerProductId: prod.id,
-          productName: prod.name,
-          gameName: prod.game,
-          category: prod.category,
-          costPrice: prod.costPrice,
-          sellingPrice: prod.costPrice * 1.2, // 20% margin
-          activeStatus: false, // Require admin approval
-          isFeatured: false,
+    const existingCatalogSlugSet = new Set(catalogItems.map((item) => item.slug));
+
+    for (const adapter of adapters) {
+      if (adapter.key === 'go4card') {
+        try {
+          if (adapter.testConnection) {
+            const probe = await adapter.testConnection()
+            if (!probe.ok && !probe.profileOk) {
+              throw new Error(probe.message || 'Provider preflight failed')
+            }
+            if (probe.productsSlow) {
+              console.warn('Go4Card sync preflight: profile OK, products probe slow')
+            }
+          }
+        } catch (preflightError) {
+          console.error('Go4Card sync preflight failed:', preflightError)
+          throw preflightError
+        }
+      }
+
+      const providerProducts = await adapter.fetchProducts();
+      const seenProviderIds = new Set<string>();
+
+      for (const prod of providerProducts) {
+        const providerProductId = String(prod.providerProductId || '').trim();
+        const providerScopedId = `${adapter.slot}:${providerProductId}`;
+        if (!providerProductId) continue;
+        if (seenProviderIds.has(providerProductId)) continue;
+        seenProviderIds.add(providerProductId);
+        try {
+
+        const cost = Number(prod.cost || 0);
+        const productName = String(prod.displayName || prod.providerProductName || '').trim();
+        const classification = classifyProviderProduct({
+          product: {
+            providerProductId,
+            displayName: productName,
+            providerProductName: String(prod.providerProductName || ''),
+            category: String(prod.category || ''),
+            cost,
+            stockStatus: String(prod.stockStatus || ''),
+            deliveryType: String(prod.deliveryType || ''),
+            metadata: prod.metadata || {},
+          },
+          catalogProducts: catalogItems,
+          existingMappedSlugByProviderProductId:
+            adapter.slot === 'secondary' ? existingMappedSlugByProviderProductId : undefined,
         });
-        await newProduct.save();
-        syncedCount++;
+
+        if (classification.classification === 'matched_to_existing') classifiedMatched++;
+        if (classification.classification === 'new_unique_products') classifiedUnique++;
+        if (classification.classification === 'ambiguous_candidates') classifiedAmbiguous++;
+        if (classification.classification === 'invalid_or_unusable') classifiedInvalid++;
+
+        await ProviderProductReview.findOneAndUpdate(
+          { providerSlot: adapter.slot, adapterKey: adapter.key, providerProductId },
+          {
+            $set: {
+              providerSlot: adapter.slot,
+              adapterKey: adapter.key,
+              providerProductId,
+              providerProductName: productName || providerProductId,
+              providerCategory: String(prod.category || '').trim().toLowerCase(),
+              classification: classification.classification,
+              suggestedInternalSlug: classification.suggestedInternalSlug || undefined,
+              confidence: classification.confidence,
+              reasons: classification.reasons,
+              requirements: classification.requirements,
+              rawSnapshot: {
+                stockStatus: prod.stockStatus,
+                cost,
+                metadata: prod.metadata || {},
+              },
+            },
+            $setOnInsert: {
+              reviewStatus: 'pending_review',
+            },
+          },
+          { upsert: true }
+        );
+
+        let matchedCatalogProduct =
+          classification.suggestedInternalSlug
+            ? catalogProducts.find((p) => String(p.slug || '').toLowerCase() === classification.suggestedInternalSlug)
+            : null;
+
+        if (!matchedCatalogProduct) {
+          matchedCatalogProduct =
+            byId.get(providerProductId.toLowerCase()) ||
+            byId.get(`pkg-${providerProductId.toLowerCase()}`) ||
+            byName.get(normalizeText(prod.displayName)) ||
+            byName.get(normalizeText(prod.providerProductName));
+        }
+
+        if (
+          adapter.slot === 'secondary' &&
+          classification.classification === 'new_unique_products'
+        ) {
+          const baseSlug = buildUniqueSlugBase({
+            providerName: productName || providerProductId,
+            providerProductId,
+          });
+          let nextSlug = baseSlug;
+          let counter = 1;
+          while (existingCatalogSlugSet.has(nextSlug)) {
+            preventedDuplicates++;
+            counter += 1;
+            nextSlug = `${baseSlug}-${counter}`.slice(0, 95);
+          }
+
+          const requirements = classification.requirements
+          const qualityOk =
+            Boolean(productName) &&
+            Boolean(providerProductId) &&
+            Boolean(prod.category) &&
+            Number.isFinite(cost) &&
+            cost > 0 &&
+            !requirements.requiresExtraInput;
+
+          if (qualityOk) {
+            const qtyRule = requirements.quantityRule
+            const isPackage = qtyRule.mode === 'list' && qtyRule.values.length > 0
+            const isCount = qtyRule.mode === 'range'
+            const mode = isPackage ? 'package' : isCount ? 'count' : 'single'
+            const price = Number((cost * 1.2).toFixed(6))
+            const packageOptions = isPackage
+              ? qtyRule.values.map((value) => ({
+                  label: `${value}`,
+                  price: Number((cost * Number(value) * 1.2).toFixed(6)),
+                  inStock: prod.stockStatus !== 'out_of_stock',
+                }))
+              : []
+
+            await CustomProduct.findOneAndUpdate(
+              { slug: nextSlug },
+              {
+                $setOnInsert: {
+                  name: productName,
+                  slug: nextSlug,
+                  shortDescription: productName,
+                  fullDescription: productName,
+                  price,
+                  costPrice: cost,
+                  category: String(prod.category || 'general').toLowerCase(),
+                  image: String(prod.image || '/placeholder.png'),
+                  mode,
+                  packageOptions,
+                  countMin: isCount ? qtyRule.min : undefined,
+                  countMax: isCount ? qtyRule.max : undefined,
+                  active: prod.stockStatus !== 'out_of_stock',
+                  featured: false,
+                  bestSeller: false,
+                  stockQuantity: deriveStockNumber(prod.stockStatus),
+                  stockStatus: prod.stockStatus === 'out_of_stock' ? 'out_of_stock' : 'in_stock',
+                  saleEnabled: prod.stockStatus !== 'out_of_stock',
+                  platform: 'BilyCard',
+                  deliveryTime: 'Instant',
+                  tags: ['secondary-provider'],
+                  providerMode: 'secondary',
+                },
+              },
+              { upsert: true }
+            )
+
+            existingCatalogSlugSet.add(nextSlug)
+            createdUniqueProducts++
+            matchedCatalogProduct = {
+              slug: nextSlug,
+              id: `manual-${nextSlug}`,
+            } as any
+          }
+        }
+
+        if (mode !== 'mappings_only') {
+          const existingProduct = await Product.findOne({
+            providerProductId: providerScopedId,
+          });
+
+          if (existingProduct) {
+            if (!String((existingProduct as any).slug || '').trim()) {
+              ;(existingProduct as any).slug = buildProviderProductSlug({
+                slot: adapter.slot,
+                providerProductId,
+                productName: prod.displayName || prod.providerProductName || providerScopedId,
+              })
+            }
+            existingProduct.productName = prod.displayName || prod.providerProductName || existingProduct.productName;
+            if (mode !== 'stock_only') {
+              existingProduct.costPrice = Number.isFinite(cost) && cost >= 0 ? cost : existingProduct.costPrice;
+              existingProduct.providerRawPrice = Number.isFinite(cost) && cost >= 0 ? cost : 0;
+            }
+            existingProduct.category = String(prod.category || existingProduct.category || 'general');
+            existingProduct.providerRawName = prod.providerProductName || prod.displayName || '';
+            if (mode !== 'costs_only') {
+              existingProduct.stock = deriveStockNumber(prod.stockStatus);
+            }
+            existingProduct.lastSyncedAt = new Date();
+            await existingProduct.save();
+            updatedCount++;
+          } else if (mode === 'all') {
+            const newProduct = new Product({
+              slug: buildProviderProductSlug({
+                slot: adapter.slot,
+                providerProductId,
+                productName: prod.displayName || prod.providerProductName || providerScopedId,
+              }),
+              providerProductId: providerScopedId,
+              productName: prod.displayName || prod.providerProductName || providerScopedId,
+              gameName: prod.category || 'General',
+              category: String(prod.category || 'general'),
+              costPrice: Number.isFinite(cost) && cost >= 0 ? cost : 0,
+              sellingPrice: Number.isFinite(cost) && cost >= 0 ? Number((cost * 1.2).toFixed(6)) : 0,
+              activeStatus: false,
+              isFeatured: false,
+              image: prod.image || '',
+              providerRawName: prod.providerProductName || prod.displayName || '',
+              providerRawPrice: Number.isFinite(cost) && cost >= 0 ? cost : 0,
+              stock: deriveStockNumber(prod.stockStatus),
+              lastSyncedAt: new Date(),
+            });
+            await newProduct.save();
+            syncedCount++;
+          }
+        }
+
+        const canAutoMap =
+          classification.classification === 'matched_to_existing' ||
+          classification.classification === 'new_unique_products'
+
+        if (matchedCatalogProduct?.slug && canAutoMap) {
+          const slugValue = String(matchedCatalogProduct.slug || '').toLowerCase()
+          const activeRows = await ProductProviderMapping.countDocuments({
+            internalSlug: slugValue,
+            active: true,
+          })
+          const sourceType =
+            activeRows >= 2 ? 'multi_source' : activeRows === 1 ? 'single_source' : 'unmapped'
+
+          await ProductProviderMapping.findOneAndUpdate(
+            {
+              internalSlug: slugValue,
+              providerSlot: adapter.slot,
+              providerProductId,
+            },
+            {
+              $set: {
+                internalSlug: slugValue,
+                providerSlot: adapter.slot,
+                providerProductId,
+                providerProductName: String(
+                  prod.providerProductName || prod.displayName || ''
+                ),
+                active:
+                  classification.classification !== 'invalid_or_unusable' &&
+                  String(prod.stockStatus || '').toLowerCase() !== 'out_of_stock',
+                fallbackEnabled: classification.classification !== 'invalid_or_unusable',
+                ...(mode !== 'stock_only'
+                  ? { lastSyncedCost: Number.isFinite(cost) && cost >= 0 ? cost : 0 }
+                  : {}),
+                ...(mode !== 'costs_only'
+                  ? { stockStatus: prod.stockStatus || 'unknown' }
+                  : {}),
+                deliveryType: prod.deliveryType || 'instant',
+                currency: prod.currency || 'USD',
+                metadata: {
+                  ...(prod.metadata || {}),
+                  ...(mode !== 'stock_only'
+                    ? { providerRawPrice: Number.isFinite(cost) && cost >= 0 ? cost : 0 }
+                    : {}),
+                  sourceType,
+                  classification: classification.classification,
+                  classificationConfidence: classification.confidence,
+                  classificationReasons: classification.reasons,
+                },
+                updatedBy: user.userId,
+              },
+              $setOnInsert: {
+                priority: adapter.slot === 'primary' ? 100 : 200,
+              },
+            },
+            { upsert: true }
+          );
+          mappedCount++;
+        }
+        } catch (productSyncError: any) {
+          syncErrors += 1
+          const message = String(productSyncError?.message || 'product_sync_failed')
+          if (syncErrorSamples.length < 20) {
+            syncErrorSamples.push({
+              slot: adapter.slot,
+              providerProductId,
+              message,
+            })
+          }
+          console.error('Provider product sync item failed', {
+            slot: adapter.slot,
+            adapter: adapter.key,
+            providerProductId,
+            message,
+            code: productSyncError?.code,
+          })
+          continue
+        }
       }
     }
 
@@ -60,18 +411,37 @@ async function handler(
         success: true,
         message: 'Products synced successfully',
         data: {
+          mode,
           synced: syncedCount,
           updated: updatedCount,
+          mapped: mappedCount,
+          classifiedMatched,
+          classifiedUnique,
+          classifiedAmbiguous,
+          classifiedInvalid,
+          createdUniqueProducts,
+          preventedDuplicates,
+          syncErrors,
+          syncErrorSamples,
+          providers: adapters.map((adapter) => `${adapter.slot}:${adapter.key}`),
+          durationMs: Date.now() - startedAt,
         },
       },
       { status: 200 }
     );
   } catch (error: any) {
+    console.error('Admin products sync fatal error:', {
+      message: error?.message,
+      code: error?.code,
+      stack: error?.stack,
+    })
     const { statusCode, message } = handleError(error);
     return NextResponse.json(
       { success: false, message },
       { status: statusCode }
     );
+  } finally {
+    syncInFlightUntil = 0
   }
 }
 

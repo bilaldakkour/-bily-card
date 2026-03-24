@@ -8,6 +8,7 @@ import { handleError } from '@/lib/utils/errors';
 import SystemSettings from '@/lib/models/SystemSettings';
 import { sendAdminNotification } from '@/lib/services/adminNotificationService';
 import { getActivePaymentMethods } from '@/lib/wallet/paymentMethods';
+import { enforceRateLimit } from '@/lib/utils/rateLimit';
 import { isTestModeEnabled, logTestMode } from '@/lib/utils/testMode';
 import { createTestModeDeposit, getTestModePaymentMethods } from '@/lib/utils/testModeStore';
 
@@ -38,6 +39,14 @@ async function handler(
   user: JWTPayload
 ): Promise<NextResponse> {
   try {
+    const limitResponse = await enforceRateLimit(
+      req,
+      `wallet-deposit-request:${String(user.userId)}`,
+      5,
+      15 * 60 * 1000
+    );
+    if (limitResponse) return limitResponse;
+
     const body = await req.json();
 
     const amount = Number(body?.amount || 0);

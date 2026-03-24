@@ -27,7 +27,13 @@ async function getHandler(_req: NextRequest, _user: JWTPayload): Promise<NextRes
       category: product.category,
       basePrice: product.price,
       productPercent: Number(ruleMap[product.slug.toLowerCase()] || 0),
+      stockQuantity: Number(product.stockQuantity || 0),
       stockStatus: product.stockStatus,
+      saleEnabled: product.saleEnabled !== false,
+      providerMode: product.providerMode || 'primary',
+      isCountProduct: Boolean(
+        product.inputFields?.some((field) => field.type === 'number' && field.name === 'count')
+      ),
     }));
 
     return NextResponse.json({ success: true, data });

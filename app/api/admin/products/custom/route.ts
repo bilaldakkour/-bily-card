@@ -2,8 +2,12 @@ import { NextRequest, NextResponse } from 'next/server';
 import { withAdminAuth } from '@/lib/auth/middleware';
 import { connectDB } from '@/lib/db/mongodb';
 import { JWTPayload } from '@/lib/types';
+import { invalidateCatalogProductsCache } from '@/lib/data/catalogProducts';
 import CustomProduct from '@/lib/models/CustomProduct';
+import ProductOverride from '@/lib/models/ProductOverride';
 import { normalizeProductProviderMode } from '@/lib/products/providerMode';
+import { normalizeSaleEnabled, resolveStockFields } from '@/lib/products/stock';
+import type { ProductProviderLink, ProductRoutingMode } from '@/lib/data/products';
 
 function slugify(input: string) {
   return String(input || '')
@@ -20,10 +24,67 @@ function parseMode(value: unknown): 'single' | 'package' | 'count' {
   return 'single';
 }
 
-function parseStockStatus(value: unknown): 'in_stock' | 'out_of_stock' | 'limited' {
-  const status = String(value || 'in_stock').toLowerCase();
-  if (status === 'out_of_stock' || status === 'limited') return status;
-  return 'in_stock';
+function parseStockQuantityInput(value: unknown) {
+  if (typeof value === 'undefined' || value === null || String(value).trim() === '') {
+    return { provided: false as const, valid: true as const, value: undefined };
+  }
+
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed) || parsed < 0) {
+    return { provided: true as const, valid: false as const, value: undefined };
+  }
+
+  return { provided: true as const, valid: true as const, value: Math.floor(parsed) };
+}
+
+function parseOptionalCostPriceInput(value: unknown) {
+  if (typeof value === 'undefined' || value === null || String(value).trim() === '') {
+    return { provided: false as const, valid: true as const, value: undefined };
+  }
+
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed) || parsed < 0) {
+    return { provided: true as const, valid: false as const, value: undefined };
+  }
+
+  return { provided: true as const, valid: true as const, value: parsed };
+}
+
+function normalizeProviderLinksInput(value: unknown): ProductProviderLink[] {
+  if (!Array.isArray(value)) return [];
+  const rows: ProductProviderLink[] = [];
+  const seen = new Set<string>();
+  for (const raw of value as Array<Record<string, unknown>>) {
+    const providerCode = String(raw?.providerCode || '').trim().toLowerCase();
+    const providerProductId = String(raw?.providerProductId || '').trim();
+    if (!providerCode || !providerProductId) continue;
+    const dedupe = `${providerCode}|${providerProductId.toLowerCase()}`;
+    if (seen.has(dedupe)) continue;
+    seen.add(dedupe);
+    rows.push({
+      providerCode,
+      providerProductId,
+      providerProductName: String(raw?.providerProductName || '').trim() || undefined,
+      enabled: raw?.enabled !== false,
+      priority: Number.isFinite(Number(raw?.priority)) ? Number(raw?.priority) : 100,
+      priceSource: String(raw?.priceSource || '').toLowerCase() === 'manual' ? 'manual' : 'provider',
+      manualCost: Number.isFinite(Number(raw?.manualCost)) ? Number(raw?.manualCost) : undefined,
+      lastKnownCost: Number.isFinite(Number(raw?.lastKnownCost)) ? Number(raw?.lastKnownCost) : undefined,
+      providerAvailability:
+        String(raw?.providerAvailability || '').toLowerCase() === 'available'
+          ? 'available'
+          : String(raw?.providerAvailability || '').toLowerCase() === 'unavailable'
+            ? 'unavailable'
+            : 'unknown',
+      fallbackEnabled: raw?.fallbackEnabled !== false,
+      lastSyncAt: raw?.lastSyncAt ? String(raw.lastSyncAt) : undefined,
+    });
+  }
+  return rows;
+}
+
+function normalizeRoutingModeInput(value: unknown): ProductRoutingMode {
+  return String(value || '').toLowerCase() === 'priority' ? 'priority' : 'cheapest';
 }
 
 async function getHandler(_req: NextRequest, _user: JWTPayload): Promise<NextResponse> {
@@ -54,7 +115,9 @@ async function postHandler(req: NextRequest, _user: JWTPayload): Promise<NextRes
     const shortDescription = String(body.shortDescription || '').trim();
     const fullDescription = String(body.fullDescription || '').trim();
     const price = Number(body.price || 0);
+    const costPriceInput = parseOptionalCostPriceInput(body.costPrice);
     const mode = parseMode(body.mode);
+    const saleEnabled = normalizeSaleEnabled(body.saleEnabled);
 
     if (!name || !slug || !category || !image || !shortDescription || !fullDescription) {
       return NextResponse.json(
@@ -66,6 +129,21 @@ async function postHandler(req: NextRequest, _user: JWTPayload): Promise<NextRes
     if (!Number.isFinite(price) || price < 0) {
       return NextResponse.json(
         { success: false, message: 'Invalid price' },
+        { status: 400 }
+      );
+    }
+
+    if (!costPriceInput.valid) {
+      return NextResponse.json(
+        { success: false, message: 'Invalid purchase cost' },
+        { status: 400 }
+      );
+    }
+
+    const stockQuantityInput = parseStockQuantityInput(body.stockQuantity);
+    if (!stockQuantityInput.valid) {
+      return NextResponse.json(
+        { success: false, message: 'Invalid stock quantity' },
         { status: 400 }
       );
     }
@@ -107,37 +185,64 @@ async function postHandler(req: NextRequest, _user: JWTPayload): Promise<NextRes
       .split(',')
       .map((tag) => tag.trim())
       .filter(Boolean);
+    const existing = await CustomProduct.findOne({ slug })
+      .select('stockQuantity stockStatus')
+      .lean();
+    const resolvedStock = resolveStockFields(
+      typeof stockQuantityInput.value === 'number'
+        ? stockQuantityInput.value
+        : existing?.stockQuantity,
+      body.stockStatus ?? existing?.stockStatus
+    );
+    const hasCostPriceField = Object.prototype.hasOwnProperty.call(body, 'costPrice');
+    const providerLinks = normalizeProviderLinksInput(body?.providerLinks);
+    const routingMode = normalizeRoutingModeInput(body?.routingMode);
+    const updateOperations: Record<string, any> = {
+      $set: {
+        name,
+        slug,
+        category,
+        image,
+        shortDescription,
+        fullDescription,
+        price,
+        mode,
+        packageOptions,
+        countMin: mode === 'count' ? Math.max(1, countMin) : undefined,
+        countMax:
+          mode === 'count' && Number.isFinite(countMax) && countMax > 0
+            ? countMax
+            : undefined,
+        active: body.active !== false,
+        featured: body.featured === true,
+        bestSeller: body.bestSeller === true,
+        stockQuantity: resolvedStock.stockQuantity,
+        stockStatus: resolvedStock.stockStatus,
+        saleEnabled,
+        platform: String(body.platform || 'BilyCard').trim() || 'BilyCard',
+        deliveryTime: String(body.deliveryTime || 'Instant').trim() || 'Instant',
+        tags,
+        providerMode: normalizeProductProviderMode(body.providerMode, 'manual'),
+        routingMode,
+        providerLinks,
+      },
+    };
+
+    if (costPriceInput.provided) {
+      updateOperations.$set.costPrice = costPriceInput.value;
+    } else if (hasCostPriceField) {
+      updateOperations.$unset = { costPrice: '' };
+    }
 
     const doc = await CustomProduct.findOneAndUpdate(
       { slug },
-      {
-        $set: {
-          name,
-          slug,
-          category,
-          image,
-          shortDescription,
-          fullDescription,
-          price,
-          mode,
-          packageOptions,
-          countMin: mode === 'count' ? Math.max(1, countMin) : undefined,
-          countMax:
-            mode === 'count' && Number.isFinite(countMax) && countMax > 0
-              ? countMax
-              : undefined,
-          active: body.active !== false,
-          featured: body.featured === true,
-          bestSeller: body.bestSeller === true,
-          stockStatus: parseStockStatus(body.stockStatus),
-          platform: String(body.platform || 'BilyCard').trim() || 'BilyCard',
-          deliveryTime: String(body.deliveryTime || 'Instant').trim() || 'Instant',
-          tags,
-          providerMode: normalizeProductProviderMode(body.providerMode, 'manual'),
-        },
-      },
+      updateOperations,
       { upsert: true, new: true, setDefaultsOnInsert: true }
     ).lean();
+
+    await ProductOverride.deleteOne({ slug });
+
+    invalidateCatalogProductsCache();
 
     return NextResponse.json({
       success: true,

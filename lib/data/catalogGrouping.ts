@@ -1,6 +1,7 @@
 import type { Product } from './products';
 import { classifyCatalogProduct } from './catalogTaxonomy';
 import { getCatalogCurationRule } from './catalogCuration';
+import { isProductAvailable } from '@/lib/products/stock';
 
 export type CatalogDisplayProduct = Product & {
   groupKey: string;
@@ -182,12 +183,24 @@ function getPrimaryProduct(products: Product[], preferredSlug?: string): Product
     const scoreA =
       (a.bestSeller ? 40 : 0) +
       (a.featured ? 20 : 0) +
-      (a.stockStatus === 'in_stock' ? 10 : a.stockStatus === 'limited' ? 5 : 0) +
+      (isProductAvailable({
+        stockQuantityValue: a.stockQuantity,
+        legacyStatusValue: a.stockStatus,
+        saleEnabledValue: a.saleEnabled,
+      })
+        ? 10
+        : 0) +
       getModeScore(a);
     const scoreB =
       (b.bestSeller ? 40 : 0) +
       (b.featured ? 20 : 0) +
-      (b.stockStatus === 'in_stock' ? 10 : b.stockStatus === 'limited' ? 5 : 0) +
+      (isProductAvailable({
+        stockQuantityValue: b.stockQuantity,
+        legacyStatusValue: b.stockStatus,
+        saleEnabledValue: b.saleEnabled,
+      })
+        ? 10
+        : 0) +
       getModeScore(b);
 
     if (scoreA !== scoreB) return scoreB - scoreA;
@@ -197,9 +210,15 @@ function getPrimaryProduct(products: Product[], preferredSlug?: string): Product
 }
 
 function getGroupStockStatus(products: Product[]): Product['stockStatus'] {
-  if (products.some((product) => product.stockStatus === 'in_stock')) return 'in_stock';
-  if (products.some((product) => product.stockStatus === 'limited')) return 'limited';
-  return 'out_of_stock';
+  return products.some((product) =>
+    isProductAvailable({
+      stockQuantityValue: product.stockQuantity,
+      legacyStatusValue: product.stockStatus,
+      saleEnabledValue: product.saleEnabled,
+    })
+  )
+    ? 'in_stock'
+    : 'out_of_stock';
 }
 
 export function groupCatalogProducts(products: Product[]): CatalogDisplayProduct[] {
@@ -236,7 +255,12 @@ export function groupCatalogProducts(products: Product[]): CatalogDisplayProduct
         name: groupDisplayName || primary.name,
         price: priceList.length ? Math.min(...priceList) : primary.price,
         startingPrice: priceList.length ? Math.min(...priceList) : primary.startingPrice,
+        stockQuantity: normalizedChildren.reduce(
+          (total, child) => total + Math.max(0, Number(child.stockQuantity || 0)),
+          0
+        ),
         stockStatus: getGroupStockStatus(children),
+        saleEnabled: normalizedChildren.some((child) => child.saleEnabled !== false),
         featured: children.some((child) => child.featured),
         bestSeller: children.some((child) => child.bestSeller),
         groupKey,

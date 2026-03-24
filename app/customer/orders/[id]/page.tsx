@@ -13,15 +13,13 @@ export default function OrderDetailPage({
   const [order, setOrder] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [token, setToken] = useState('');
 
   useEffect(() => {
-    const storedToken = localStorage.getItem('token') || localStorage.getItem('adminToken');
+    const storedToken = localStorage.getItem('token');
     if (!storedToken) {
-      router.push('/customer/login');
+      router.push('/login');
       return;
     }
-    setToken(storedToken);
 
     const fetchOrder = async () => {
       try {

@@ -27,10 +27,6 @@ export default async function ProductPage({ params }: ProductPageProps) {
     notFound()
   }
 
-  if (product.stockStatus === 'out_of_stock') {
-    notFound()
-  }
-
   const relatedProducts = (await getCatalogDisplayBestSellingProducts())
     .filter((p) => p.id !== product.id && p.category === product.category)
     .slice(0, 3)
@@ -42,7 +38,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
       </div>
 
       <div className="md:hidden">
-        <div className="mx-auto max-w-[1480px] px-4 pb-0 pt-3 sm:px-5">
+        <div className="mx-auto max-w-[1480px] px-4 pb-0 pt-2 sm:px-5">
           <MobileUserShell title={product.name} />
         </div>
       </div>
@@ -52,28 +48,28 @@ export default async function ProductPage({ params }: ProductPageProps) {
           title={product.name}
           subtitle={product.shortDescription || product.fullDescription}
           breadcrumbs={[
-            { label: 'Home', href: '/' },
-            { label: 'Products', href: '/products' },
+            { label: 'الرئيسية', href: '/' },
+            { label: 'المنتجات', href: '/products' },
             { label: product.name, href: `/products/${product.slug}` },
           ]}
           action={
             <Link href="/products">
               <Button variant="outline">
                 <ArrowLeft className="mr-2 h-4 w-4" />
-                Back to Products
+                العودة للمنتجات
               </Button>
             </Link>
           }
         />
       </div>
 
-      <div className="relative mx-auto max-w-[1480px] px-3 pb-12 pt-3 sm:px-5 lg:px-6">
-        <div className="absolute inset-x-4 top-0 -z-10 h-40 rounded-[32px] bg-[radial-gradient(circle_at_top,rgba(56,189,248,0.14),transparent_70%)] blur-3xl sm:inset-x-5 lg:inset-x-6" />
+      <div className="relative mx-auto max-w-[1480px] px-3 pb-9 pt-2 sm:px-5 lg:px-6">
+        <div className="absolute inset-x-4 top-0 -z-10 h-36 rounded-[28px] bg-[radial-gradient(circle_at_top,rgba(46,91,255,0.18),transparent_70%)] blur-3xl sm:inset-x-5 lg:inset-x-6" />
 
-        <MobilePanel className="p-3 sm:p-6">
-          <div className="mb-5 md:hidden">
+        <MobilePanel className="p-2.5 sm:p-4">
+          <div className="mb-3 md:hidden">
             <MobileSectionHeading
-              eyebrow={product.platform || 'Digital Product'}
+              eyebrow={product.platform || 'منتج رقمي'}
               title={product.name}
               description={product.shortDescription || product.fullDescription}
             />
@@ -82,31 +78,31 @@ export default async function ProductPage({ params }: ProductPageProps) {
           <ProductDetails product={product} />
 
           {relatedProducts.length > 0 && (
-            <MobilePanel className="mt-8 p-4 sm:p-5" tone="soft">
+            <MobilePanel className="mt-4 p-3 sm:p-3.5" tone="soft">
               <MobileSectionHeading
-                eyebrow="More"
-                title="Related Products"
-                description="Products from the same category, shown in the same mobile-friendly layout."
+                eyebrow="منتجات إضافية"
+                title="منتجات مشابهة"
+                description="منتجات من نفس التصنيف ضمن نفس عرض الهاتف."
               />
 
-              <div className="mt-5">
+              <div className="mt-3">
                 <ProductGrid products={relatedProducts} />
               </div>
             </MobilePanel>
           )}
 
-          <MobilePanel className="mt-8 p-4 sm:p-5" tone="soft">
+          <MobilePanel className="mt-4 p-3 sm:p-3.5" tone="soft">
             <MobileSectionHeading
-              eyebrow="Notes"
-              title="Important Notes"
-              description="Quick reminders to keep the buying flow clear and smooth on every screen."
+              eyebrow="ملاحظات"
+              title="ملاحظات مهمة"
+              description="معلومات مختصرة لتجربة شراء أوضح وأسهل."
             />
-            <ul className="mt-4 grid gap-3 text-sm text-slate-400 sm:grid-cols-2">
-              <li>All digital products are delivered instantly after payment confirmation.</li>
-              <li>Please ensure your account details are entered correctly to avoid delivery issues.</li>
-              <li>For gaming top-ups, make sure your game account is active and accessible.</li>
-              <li>Refunds are available within 24 hours if the product has not been delivered.</li>
-              <li>Contact our support team if you encounter any issues with your order.</li>
+            <ul className="mt-3 grid gap-2 text-xs leading-6 text-slate-400 sm:grid-cols-2 sm:text-sm">
+              <li>يتم تسليم المنتجات الرقمية فور تأكيد الطلب وفق حالة المنتج.</li>
+              <li>تأكد من إدخال بيانات الحساب بشكل صحيح لتجنب أي تأخير.</li>
+              <li>في شحن الألعاب، تأكد أن الحساب نشط وقابل للاستقبال.</li>
+              <li>سياسة الاسترجاع تخضع لشروط المتجر وحالة الطلب.</li>
+              <li>يمكنك التواصل مع الدعم عند مواجهة أي مشكلة في الطلب.</li>
             </ul>
           </MobilePanel>
         </MobilePanel>

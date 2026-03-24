@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withAdminAuth } from '@/lib/auth/middleware';
+import { invalidateCatalogProductsCache } from '@/lib/data/catalogProducts';
 import { connectDB } from '@/lib/db/mongodb';
+import { resolveProviderOrderSync } from '@/lib/orders/providerSync';
+import { refundOrderAndRestoreStock } from '@/lib/orders/refundRecovery';
 import Order from '@/lib/models/Order';
 import { JWTPayload } from '@/lib/types';
 
@@ -10,6 +13,79 @@ async function handler(
 ): Promise<NextResponse> {
   try {
     await connectDB();
+
+    const syncCandidates = await Order.find({
+      status: { $in: ['pending', 'processing'] },
+    })
+      .select(
+        '_id orderId userId status providerStatus providerSlot providerOrderId providerResponse total quantity productSlug currency notes failureReason'
+      )
+      .lean();
+
+    let shouldInvalidateCatalogCache = false;
+
+    for (const order of syncCandidates) {
+      try {
+        const providerSync = await resolveProviderOrderSync(order as any);
+        if (!providerSync) continue;
+
+        const { mappedStatus, providerStatus, statusPayload } = providerSync;
+
+        if (mappedStatus === 'refunded' && order.status !== 'refunded') {
+          const refundAmount = Number(order.total || 0);
+
+          if (refundAmount > 0) {
+            const refundResult = await refundOrderAndRestoreStock({
+              orderId: String(order._id),
+              refundAmount,
+              currency: order.currency === 'LBP' ? 'LBP' : 'USD',
+              nextStatus: 'refunded',
+              refundNote: 'Refund: Provider cancelled order',
+              providerStatus,
+              providerResponse: statusPayload,
+              notes: 'Auto refunded after provider cancellation',
+              failureReason:
+                providerStatus === 'cancelled'
+                  ? 'Provider cancelled order and refunded balance at source'
+                  : String(order.failureReason || ''),
+            });
+
+            if (refundResult.stockRestored) {
+              shouldInvalidateCatalogCache = true;
+            }
+          }
+
+          continue;
+        }
+
+        if (mappedStatus !== order.status || providerStatus !== order.providerStatus) {
+          await Order.updateOne(
+            { _id: order._id },
+            {
+              $set: {
+                status: mappedStatus,
+                providerStatus,
+                providerResponse: statusPayload,
+                notes:
+                  mappedStatus === 'refunded'
+                    ? 'Auto refunded after provider cancellation'
+                    : order.notes,
+                failureReason:
+                  providerStatus === 'cancelled'
+                    ? 'Provider cancelled order and refunded balance at source'
+                    : order.failureReason,
+              },
+            }
+          );
+        }
+      } catch (syncError) {
+        console.error('Admin provider status sync failed:', order.orderId, syncError);
+      }
+    }
+
+    if (shouldInvalidateCatalogCache) {
+      invalidateCatalogProductsCache();
+    }
 
     const { searchParams } = new URL(req.url);
     const page = parseInt(searchParams.get('page') || '1');

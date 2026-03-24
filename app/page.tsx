@@ -1,5 +1,5 @@
 import HomeCompactDashboard from '@/components/ui/HomeCompactDashboard'
 
-export default function HomePage() {
+export default async function HomePage() {
   return <HomeCompactDashboard />
 }

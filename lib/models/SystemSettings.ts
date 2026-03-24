@@ -40,6 +40,8 @@ const SystemSettingsSchema = new Schema(
     whatsappAccessToken: { type: String, default: '' },
     whatsappPhoneNumberId: { type: String, default: '' },
     whatsappAdminNumber: { type: String, default: '' },
+    homePromoSlides: [{ type: String }],
+    homePromoUseDefaultFallback: { type: Boolean, default: true },
   },
   { timestamps: true }
 );

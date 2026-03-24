@@ -10,6 +10,21 @@ interface CategoryGridProps {
   subtitle?: string;
 }
 
+const getSafeImageSrc = (value: unknown) => {
+  const raw = typeof value === 'string' ? value.trim() : ''
+  if (!raw || raw === '.' || raw === 'null' || raw === 'undefined') return '/placeholder.png'
+  if (raw.startsWith('/')) return raw
+
+  try {
+    const parsed = new URL(raw)
+    if (!['http:', 'https:'].includes(parsed.protocol)) return '/placeholder.png'
+    if (parsed.hostname === 'dailycard-media.s3.amazonaws.com') return raw
+    return '/placeholder.png'
+  } catch {
+    return '/placeholder.png'
+  }
+}
+
 export function CategoryGrid({ categories, title = "Shop by Category", subtitle }: CategoryGridProps) {
   return (
     <section className="py-14">
@@ -25,9 +40,10 @@ export function CategoryGrid({ categories, title = "Shop by Category", subtitle 
             >
               <div className="relative h-48 w-full overflow-hidden bg-gradient-to-br from-slate-800 to-slate-900">
                 <Image
-                  src={category.image || "/games/pubg.jpg"}
+                  src={getSafeImageSrc(category.image)}
                   alt={category.name}
                   fill
+                  unoptimized={String(getSafeImageSrc(category.image)).startsWith('http://') || String(getSafeImageSrc(category.image)).startsWith('https://')}
                   className="object-cover transition-transform duration-300 group-hover:scale-110"
                 />
                 {/* Fallback overlay */}

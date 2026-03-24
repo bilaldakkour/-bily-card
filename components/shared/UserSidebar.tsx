@@ -5,7 +5,8 @@ import { useRouter, usePathname } from 'next/navigation'
 import Link from 'next/link'
 import { useLanguage, type LanguageCode } from '@/hooks/useLanguage'
 import { useSupportContact } from '@/hooks/useSupportContact'
-import { clearAuthUserCache, fetchAuthUser } from '@/lib/utils/authClient'
+import { clearAuthUserCache, fetchAuthUser, fetchUserActivitySnapshot } from '@/lib/utils/authClient'
+import { logoutCustomer } from '@/lib/utils/customerLogout'
 import { notifySessionExpired } from '@/lib/utils/sessionNotice'
 import {
   Home,
@@ -13,6 +14,7 @@ import {
   Receipt,
   FileText,
   Trophy,
+  Heart,
   Settings,
   LogOut,
   Palette,
@@ -53,6 +55,28 @@ interface UserSidebarProps {
   desktopSticky?: boolean
 }
 
+const getLevelState = (balanceRaw: number) => {
+  const balance = Number.isFinite(balanceRaw) ? Math.max(0, balanceRaw) : 0
+
+  if (balance < 500) {
+    return { level: 1, progress: (balance / 500) * 100, nextLevel: 2 as number | null }
+  }
+  if (balance < 1500) {
+    return { level: 2, progress: ((balance - 500) / 1000) * 100, nextLevel: 3 as number | null }
+  }
+  if (balance < 6000) {
+    return { level: 3, progress: ((balance - 1500) / 4500) * 100, nextLevel: 4 as number | null }
+  }
+  if (balance < 12000) {
+    return { level: 4, progress: ((balance - 6000) / 6000) * 100, nextLevel: 5 as number | null }
+  }
+  if (balance < 25000) {
+    return { level: 5, progress: ((balance - 12000) / 13000) * 100, nextLevel: null as number | null }
+  }
+
+  return { level: 5, progress: 100, nextLevel: null as number | null }
+}
+
 export default function UserSidebar({
   onBalanceUpdate,
   desktopSticky = true,
@@ -84,14 +108,15 @@ export default function UserSidebar({
     { code: 'en', label: t('lang.en') },
     { code: 'fr', label: t('lang.fr') },
   ]
+  const favoritesLabel =
+    language === 'ar' ? 'المفضلة' : language === 'fr' ? 'Favoris' : 'Favorites'
 
   const navigationItems = [
     { href: '/', label: t('sidebar.home'), icon: Home },
     { href: '/products', label: t('sidebar.products'), icon: Trophy },
     { href: '/wallet', label: t('sidebar.wallet'), icon: Wallet },
     { href: '/my-orders', label: t('sidebar.purchaseHistory'), icon: Receipt },
-    { href: '/orders', label: t('sidebar.orders'), icon: FileText },
-    { href: '/profile', label: t('sidebar.account'), icon: Settings },
+    { href: '/my-favorites', label: favoritesLabel, icon: Heart },
     { href: '/contact', label: t('sidebar.contact'), icon: Phone },
     { href: '/account', label: t('sidebar.settings'), icon: Settings },
     ...(user?.role === 'admin'
@@ -105,6 +130,29 @@ export default function UserSidebar({
     user?.name ||
     (user?.email ? user.email.split('@')[0] : '') ||
     t('nav.profile')
+  const walletUsd = Number(user?.walletBalance?.usd || 0)
+  const levelState = getLevelState(walletUsd)
+  const levelProgress = Math.max(0, Math.min(100, Math.round(levelState.progress)))
+  const levelLabelBase =
+    language === 'ar' ? 'المستوى الحالي' : language === 'fr' ? 'Niveau actuel' : 'Current level'
+  const levelProgressLabel =
+    language === 'ar'
+      ? levelState.nextLevel
+        ? `${levelProgress}% نحو المستوى ${levelState.nextLevel}`
+        : levelProgress >= 100
+          ? 'تم الوصول لأعلى مستوى'
+          : `${levelProgress}% ضمن المستوى 5`
+      : language === 'fr'
+        ? levelState.nextLevel
+          ? `${levelProgress}% vers niveau ${levelState.nextLevel}`
+          : levelProgress >= 100
+            ? 'Niveau maximum atteint'
+            : `${levelProgress}% dans niveau 5`
+        : levelState.nextLevel
+          ? `${levelProgress}% to level ${levelState.nextLevel}`
+          : levelProgress >= 100
+            ? 'Max level reached'
+            : `${levelProgress}% within level 5`
 
   useEffect(() => {
     fetchUserData()
@@ -115,7 +163,7 @@ export default function UserSidebar({
     localStorage.removeItem('bilycard_token')
     localStorage.removeItem('token')
     localStorage.removeItem('adminToken')
-    notifySessionExpired('ط§ظ†طھظ‡طھ ط§ظ„ط¬ظ„ط³ط©طŒ ط³ط¬ظ„ ط¯ط®ظˆظ„ظƒ ظ…ظ† ط¬ط¯ظٹط¯')
+    notifySessionExpired('انتهت الجلسة، سجل دخولك من جديد')
   }
 
   const fetchUserData = async () => {
@@ -145,41 +193,10 @@ export default function UserSidebar({
         currentDebt: walletUsd < 0 ? Math.abs(walletUsd) : 0,
       }))
 
-      const [ordersRes, txRes] = await Promise.all([
-        fetch('/api/orders', {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-          cache: 'no-store',
-        }),
-        fetch('/api/wallet/transactions', {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-          cache: 'no-store',
-        }),
-      ])
-
-      if (
-        ordersRes.status === 401 ||
-        ordersRes.status === 403 ||
-        txRes.status === 401 ||
-        txRes.status === 403
-      ) {
-        clearLocalAuth(token)
-        setUser(null)
-        setLoading(false)
-        return
-      }
-
-      const [ordersData, txData] = await Promise.all([
-        ordersRes.json(),
-        txRes.json(),
-      ])
-
-      const orders: SidebarOrder[] = Array.isArray(ordersData?.data) ? ordersData.data : []
-      const transactions: SidebarTransaction[] = Array.isArray(txData?.transactions)
-        ? txData.transactions
+      const snapshot = await fetchUserActivitySnapshot(token)
+      const orders: SidebarOrder[] = Array.isArray(snapshot?.orders) ? snapshot.orders : []
+      const transactions: SidebarTransaction[] = Array.isArray(snapshot?.transactions)
+        ? snapshot.transactions
         : []
 
       const pendingCount = orders.filter((order) =>
@@ -224,15 +241,8 @@ export default function UserSidebar({
     }
   }
 
-  const handleLogout = () => {
-    const token = localStorage.getItem('bilycard_token') || localStorage.getItem('token') || undefined
-    clearAuthUserCache(token)
-    localStorage.removeItem('token')
-    localStorage.removeItem('bilycard_token')
-    localStorage.removeItem('bilycard_user_name')
-    localStorage.removeItem('bilycard_user_email')
-    window.dispatchEvent(new Event('bilycard-auth-changed'))
-    router.push('/login')
+  const handleLogout = async () => {
+    await logoutCustomer('/login')
   }
 
   const refreshBalance = () => {
@@ -325,21 +335,25 @@ export default function UserSidebar({
 
           <div className={`min-w-0 flex-1 ${isRTL ? 'text-right' : 'text-left'}`}>
             <p className="truncate text-sm font-bold text-white">{userDisplayName}</p>
-            <span className="mt-1 inline-flex rounded-full border border-yellow-400/20 bg-yellow-400/15 px-2.5 py-1 text-xs font-semibold text-yellow-300">
-              {t('sidebar.level')}
-            </span>
+            <Link
+              href="/level-progress"
+              onClick={() => setIsMobileOpen(false)}
+              className="mt-1 inline-flex rounded-full border border-yellow-400/20 bg-yellow-400/15 px-2.5 py-1 text-xs font-semibold text-yellow-300 transition hover:border-yellow-300/40 hover:bg-yellow-400/20"
+            >
+              {levelLabelBase} {levelState.level}
+            </Link>
           </div>
         </div>
 
         <div className="mt-4 h-2 w-full rounded-full bg-slate-800/90">
           <div
             className="h-2 rounded-full bg-gradient-to-r from-yellow-300 to-amber-500"
-            style={{ width: '60%' }}
+            style={{ width: `${levelProgress}%` }}
           />
         </div>
 
         <p className={`mt-1.5 text-xs text-slate-400 ${isRTL ? 'text-right' : 'text-left'}`}>
-          {t('sidebar.progress')}
+          {levelProgressLabel}
         </p>
 
         <div className="mt-4 rounded-[22px] border border-white/10 bg-white/[0.04] p-3.5">

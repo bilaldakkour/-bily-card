@@ -12,16 +12,16 @@ interface PageHeaderProps {
 
 export function PageHeader({ title, subtitle, breadcrumbs, action }: PageHeaderProps) {
   return (
-    <div className="relative overflow-hidden border-b border-white/10 bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 py-8 sm:py-10">
+    <div className="relative overflow-hidden border-b border-white/10 bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 py-5 sm:py-6">
       {/* Background effects */}
       <div className="absolute inset-0">
-        <div className="absolute right-0 top-0 h-44 w-44 rounded-full bg-gradient-to-l from-blue-500/5 to-purple-500/5 blur-3xl"></div>
-        <div className="absolute bottom-0 left-0 h-36 w-36 rounded-full bg-gradient-to-r from-purple-500/5 to-pink-500/5 blur-3xl"></div>
+        <div className="absolute right-0 top-0 h-40 w-40 rounded-full bg-gradient-to-l from-[#2e5bff]/12 to-[#7e57ff]/10 blur-3xl"></div>
+        <div className="absolute bottom-0 left-0 h-32 w-32 rounded-full bg-gradient-to-r from-[#7e57ff]/10 to-[#d4a940]/10 blur-3xl"></div>
       </div>
 
       <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         {breadcrumbs && (
-          <nav className="mb-4">
+          <nav className="mb-2.5">
             <ol className="flex flex-wrap items-center gap-y-1 text-xs sm:text-sm text-slate-400">
               {breadcrumbs.map((crumb, index) => (
                 <li key={index} className="flex items-center">
@@ -29,7 +29,7 @@ export function PageHeader({ title, subtitle, breadcrumbs, action }: PageHeaderP
                   {index === breadcrumbs.length - 1 ? (
                     <span className="font-medium text-white">{crumb.label}</span>
                   ) : (
-                    <Link href={crumb.href} className="font-medium transition-colors duration-300 hover:text-blue-400">
+                    <Link href={crumb.href} className="font-medium transition-colors duration-300 hover:text-[#d4a940]">
                       {crumb.label}
                     </Link>
                   )}
@@ -39,13 +39,13 @@ export function PageHeader({ title, subtitle, breadcrumbs, action }: PageHeaderP
           </nav>
         )}
 
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-          <div className="space-y-2.5">
-            <h1 className="text-2xl font-black leading-tight text-white sm:text-3xl lg:text-4xl">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+          <div className="space-y-1.5">
+            <h1 className="text-xl font-black leading-tight text-white sm:text-2xl lg:text-[2rem]">
               {title}
             </h1>
             {subtitle && (
-              <p className="max-w-3xl text-sm font-medium leading-relaxed text-slate-400 sm:text-base lg:text-lg">
+              <p className="max-w-3xl text-xs font-medium leading-relaxed text-slate-400 sm:text-sm lg:text-base">
                 {subtitle}
               </p>
             )}

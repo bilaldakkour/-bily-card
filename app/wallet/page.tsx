@@ -12,6 +12,7 @@ import {
 import { CopyButton } from '@/components/ui/CopyButton'
 import UserPageLayout from '@/components/shared/UserPageLayout'
 import { useLanguage } from '@/hooks/useLanguage'
+import { fetchAuthUser, fetchUserActivitySnapshot } from '@/lib/utils/authClient'
 
 interface WalletBalance {
   usd: number
@@ -238,7 +239,7 @@ export default function WalletPage() {
     }
   }, [isPaymentModalOpen])
 
-  const fetchWalletData = async () => {
+  const fetchWalletData = async (force = false) => {
     const token = localStorage.getItem('bilycard_token')
     if (!token) {
       router.push('/login')
@@ -246,40 +247,17 @@ export default function WalletPage() {
     }
 
     try {
-      const meRes = await fetch('/api/auth/me', {
-        headers: { Authorization: `Bearer ${token}` },
-      })
+      const [meData, activityData] = await Promise.all([
+        fetchAuthUser(token, force),
+        fetchUserActivitySnapshot(token, force),
+      ])
 
-      if (meRes.status === 401 || meRes.status === 403) {
-        router.push('/login')
-        return
-      }
-
-      if (meRes.ok) {
-        const meData = await meRes.json()
-        if (meData?.success && meData?.data?.walletBalance) {
-          setBalance(meData.data.walletBalance)
-        }
-      }
-
-      const txRes = await fetch('/api/wallet/transactions', {
-        headers: { Authorization: `Bearer ${token}` },
-      })
-
-      if (txRes.status === 401 || txRes.status === 403) {
-        router.push('/login')
-        return
-      }
-
-      if (txRes.ok) {
-        const txData = await txRes.json()
-        if (txData?.success) {
-          setTxns(txData.transactions || [])
-        }
-      }
+      setBalance((meData as { walletBalance?: WalletBalance })?.walletBalance || { usd: 0 })
+      setTxns(Array.isArray(activityData?.transactions) ? activityData.transactions : [])
 
       const methodsRes = await fetch('/api/wallet/payment-methods', {
         headers: { Authorization: `Bearer ${token}` },
+        cache: 'no-store',
       })
 
       if (methodsRes.ok) {
@@ -293,6 +271,10 @@ export default function WalletPage() {
       }
     } catch (error) {
       console.error('Failed to fetch wallet data:', error)
+      if (!localStorage.getItem('bilycard_token')) {
+        router.push('/login')
+        return
+      }
       setMessage(t('wallet.loadError'))
       setMessageTone('error')
     } finally {
@@ -341,7 +323,7 @@ export default function WalletPage() {
         setProofImage('')
         setProofName('')
         setIsPaymentModalOpen(false)
-        await fetchWalletData()
+        await fetchWalletData(true)
       } else {
         setMessage(data.message || t('wallet.depositFailed'))
         setMessageTone('error')
@@ -426,45 +408,45 @@ export default function WalletPage() {
         maxWidthClass="max-w-[1720px]"
         fixedSidebarRightClass="lg:right-6"
       >
-        <div className="grid gap-3 xl:grid-cols-[minmax(0,1.18fr)_minmax(320px,0.82fr)]">
-          <div className="relative overflow-hidden rounded-[28px] border border-emerald-400/16 bg-[linear-gradient(135deg,rgba(7,38,42,0.96),rgba(5,18,28,0.99))] p-4 shadow-[0_24px_70px_rgba(2,6,23,0.24)] sm:p-5 lg:p-6">
+        <div className="grid gap-2 xl:grid-cols-[minmax(0,1.2fr)_minmax(290px,0.8fr)]">
+          <div className="relative overflow-hidden rounded-[20px] border border-[#3a7bff]/22 bg-[linear-gradient(135deg,rgba(7,38,42,0.96),rgba(5,18,28,0.99))] p-3 shadow-[0_18px_44px_rgba(2,6,23,0.22)] sm:p-3.5 lg:p-4">
             <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(52,211,153,0.2),transparent_34%),radial-gradient(circle_at_bottom_left,rgba(34,211,238,0.14),transparent_38%)]" />
             <div className="relative z-10">
               <p className="text-[11px] font-black uppercase tracking-[0.22em] text-emerald-200/90">
                 {t('wallet.balanceUsd')}
               </p>
-              <div className="mt-4 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+              <div className="mt-3 flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
                 <div className="text-right">
-                  <div className="text-[2rem] font-black leading-none text-white sm:text-[2.4rem]">
+                  <div className="text-[1.7rem] font-black leading-none text-white sm:text-[2.05rem]">
                     ${balance.usd.toFixed(2)}
                   </div>
-                  <p className="mt-2 max-w-2xl text-sm leading-6 text-emerald-50/80">
+                  <p className="mt-1.5 max-w-2xl text-xs leading-5 text-emerald-50/80 sm:text-sm">
                     {pageCopy.heroDescription}
                   </p>
                 </div>
 
                 <div className="grid grid-cols-2 gap-2 lg:min-w-[280px]">
-                  <div className="rounded-[20px] border border-white/10 bg-white/[0.08] px-3.5 py-3 text-right">
+                  <div className="rounded-[16px] border border-white/10 bg-white/[0.08] px-3 py-2.5 text-right">
                     <div className="flex items-center justify-end gap-2 text-emerald-100">
-                      <WalletCards className="h-4.5 w-4.5" />
+                      <WalletCards className="h-4 w-4" />
                       <span className="text-[11px] uppercase tracking-[0.18em] text-emerald-100/80">{pageCopy.paymentRails}</span>
                     </div>
-                    <p className="mt-2 text-2xl font-black text-white">{activePaymentMethodsCount}</p>
+                    <p className="mt-1.5 text-xl font-black text-white">{activePaymentMethodsCount}</p>
                   </div>
 
-                  <div className="rounded-[20px] border border-white/10 bg-white/[0.08] px-3.5 py-3 text-right">
+                  <div className="rounded-[16px] border border-white/10 bg-white/[0.08] px-3 py-2.5 text-right">
                     <div className="flex items-center justify-end gap-2 text-cyan-100">
-                      <Clock3 className="h-4.5 w-4.5" />
+                      <Clock3 className="h-4 w-4" />
                       <span className="text-[11px] uppercase tracking-[0.18em] text-cyan-100/80">{pageCopy.recentActivity}</span>
                     </div>
-                    <p className="mt-2 text-2xl font-black text-white">{txns.length}</p>
+                    <p className="mt-1.5 text-xl font-black text-white">{txns.length}</p>
                   </div>
                 </div>
               </div>
             </div>
           </div>
 
-          <MobilePanel tone="accent" className="hidden xl:block">
+          <MobilePanel tone="accent" className="hidden xl:block p-3.5">
             <div className="flex h-full flex-col justify-between">
               <div className="text-right">
                 <p className="text-[11px] font-black uppercase tracking-[0.22em] text-cyan-300">{pageCopy.desktopFlow}</p>
@@ -474,16 +456,16 @@ export default function WalletPage() {
                 </p>
               </div>
 
-              <div className="mt-5 space-y-2.5 text-right">
-                <div className="rounded-[18px] border border-white/10 bg-white/[0.05] px-3.5 py-3">
+              <div className="mt-3.5 space-y-2 text-right">
+                <div className="rounded-[14px] border border-white/10 bg-white/[0.05] px-3 py-2.5">
                   <p className="text-[11px] uppercase tracking-[0.18em] text-slate-400">{pageCopy.selectedMethod}</p>
                   <p className="mt-1 text-base font-bold text-white">{selectedMethod?.name || pageCopy.chooseAMethod}</p>
                 </div>
-                <div className="rounded-[18px] border border-white/10 bg-white/[0.05] px-3.5 py-3">
+                <div className="rounded-[14px] border border-white/10 bg-white/[0.05] px-3 py-2.5">
                   <p className="text-[11px] uppercase tracking-[0.18em] text-slate-400">{pageCopy.minimum}</p>
                   <p className="mt-1 text-base font-bold text-white">${Number(selectedMethod?.minAmount || 0).toFixed(2)}</p>
                 </div>
-                <div className="rounded-[18px] border border-white/10 bg-white/[0.05] px-3.5 py-3">
+                <div className="rounded-[14px] border border-white/10 bg-white/[0.05] px-3 py-2.5">
                   <p className="text-[11px] uppercase tracking-[0.18em] text-slate-400">{pageCopy.fee}</p>
                   <p className="mt-1 text-base font-bold text-white">{Number(selectedMethod?.feePercent || 0).toFixed(2)}%</p>
                 </div>
@@ -499,10 +481,10 @@ export default function WalletPage() {
             description={pageCopy.depositDescription}
           />
 
-          <div className="mt-4 grid gap-4 xl:grid-cols-[minmax(0,1fr)_280px]">
+          <div className="mt-2.5 grid gap-2.5 xl:grid-cols-[minmax(0,1fr)_250px]">
             <div>
-            <p className="mb-3 text-sm font-medium text-slate-300">{pageCopy.paymentMethod}</p>
-            <div className="grid grid-cols-3 gap-2.5 xl:grid-cols-4">
+            <p className="mb-2 text-xs font-medium text-slate-300 sm:text-sm">{pageCopy.paymentMethod}</p>
+            <div className="grid grid-cols-3 gap-1.5 xl:grid-cols-4">
               {paymentMethods.map((method) => {
                 const active = method.key === selectedMethodKey
                 return (
@@ -510,15 +492,15 @@ export default function WalletPage() {
                     key={method.key}
                     type="button"
                     onClick={() => handleMethodClick(method.key)}
-                    className={`flex h-full flex-col rounded-[20px] border p-2.5 text-center transition sm:rounded-[22px] sm:p-3.5 lg:min-h-[190px] lg:rounded-[24px] lg:p-4 md:text-left ${
+                    className={`flex h-full flex-col rounded-[16px] border p-2 text-center transition sm:rounded-[18px] sm:p-2.5 lg:min-h-[148px] lg:rounded-[20px] lg:p-3 md:text-left ${
                       active
                         ? 'border-cyan-400/40 bg-cyan-500/10 shadow-[0_16px_34px_rgba(14,165,233,0.12)]'
                         : 'border-white/10 bg-white/[0.04] hover:border-white/25 hover:bg-white/[0.055]'
                     }`}
                   >
-                    <div className="mb-2 flex flex-col items-center gap-2 sm:mb-3 md:flex-row md:items-start md:justify-between md:gap-3">
+                    <div className="mb-1.5 flex flex-col items-center gap-1.5 sm:mb-2 md:flex-row md:items-start md:justify-between md:gap-2">
                       <div className="flex flex-col items-center gap-1.5 sm:gap-2 md:items-start">
-                        <div className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-xl border border-white/10 bg-white shadow-[0_10px_24px_rgba(2,6,23,0.22)] sm:h-16 sm:w-16 sm:rounded-2xl lg:h-[4.6rem] lg:w-[4.6rem]">
+                        <div className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-lg border border-white/10 bg-white shadow-[0_10px_24px_rgba(2,6,23,0.22)] sm:h-12 sm:w-12 sm:rounded-xl lg:h-14 lg:w-14">
                           <img
                             src={resolvePaymentMethodImage(method)}
                             alt={method.name}
@@ -543,7 +525,7 @@ export default function WalletPage() {
                         {pageCopy.minBadge(Number(method.minAmount || 0))}
                       </span>
                     </div>
-                    <p className="line-clamp-2 min-h-[2rem] text-[11px] font-semibold leading-4 text-white sm:min-h-0 sm:text-sm lg:text-[0.95rem]">
+                    <p className="line-clamp-2 min-h-[1.8rem] text-[10px] font-semibold leading-4 text-white sm:min-h-0 sm:text-xs lg:text-sm">
                       {method.name}
                     </p>
                     <p className="mt-0.5 text-[9px] text-slate-400 sm:mt-1 sm:text-[11px]">
@@ -555,32 +537,32 @@ export default function WalletPage() {
             </div>
           </div>
 
-            <div className="hidden xl:flex xl:flex-col xl:justify-between xl:rounded-[24px] xl:border xl:border-white/10 xl:bg-white/[0.04] xl:p-4">
+            <div className="hidden xl:flex xl:flex-col xl:justify-between xl:rounded-[20px] xl:border xl:border-white/10 xl:bg-white/[0.04] xl:p-3.5">
               <div className="text-right">
                 <div className="inline-flex items-center gap-2 rounded-full border border-cyan-400/18 bg-cyan-500/10 px-2.5 py-1 text-[11px] font-semibold text-cyan-200">
                   <Sparkles className="h-3.5 w-3.5" />
                   {pageCopy.quickDeposit}
                 </div>
-                <h3 className="mt-3 text-lg font-black text-white">{pageCopy.quickTipsTitle}</h3>
-                <p className="mt-2 text-sm leading-6 text-slate-400">
+                <h3 className="mt-2 text-base font-black text-white">{pageCopy.quickTipsTitle}</h3>
+                <p className="mt-1.5 text-xs leading-5 text-slate-400 sm:text-sm">
                   {pageCopy.quickTipsDescription}
                 </p>
               </div>
 
-              <div className="mt-4 space-y-2.5">
-                <div className="rounded-[18px] border border-white/10 bg-white/[0.04] px-3.5 py-3 text-right">
+              <div className="mt-2.5 space-y-2">
+                <div className="rounded-[14px] border border-white/10 bg-white/[0.04] px-3 py-2.5 text-right">
                   <div className="flex items-center justify-end gap-2 text-cyan-200">
                     <Sparkles className="h-4 w-4" />
                     <span className="text-sm font-semibold">{pageCopy.chooseMethodStep}</span>
                   </div>
                 </div>
-                <div className="rounded-[18px] border border-white/10 bg-white/[0.04] px-3.5 py-3 text-right">
+                <div className="rounded-[14px] border border-white/10 bg-white/[0.04] px-3 py-2.5 text-right">
                   <div className="flex items-center justify-end gap-2 text-slate-200">
                     <WalletCards className="h-4 w-4" />
                     <span className="text-sm font-semibold">{pageCopy.copyAddressStep}</span>
                   </div>
                 </div>
-                <div className="rounded-[18px] border border-white/10 bg-white/[0.04] px-3.5 py-3 text-right">
+                <div className="rounded-[14px] border border-white/10 bg-white/[0.04] px-3 py-2.5 text-right">
                   <div className="flex items-center justify-end gap-2 text-emerald-200">
                     <Shield className="h-4 w-4" />
                     <span className="text-sm font-semibold">{pageCopy.safeRequestStep}</span>
@@ -590,12 +572,12 @@ export default function WalletPage() {
             </div>
           </div>
 
-          <div className="mt-4 rounded-[20px] border border-dashed border-white/12 bg-white/[0.03] px-4 py-4 text-center text-sm text-slate-300 lg:text-right">
+          <div className="mt-2.5 rounded-[14px] border border-dashed border-white/12 bg-white/[0.03] px-3.5 py-3 text-center text-xs text-slate-300 sm:text-sm lg:text-right">
             {pageCopy.depositHint}
           </div>
 
           <form onSubmit={handleTopUp} className="hidden">
-            <div className="grid gap-2.5 md:grid-cols-2">
+            <div className="grid gap-2 md:grid-cols-2">
               <div>
                 <label className="mb-1.5 block text-xs font-medium text-slate-400 sm:mb-2 sm:text-sm">{pageCopy.paymentAddress}</label>
                 <div className="flex items-start gap-2 rounded-[18px] border border-white/10 bg-white/[0.035] px-3 py-2.5 text-xs text-slate-200 sm:rounded-2xl sm:px-4 sm:py-3 sm:text-sm">
@@ -629,7 +611,7 @@ export default function WalletPage() {
               </div>
             </div>
 
-            <div className="grid gap-2.5 md:grid-cols-2">
+            <div className="grid gap-2 md:grid-cols-2">
               <div>
                 <label className="mb-1.5 block text-xs font-medium text-slate-400 sm:mb-2 sm:text-sm">{pageCopy.amountAfterFees}</label>
                 <div className="rounded-[18px] border border-white/10 bg-white/[0.045] px-3 py-2.5 text-sm text-slate-200 sm:rounded-2xl sm:px-4 sm:py-3">
@@ -675,7 +657,7 @@ export default function WalletPage() {
             description={pageCopy.searchDescription}
           />
 
-          <label className="relative mt-4 block">
+          <label className="relative mt-3 block">
             <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" />
             <input
               type="text"
@@ -695,19 +677,19 @@ export default function WalletPage() {
           />
 
           {txns.length === 0 ? (
-            <div className="mt-4 rounded-[20px] border border-white/10 bg-white/[0.04] p-6 text-center sm:rounded-[24px] sm:p-8">
+            <div className="mt-2.5 rounded-[14px] border border-white/10 bg-white/[0.04] p-3.5 text-center sm:rounded-[18px] sm:p-4">
               <p className="text-slate-400">{t('wallet.noTx')}</p>
             </div>
           ) : filteredTxns.length === 0 ? (
-            <div className="mt-4 rounded-[20px] border border-white/10 bg-white/[0.04] p-6 text-center sm:rounded-[24px] sm:p-8">
+            <div className="mt-2.5 rounded-[14px] border border-white/10 bg-white/[0.04] p-3.5 text-center sm:rounded-[18px] sm:p-4">
               <p className="text-slate-400">{pageCopy.noMatchingTransactions}</p>
             </div>
           ) : (
-            <div className="mt-4 space-y-2.5">
+            <div className="mt-2.5 space-y-2">
               {filteredTxns.map((txn) => (
                 <div
                   key={txn._id}
-                  className="flex flex-col gap-2.5 rounded-[18px] border border-white/8 bg-white/[0.04] p-3 sm:flex-row sm:items-start sm:justify-between sm:rounded-[22px] sm:p-4"
+                  className="flex flex-col gap-2 rounded-[14px] border border-white/8 bg-white/[0.04] p-2.5 sm:flex-row sm:items-start sm:justify-between sm:rounded-[16px] sm:p-3"
                 >
                   <div>
                     <p className="text-sm font-semibold capitalize text-white">{txn.type}</p>
@@ -733,20 +715,20 @@ export default function WalletPage() {
 
       {isPaymentModalOpen && selectedMethod ? (
         <div
-          className="fixed inset-0 z-[80] flex items-end justify-center bg-slate-950/88 p-3 backdrop-blur-sm sm:items-center sm:p-4"
+          className="fixed inset-0 z-[80] flex items-end justify-center bg-slate-950/88 p-2.5 backdrop-blur-sm sm:items-center sm:p-3"
           role="dialog"
           aria-modal="true"
           aria-labelledby="wallet-deposit-modal-title"
           onClick={() => setIsPaymentModalOpen(false)}
         >
           <div
-            className="w-full max-w-[22.75rem] overflow-hidden rounded-[24px] border border-cyan-400/12 bg-[linear-gradient(180deg,rgba(6,18,34,0.98),rgba(4,10,22,0.99))] shadow-[0_34px_90px_rgba(2,6,23,0.52)] sm:max-w-[24rem]"
+            className="w-full max-w-[21.75rem] overflow-hidden rounded-[18px] border border-[#3a7bff]/22 bg-[linear-gradient(180deg,rgba(6,18,34,0.98),rgba(4,10,22,0.99))] shadow-[0_30px_70px_rgba(2,6,23,0.5)] sm:max-w-[23rem]"
             onClick={(event) => event.stopPropagation()}
           >
-            <div className="flex items-start justify-between gap-2.5 border-b border-white/8 px-3 py-3 sm:px-3.5 sm:py-3.5">
+            <div className="flex items-start justify-between gap-2.5 border-b border-white/8 px-2.5 py-2.5 sm:px-3 sm:py-3">
               <div className="min-w-0 text-right">
                 <p className="text-[11px] font-black uppercase tracking-[0.22em] text-cyan-300">{pageCopy.depositMethod}</p>
-                <h2 id="wallet-deposit-modal-title" className="mt-1 text-[1.02rem] font-black text-white sm:text-lg">
+                <h2 id="wallet-deposit-modal-title" className="mt-1 text-[0.95rem] font-black text-white sm:text-base">
                   {selectedMethod.name}
                 </h2>
                 <p className="mt-1 text-[12px] leading-5 text-slate-400">
@@ -757,14 +739,14 @@ export default function WalletPage() {
               <button
                 type="button"
                 onClick={() => setIsPaymentModalOpen(false)}
-                className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-rose-300/20 bg-rose-400/[0.09] text-rose-100 shadow-[0_10px_24px_rgba(15,23,42,0.28)] transition hover:border-rose-300/34 hover:bg-rose-400/[0.16] hover:text-white"
+                className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-rose-300/20 bg-rose-400/[0.09] text-rose-100 shadow-[0_10px_24px_rgba(15,23,42,0.28)] transition hover:border-rose-300/34 hover:bg-rose-400/[0.16] hover:text-white"
                 aria-label={pageCopy.closeDepositPopup}
               >
-                <X className="h-5 w-5 stroke-[2.7]" />
+                <X className="h-4 w-4 stroke-[2.7]" />
               </button>
             </div>
 
-            <div className="max-h-[80vh] overflow-y-auto px-3 py-3 sm:px-3.5 sm:py-3.5">
+            <div className="max-h-[80vh] overflow-y-auto px-2.5 py-2.5 sm:px-3 sm:py-3">
               <div className="mb-3 flex items-center gap-2.5 rounded-[18px] border border-white/10 bg-white/[0.04] p-2.5">
                 <div className="flex h-11 w-11 items-center justify-center overflow-hidden rounded-[16px] border border-white/10 bg-white shadow-[0_12px_28px_rgba(2,6,23,0.24)]">
                   <img
@@ -792,7 +774,7 @@ export default function WalletPage() {
                 </div>
               </div>
 
-              <form onSubmit={handleTopUp} className="space-y-2.5">
+              <form onSubmit={handleTopUp} className="space-y-2">
                 <div>
                   <label className="mb-1.5 block text-[13px] font-medium text-slate-300">{pageCopy.paymentAddress}</label>
                   <div className="flex items-center gap-2 rounded-[18px] border border-white/10 bg-white/[0.045] px-3 py-2.5 text-sm text-slate-200">
@@ -826,7 +808,7 @@ export default function WalletPage() {
                 <div>
                   <label className="mb-1.5 block text-[13px] font-medium text-slate-300">{pageCopy.amountAfterFees}</label>
                   <div className="rounded-[18px] border border-white/10 bg-white/[0.045] px-3 py-2.5 text-sm text-slate-200">
-                    <span className="text-[1.35rem] font-bold text-white">${amountAfterFee.toFixed(2)}</span>
+                    <span className="text-[1.15rem] font-bold text-white">${amountAfterFee.toFixed(2)}</span>
                     <span className="ml-2 text-xs text-slate-400">{pageCopy.fee}: {feePercent.toFixed(2)}%</span>
                   </div>
                 </div>

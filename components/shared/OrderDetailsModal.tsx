@@ -318,6 +318,7 @@ export default function OrderDetailsModal({ order, open, onClose }: OrderDetails
     `${copy.quantity}: ${order.quantity ?? 1}`,
     `${copy.total}: $${total}`,
     `${copy.provider}: ${statusLabel}`,
+    noteText,
   ].join('\n')
 
   const handleShare = async () => {
@@ -344,12 +345,12 @@ export default function OrderDetailsModal({ order, open, onClose }: OrderDetails
     >
       <div
         dir={isRTL ? 'rtl' : 'ltr'}
-        className="relative w-full max-w-[27.75rem] overflow-hidden rounded-[22px] border border-cyan-300/12 bg-[linear-gradient(180deg,rgba(6,14,28,0.985),rgba(4,10,22,0.995))] shadow-[0_22px_56px_rgba(2,6,23,0.5)] ring-1 ring-white/[0.05] sm:max-w-[28.75rem]"
+        className="relative w-full max-w-[23.75rem] overflow-hidden rounded-[20px] border border-cyan-300/12 bg-[linear-gradient(180deg,rgba(6,14,28,0.985),rgba(4,10,22,0.995))] shadow-[0_20px_52px_rgba(2,6,23,0.5)] ring-1 ring-white/[0.05] sm:max-w-[24.75rem]"
         onClick={(event) => event.stopPropagation()}
       >
         <div className={cn('pointer-events-none absolute inset-x-0 top-0 h-28 bg-gradient-to-b', statusMeta.glowClass)} />
 
-        <div className="relative border-b border-white/8 px-2.5 py-2.5 sm:px-3">
+        <div className="relative border-b border-white/8 px-2.5 py-2 sm:px-3">
           <div className="flex items-start justify-between gap-3">
             <div className="flex items-center gap-2">
               <button
@@ -380,10 +381,10 @@ export default function OrderDetailsModal({ order, open, onClose }: OrderDetails
           </div>
         </div>
 
-        <div className="max-h-[78vh] overflow-y-auto px-2 py-2 sm:px-2.5 sm:py-2.5">
+        <div className="max-h-[72vh] overflow-y-auto px-2 py-2 sm:px-2.5 sm:py-2.5">
           <div className="rounded-[18px] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.04),rgba(255,255,255,0.02))] p-2.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]">
             <div className="flex items-start gap-2.5">
-              <div className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-[16px] border border-white/10 bg-white/[0.05] shadow-[0_12px_24px_rgba(2,6,23,0.2)] sm:h-16 sm:w-16">
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-[14px] border border-white/10 bg-white/[0.05] shadow-[0_12px_24px_rgba(2,6,23,0.2)] sm:h-14 sm:w-14">
                 {order.productImage ? (
                   <img src={order.productImage} alt={order.productName} className="h-full w-full object-cover" />
                 ) : (
@@ -400,22 +401,14 @@ export default function OrderDetailsModal({ order, open, onClose }: OrderDetails
 
                 <h3 className="mt-2 text-[0.95rem] font-black text-white sm:text-base">{order.productName}</h3>
 
-                <div className="mt-2 flex flex-wrap justify-end gap-1.5">
-                  <div className="rounded-full border border-white/8 bg-white/[0.03] px-2.5 py-1.5 text-right">
-                    <p className="text-[10px] uppercase tracking-[0.16em] text-slate-500">{copy.quantity}</p>
-                    <p className="mt-0.5 text-sm font-semibold text-white">{order.quantity ?? 1}</p>
-                  </div>
-                  <div className="rounded-full border border-white/8 bg-white/[0.03] px-2.5 py-1.5 text-right">
-                    <p className="text-[10px] uppercase tracking-[0.16em] text-slate-500">{copy.created}</p>
-                    <p className="mt-0.5 text-sm font-semibold text-white">{formatDate(order.createdAt, language)}</p>
-                  </div>
-                  {order.selectedPackageOption ? (
+                {order.selectedPackageOption ? (
+                  <div className="mt-2 flex justify-end">
                     <div className="rounded-full border border-cyan-400/14 bg-cyan-500/[0.08] px-2.5 py-1.5 text-right">
                       <p className="text-[10px] uppercase tracking-[0.16em] text-cyan-300">{copy.package}</p>
                       <p className="mt-0.5 text-sm font-semibold text-cyan-50">{order.selectedPackageOption}</p>
                     </div>
-                  ) : null}
-                </div>
+                  </div>
+                ) : null}
               </div>
             </div>
           </div>
@@ -500,6 +493,16 @@ export default function OrderDetailsModal({ order, open, onClose }: OrderDetails
             <div className="rounded-[16px] border border-white/10 bg-white/[0.03] px-2.5 py-2.5 text-right">
               <div className="flex items-center justify-between gap-3">
                 <div className="min-w-0 flex-1">
+                  <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500">{copy.quantity}</p>
+                  <p className="mt-1 text-sm font-semibold text-white">{order.quantity ?? 1}</p>
+                </div>
+                <Package2 className="h-[18px] w-[18px] text-slate-400" />
+              </div>
+            </div>
+
+            <div className="rounded-[16px] border border-white/10 bg-white/[0.03] px-2.5 py-2.5 text-right">
+              <div className="flex items-center justify-between gap-3">
+                <div className="min-w-0 flex-1">
                   <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500">{copy.created}</p>
                   <p className="mt-1 text-sm font-semibold text-white">{formatDate(order.createdAt, language)}</p>
                   <p className="mt-1 text-xs text-slate-400">{relativeTime}</p>
@@ -519,25 +522,7 @@ export default function OrderDetailsModal({ order, open, onClose }: OrderDetails
             </div>
           </div>
 
-          <div className="mt-2 grid gap-2 sm:grid-cols-2">
-            <div className="rounded-[16px] border border-white/10 bg-white/[0.03] p-2.5 text-right">
-              <div className="mb-2.5 flex items-center justify-end gap-2 text-slate-200">
-                <span className="text-sm font-black">{copy.note}</span>
-                <ShieldCheck className="h-[18px] w-[18px] text-cyan-300" />
-              </div>
-
-              <div className="rounded-[14px] border border-white/8 bg-slate-950/40 px-2.5 py-2.5">
-                <p className="text-[13px] leading-5 text-slate-200">{noteText}</p>
-              </div>
-
-              {order.providerStatus ? (
-                <div className="mt-2.5 flex items-center justify-between rounded-[16px] border border-white/8 bg-white/[0.03] px-3 py-2.5 text-sm">
-                  <span className="font-semibold text-white">{order.providerStatus}</span>
-                  <span className="text-slate-500">{copy.provider}</span>
-                </div>
-              ) : null}
-            </div>
-
+          <div className="mt-2">
             <div className="rounded-[16px] border border-white/10 bg-white/[0.03] p-2.5 text-right">
               <div className="mb-2.5 flex items-center justify-end gap-2 text-slate-200">
                 <span className="text-sm font-black">{copy.walletBand}</span>

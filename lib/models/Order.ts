@@ -27,6 +27,8 @@ const OrderSchema = new Schema(
     productSlug: String,
     category: String,
     providerProductId: String,
+    selectedProviderId: String,
+    selectedProviderCode: String,
     providerSlot: String,
     selectedPackageOption: String,
     providerMatchedProductName: String,
@@ -44,6 +46,10 @@ const OrderSchema = new Schema(
       default: 0,
     },
     providerUnitCost: {
+      type: Number,
+      default: 0,
+    },
+    providerEffectiveCost: {
       type: Number,
       default: 0,
     },
@@ -87,6 +93,29 @@ const OrderSchema = new Schema(
       default: 'pending',
     },
     providerOrderId: String,
+    routingRequestUuid: {
+      type: String,
+      index: true,
+      sparse: true,
+    },
+    providerAttempts: {
+      type: [
+        new Schema(
+          {
+            providerId: { type: String },
+            providerCode: { type: String },
+            providerProductId: { type: String },
+            status: { type: String, enum: ['success', 'failed', 'skipped'], default: 'skipped' },
+            message: { type: String },
+            attemptedAt: { type: Date, default: Date.now },
+            rawCost: { type: Number, default: 0 },
+            effectiveCost: { type: Number, default: 0 },
+          },
+          { _id: false }
+        ),
+      ],
+      default: [],
+    },
     providerResponse: Schema.Types.Mixed,
     notes: String,
     failureReason: String,

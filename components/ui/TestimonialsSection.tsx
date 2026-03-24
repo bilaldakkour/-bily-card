@@ -19,11 +19,11 @@ export function TestimonialsSection({ testimonials }: TestimonialsSectionProps) 
           {testimonials.map((testimonial) => (
             <div
               key={testimonial.id}
-              className="relative rounded-2xl bg-slate-900/80 backdrop-blur border border-white/10 p-5 transition-all duration-300 hover:scale-105 hover:border-white/20 hover:shadow-xl hover:shadow-white/5"
+              className="relative rounded-2xl border border-white/10 bg-slate-900/80 p-5 backdrop-blur transition-all duration-300 hover:scale-105 hover:border-white/20 hover:shadow-xl hover:shadow-white/5"
             >
-              <Quote className="h-8 w-8 text-blue-400 mb-4 opacity-50" />
+              <Quote className="mb-4 h-8 w-8 text-blue-400 opacity-50" />
 
-              <div className="flex items-center space-x-1 mb-4">
+              <div className="mb-4 flex items-center space-x-1">
                 {[...Array(5)].map((_, i) => (
                   <Star
                     key={i}
@@ -34,8 +34,8 @@ export function TestimonialsSection({ testimonials }: TestimonialsSectionProps) 
                 ))}
               </div>
 
-              <blockquote className="text-slate-300 mb-4 leading-relaxed">
-                "{testimonial.review}"
+              <blockquote className="mb-4 leading-relaxed text-slate-300">
+                &ldquo;{testimonial.review}&rdquo;
               </blockquote>
 
               <div className="flex items-center justify-between">
@@ -44,9 +44,7 @@ export function TestimonialsSection({ testimonials }: TestimonialsSectionProps) 
                   <div className="text-sm text-slate-400">{testimonial.product}</div>
                 </div>
                 {testimonial.verified && (
-                  <div className="text-xs text-green-400 font-medium">
-                    ✓ Verified
-                  </div>
+                  <div className="text-xs font-medium text-green-400">Verified</div>
                 )}
               </div>
             </div>

@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { buildAdminAuthHeaders, getAdminTokenOptional, isUnauthorizedStatus } from '@/lib/utils/adminAuth'
 
 type AuditLog = {
   _id: string
@@ -47,11 +48,7 @@ export default function AdminAuditLogsPage() {
   const [exporting, setExporting] = useState(false)
 
   const fetchLogs = async (page = 1) => {
-    const token = localStorage.getItem('adminToken')
-    if (!token) {
-      router.push('/admin/login')
-      return
-    }
+    const token = getAdminTokenOptional()
 
     try {
       setLoading(true)
@@ -69,10 +66,12 @@ export default function AdminAuditLogsPage() {
       if (toDate) params.set('to', toDate)
 
       const res = await fetch(`/api/admin/audit-logs?${params.toString()}`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+        headers: buildAdminAuthHeaders(token),
       })
+      if (isUnauthorizedStatus(res.status)) {
+        router.push('/admin/login')
+        return
+      }
 
       const data = await res.json()
 
@@ -97,11 +96,7 @@ export default function AdminAuditLogsPage() {
   }, [actionFilter, targetTypeFilter, fromDate, toDate])
 
   const exportCsv = async () => {
-    const token = localStorage.getItem('adminToken')
-    if (!token) {
-      router.push('/admin/login')
-      return
-    }
+    const token = getAdminTokenOptional()
 
     try {
       setExporting(true)
@@ -117,10 +112,12 @@ export default function AdminAuditLogsPage() {
       if (toDate) params.set('to', toDate)
 
       const res = await fetch(`/api/admin/audit-logs?${params.toString()}`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+        headers: buildAdminAuthHeaders(token),
       })
+      if (isUnauthorizedStatus(res.status)) {
+        router.push('/admin/login')
+        return
+      }
 
       if (!res.ok) {
         throw new Error('Failed to export CSV')

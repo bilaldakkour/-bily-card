@@ -55,6 +55,14 @@ const UserSchema = new Schema(
       type: Boolean,
       default: false,
     },
+    lastEmailVerificationAt: {
+      type: Date,
+      default: null,
+    },
+    forceEmailReauth: {
+      type: Boolean,
+      default: false,
+    },
     isBlocked: {
       type: Boolean,
       default: false,

@@ -2,13 +2,11 @@ import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/db/mongodb';
 import User from '@/lib/models/User';
 import Wallet from '@/lib/models/Wallet';
-import Otp from '@/lib/models/Otp';
 import { RegisterSchema } from '@/lib/utils/validation';
 import { sendOtpEmail } from '@/lib/email';
 import { enforceRateLimit } from '@/lib/utils/rateLimit';
 import { sendAdminNotification } from '@/lib/services/adminNotificationService';
-import bcrypt from 'bcryptjs';
-import crypto from 'crypto';
+import { issueEmailVerificationOtp } from '@/lib/auth/emailVerification';
 import { ZodError } from 'zod';
 import { isTestModeEnabled, logTestMode } from '@/lib/utils/testMode';
 
@@ -78,10 +76,33 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ message: 'Phone number is invalid' }, { status: 400 });
     }
 
-    // Check if user exists
     const existingUser = await User.findOne({ email: normalizedEmail });
     if (existingUser) {
-      return NextResponse.json({ message: 'User already exists' }, { status: 400 });
+      if (existingUser.isVerified) {
+        return NextResponse.json({ message: 'User already exists' }, { status: 400 });
+      }
+
+      const conflictingPhone = await User.findOne({
+        phoneNumber: normalizedPhoneNumber,
+        _id: { $ne: existingUser._id },
+      });
+
+      if (conflictingPhone) {
+        return NextResponse.json({ message: 'Phone number already in use' }, { status: 400 });
+      }
+
+      existingUser.displayName = name;
+      existingUser.phoneNumber = normalizedPhoneNumber;
+      existingUser.password = password;
+      existingUser.isVerified = false;
+      await existingUser.save();
+
+      const otp = await issueEmailVerificationOtp(normalizedEmail);
+      await sendOtpEmail(normalizedEmail, otp);
+
+      return NextResponse.json({
+        message: 'Your account is pending verification. We sent a new code to your email.',
+      });
     }
 
     const existingPhone = await User.findOne({ phoneNumber: normalizedPhoneNumber });
@@ -89,19 +110,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ message: 'Phone number already in use' }, { status: 400 });
     }
 
-    // Generate OTP
-    const otp = crypto.randomInt(100000, 999999).toString();
-    const otpHash = await bcrypt.hash(otp, 10);
-
     const username = await generateUniqueUsername(normalizedEmail);
-
-    // Save OTP
-    await Otp.create({
-      email: normalizedEmail,
-      otp: otpHash,
-      used: false,
-      expiresAt: new Date(Date.now() + 10 * 60 * 1000),
-    });
 
     // Create user (not verified yet)
     const user = new User({
@@ -125,6 +134,7 @@ export async function POST(req: NextRequest) {
     await wallet.save();
 
     // Send OTP email
+    const otp = await issueEmailVerificationOtp(normalizedEmail);
     await sendOtpEmail(normalizedEmail, otp);
 
     await sendAdminNotification({

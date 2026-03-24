@@ -94,7 +94,7 @@ class GoogleSheetsService {
     try {
       // This would aggregate data and create a report
       // Implementation depends on your reporting needs
-      console.log('Generating daily report for', date);
+      void date;
     } catch (error: any) {
       console.error('Failed to generate report:', error.message);
     }

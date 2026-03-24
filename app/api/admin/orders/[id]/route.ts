@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withAdminAuth } from '@/lib/auth/middleware';
+import { invalidateCatalogProductsCache } from '@/lib/data/catalogProducts';
 import { connectDB } from '@/lib/db/mongodb';
+import { refundOrderAndRestoreStock } from '@/lib/orders/refundRecovery';
 import Order from '@/lib/models/Order';
 import User from '@/lib/models/User';
-import walletService from '@/lib/services/walletService';
 import { logAdminAction } from '@/lib/services/auditLogService';
 import { JWTPayload } from '@/lib/types';
 import { handleError } from '@/lib/utils/errors';
@@ -57,9 +58,9 @@ async function handler(
         { status: 200 }
       );
     } else if (body.action === 'reject') {
-      if (order.status === 'completed') {
+      if (order.status !== 'pending' && order.status !== 'processing') {
         return NextResponse.json(
-          { success: false, message: 'Completed orders cannot be rejected' },
+          { success: false, message: 'Order cannot be rejected' },
           { status: 400 }
         );
       }
@@ -94,7 +95,7 @@ async function handler(
         );
       }
 
-      const refundAmount = Number(order.price || order.total || 0);
+      const refundAmount = Number(order.total || 0);
       if (!Number.isFinite(refundAmount) || refundAmount <= 0) {
         return NextResponse.json(
           {
@@ -107,17 +108,22 @@ async function handler(
 
       const refundCurrency = order.currency === 'LBP' ? 'LBP' : 'USD';
 
-      // Refund the wallet
-      await walletService.addBalance(
-        String(existingUser._id),
+      const refundResult = await refundOrderAndRestoreStock({
+        orderId: String(order._id),
         refundAmount,
-        refundCurrency,
-        `Refund for rejected order ${order.orderId}`,
-        user.userId
-      );
+        currency: refundCurrency,
+        nextStatus: 'rejected',
+        refundNote: `Refund for rejected order ${order.orderId}`,
+        approvedBy: user.userId,
+        ...(order.providerStatus ? { providerStatus: String(order.providerStatus) } : {}),
+        providerResponse: order.providerResponse,
+        notes: String(order.notes || 'Order rejected and wallet refunded'),
+        failureReason: String(order.failureReason || 'Rejected by admin'),
+      });
 
-      order.status = 'rejected';
-      await order.save();
+      if (refundResult.stockRestored) {
+        invalidateCatalogProductsCache();
+      }
 
       await logAdminAction({
         adminUserId: user.userId,
@@ -135,7 +141,7 @@ async function handler(
         {
           success: true,
           message: 'Order rejected and wallet refunded',
-          data: order,
+          data: refundResult.order,
         },
         { status: 200 }
       );

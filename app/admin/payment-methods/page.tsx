@@ -1,7 +1,9 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { DEFAULT_SUPPORT_CONTACT } from '@/lib/supportContactConfig'
+import { buildAdminAuthHeaders, getAdminTokenOptional, isUnauthorizedStatus } from '@/lib/utils/adminAuth'
 
 type PaymentMethod = {
   key: string
@@ -68,6 +70,7 @@ function createEmptyMethod(existingKeys: Set<string>): PaymentMethod {
 }
 
 export default function AdminPaymentMethodsPage() {
+  const router = useRouter()
   const [token, setToken] = useState('')
   const [methods, setMethods] = useState<PaymentMethod[]>([])
   const [supportContact, setSupportContact] = useState<SupportContact>(DEFAULT_SUPPORT_CONTACT)
@@ -83,22 +86,19 @@ export default function AdminPaymentMethodsPage() {
   const [message, setMessage] = useState('')
 
   useEffect(() => {
-    const storedToken = localStorage.getItem('adminToken') || ''
+    const storedToken = getAdminTokenOptional()
     setToken(storedToken)
-
-    if (!storedToken) {
-      window.location.href = '/admin/login'
-      return
-    }
 
     const loadMethods = async () => {
       try {
         const res = await fetch('/api/admin/payment-methods', {
-          headers: {
-            Authorization: `Bearer ${storedToken}`,
-          },
+          headers: buildAdminAuthHeaders(storedToken),
           cache: 'no-store',
         })
+        if (isUnauthorizedStatus(res.status)) {
+          router.push('/admin/login')
+          return
+        }
 
         const data = await res.json()
         if (!res.ok || !data?.success) {
@@ -131,7 +131,7 @@ export default function AdminPaymentMethodsPage() {
     }
 
     void loadMethods()
-  }, [])
+  }, [router])
 
   const updateMethod = (index: number, field: keyof PaymentMethod, value: string | boolean) => {
     setMethods((prev) =>
@@ -198,7 +198,7 @@ export default function AdminPaymentMethodsPage() {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
+          ...(buildAdminAuthHeaders(token) || {}),
         },
         body: JSON.stringify({
           paymentMethods: normalizedMethods,
@@ -206,6 +206,10 @@ export default function AdminPaymentMethodsPage() {
           adminNotifications,
         }),
       })
+      if (isUnauthorizedStatus(res.status)) {
+        router.push('/admin/login')
+        return
+      }
 
       const data = await res.json()
       if (!res.ok || !data?.success) {

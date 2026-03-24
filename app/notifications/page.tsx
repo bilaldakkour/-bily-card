@@ -11,6 +11,7 @@ import {
 } from '@/components/shared/MobileDesignSystem'
 import UserPageLayout from '@/components/shared/UserPageLayout'
 import { useLanguage } from '@/hooks/useLanguage'
+import { fetchUserActivitySnapshot } from '@/lib/utils/authClient'
 
 type OrderItem = {
   _id?: string
@@ -100,7 +101,7 @@ export default function NotificationsPage() {
     },
   }[language]
 
-  const loadNotifications = async () => {
+  const loadNotifications = async (force = false) => {
     const token = localStorage.getItem('bilycard_token')
     if (!token) {
       router.push('/login')
@@ -108,21 +109,10 @@ export default function NotificationsPage() {
     }
 
     try {
-      const [ordersRes, txRes] = await Promise.all([
-        fetch('/api/orders', {
-          headers: { Authorization: `Bearer ${token}` },
-          cache: 'no-store',
-        }),
-        fetch('/api/wallet/transactions', {
-          headers: { Authorization: `Bearer ${token}` },
-          cache: 'no-store',
-        }),
-      ])
-
-      const [ordersData, txData] = await Promise.all([ordersRes.json(), txRes.json()])
-      const orders = Array.isArray(ordersData?.data) ? (ordersData.data as OrderItem[]) : []
-      const transactions = Array.isArray(txData?.transactions)
-        ? (txData.transactions as TransactionItem[])
+      const snapshot = await fetchUserActivitySnapshot(token, force)
+      const orders = Array.isArray(snapshot?.orders) ? (snapshot.orders as OrderItem[]) : []
+      const transactions = Array.isArray(snapshot?.transactions)
+        ? (snapshot.transactions as TransactionItem[])
         : []
 
       const nextNotifications: NotificationItem[] = [
@@ -149,6 +139,9 @@ export default function NotificationsPage() {
       setNotifications(nextNotifications)
     } catch {
       setNotifications([])
+      if (!localStorage.getItem('bilycard_token')) {
+        router.push('/login')
+      }
     } finally {
       setLoading(false)
     }
@@ -189,7 +182,7 @@ export default function NotificationsPage() {
           action={
             <button
               type="button"
-              onClick={() => void loadNotifications()}
+              onClick={() => void loadNotifications(true)}
               className={mobileSecondaryButtonClass}
             >
               <RefreshCw className="mr-2 h-4 w-4" />

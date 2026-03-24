@@ -4,16 +4,19 @@ import mongoose from 'mongoose';
 import { connectDB } from '@/lib/db/mongodb';
 import User from '@/lib/models/User';
 import { JWTPayload } from '../types';
+import { isEmailReverificationRequired } from './reverification';
 import { isTestModeEnabled, logTestMode } from '@/lib/utils/testMode';
+import { AUTH_COOKIE_NAME } from './cookies'
 
 export async function withAuth(
   request: NextRequest,
   handler: (req: NextRequest, user: JWTPayload) => Promise<NextResponse>
 ): Promise<NextResponse> {
   try {
-    const token = extractToken(
+    const token =
+      extractToken(
       request.headers.get('authorization') || request.headers.get('Authorization')
-    );
+      ) || request.cookies.get(AUTH_COOKIE_NAME)?.value || null;
 
     if (!token) {
       return NextResponse.json(
@@ -45,14 +48,50 @@ export async function withAuth(
 
     await connectDB();
     const dbUser = (await User.findById(user.userId)
-      .select('isBlocked')
-      .lean()) as { isBlocked?: boolean } | null;
+      .select('email isBlocked isVerified role lastEmailVerificationAt forceEmailReauth')
+      .lean()) as {
+        email?: string
+        isBlocked?: boolean
+        isVerified?: boolean
+        role?: string
+        lastEmailVerificationAt?: Date | string | null
+        forceEmailReauth?: boolean | null
+      } | null;
 
     if (!dbUser || dbUser.isBlocked) {
       return NextResponse.json(
         { success: false, message: 'Account is inactive' },
         { status: 403 }
       );
+    }
+
+    if (dbUser.role !== 'admin' && !dbUser.isVerified) {
+      return NextResponse.json(
+        { success: false, message: 'Please verify your email first' },
+        { status: 403 }
+      );
+    }
+
+    if (
+      isEmailReverificationRequired({
+        role: dbUser.role,
+        isVerified: dbUser.isVerified,
+        lastEmailVerificationAt: dbUser.lastEmailVerificationAt,
+        forceEmailReauth: dbUser.forceEmailReauth,
+      })
+    ) {
+      return NextResponse.json(
+        {
+          success: false,
+          requiresVerification: true,
+          verificationType: 'reauth',
+          message: 'Email verification expired. Please sign in again and verify your email.',
+          data: {
+            email: dbUser.email || '',
+          },
+        },
+        { status: 403 }
+      )
     }
 
     return handler(request, user);
@@ -69,9 +108,10 @@ export async function withAdminAuth(
   handler: (req: NextRequest, user: JWTPayload) => Promise<NextResponse>
 ): Promise<NextResponse> {
   try {
-    const token = extractToken(
+    const token =
+      extractToken(
       request.headers.get('authorization') || request.headers.get('Authorization')
-    );
+      ) || request.cookies.get(AUTH_COOKIE_NAME)?.value || null;
 
     if (!token) {
       return NextResponse.json(

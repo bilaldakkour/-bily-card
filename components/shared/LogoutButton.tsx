@@ -1,14 +1,14 @@
 'use client'
 
 import { useRouter } from 'next/navigation';
+import { logoutCustomer } from '@/lib/utils/customerLogout';
 
 export default function LogoutButton() {
   const router = useRouter();
 
-  const handleLogout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('bilycard_token');
-    router.push('/login');
+  const handleLogout = async () => {
+    router.prefetch('/login');
+    await logoutCustomer('/login');
   };
 
   return (

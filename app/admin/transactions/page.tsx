@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { buildAdminAuthHeaders, getAdminTokenOptional, isUnauthorizedStatus } from '@/lib/utils/adminAuth'
 
 interface Transaction {
   _id: string
@@ -26,12 +27,7 @@ export default function AdminTransactionsPage() {
   const [totalPages, setTotalPages] = useState(1)
 
   useEffect(() => {
-    const token = localStorage.getItem('adminToken')
-    if (!token) {
-      router.push('/admin/login')
-      return
-    }
-
+    const token = getAdminTokenOptional()
     fetchTransactions(token, 1)
   }, [router])
 
@@ -44,10 +40,12 @@ export default function AdminTransactionsPage() {
       })
 
       const res = await fetch(`/api/admin/transactions?${params}`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+        headers: buildAdminAuthHeaders(token),
       })
+      if (isUnauthorizedStatus(res.status)) {
+        router.push('/admin/login')
+        return
+      }
       const data = await res.json()
       if (data.success) {
         setTransactions(data.data)
@@ -81,7 +79,7 @@ export default function AdminTransactionsPage() {
   const handleTypeFilterChange = (type: string) => {
     setTypeFilter(type)
     setCurrentPage(1)
-    const token = localStorage.getItem('adminToken')
+    const token = getAdminTokenOptional()
     if (token) {
       fetchTransactions(token, 1)
     }
@@ -89,7 +87,7 @@ export default function AdminTransactionsPage() {
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page)
-    const token = localStorage.getItem('adminToken')
+    const token = getAdminTokenOptional()
     if (token) {
       fetchTransactions(token, page)
     }

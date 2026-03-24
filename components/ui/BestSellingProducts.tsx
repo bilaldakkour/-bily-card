@@ -67,6 +67,21 @@ const products = [
   }
 ]
 
+const getSafeImageSrc = (value: unknown) => {
+  const raw = typeof value === 'string' ? value.trim() : ''
+  if (!raw || raw === '.' || raw === 'null' || raw === 'undefined') return '/placeholder.png'
+  if (raw.startsWith('/')) return raw
+
+  try {
+    const parsed = new URL(raw)
+    if (!['http:', 'https:'].includes(parsed.protocol)) return '/placeholder.png'
+    if (parsed.hostname === 'dailycard-media.s3.amazonaws.com') return raw
+    return '/placeholder.png'
+  } catch {
+    return '/placeholder.png'
+  }
+}
+
 export default function BestSellingProducts() {
   return (
     <section className="py-14 bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950">
@@ -80,29 +95,36 @@ export default function BestSellingProducts() {
           </p>
         </div>
 
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 sm:gap-3 lg:grid-cols-5 xl:grid-cols-6">
           {products.map((product) => (
             <Link
               key={product.id}
               href={`/products/${product.id}`}
-              className="group relative rounded-2xl bg-slate-900/80 backdrop-blur border border-white/10 overflow-hidden transition-all duration-300 hover:scale-105 hover:border-blue-500/50 hover:shadow-2xl hover:shadow-blue-500/20"
+              className="group relative flex h-full flex-col overflow-hidden rounded-[18px] border border-white/10 bg-slate-900/80 backdrop-blur transition-all duration-300 hover:scale-105 hover:border-blue-500/50 hover:shadow-2xl hover:shadow-blue-500/20"
             >
               {/* Badge */}
               {product.badge && (
-                <div className="absolute top-4 left-4 z-10 rounded-full bg-gradient-to-r from-blue-600 to-purple-600 px-3 py-1 text-xs font-semibold text-white flex items-center space-x-1">
+                <div className="absolute left-2 top-2 z-10 flex items-center space-x-1 rounded-full bg-gradient-to-r from-blue-600 to-purple-600 px-2 py-0.5 text-[10px] font-semibold text-white">
                   <Zap className="h-3 w-3" />
                   <span>{product.badge}</span>
                 </div>
               )}
 
               {/* Image Container with fixed height */}
-              <div className="relative h-48 w-full overflow-hidden bg-gradient-to-br from-slate-800 to-slate-900">
+              <div className="relative h-24 w-full overflow-hidden bg-gradient-to-br from-slate-800 to-slate-900 sm:h-28">
+                {(() => {
+                  const safeImageSrc = getSafeImageSrc(product.image)
+                  const useUnoptimizedImage = safeImageSrc.startsWith('http://') || safeImageSrc.startsWith('https://')
+                  return (
                 <Image
-                  src={product.image}
+                  src={safeImageSrc}
                   alt={product.name}
                   fill
+                  unoptimized={useUnoptimizedImage}
                   className="object-cover transition-transform duration-300 group-hover:scale-110"
                 />
+                  )
+                })()}
                 {/* Fallback overlay if image fails */}
                 <div className="absolute inset-0 bg-gradient-to-b from-transparent to-slate-900/40 flex items-center justify-center">
                   <div className="text-5xl opacity-30">🎮</div>
@@ -110,23 +132,23 @@ export default function BestSellingProducts() {
               </div>
 
               {/* Content */}
-              <div className="p-5">
-                <div className="mb-3">
-                  <span className="text-xs font-medium text-blue-400 uppercase tracking-widest">
+              <div className="flex h-full flex-1 flex-col justify-between p-2.5">
+                <div className="mb-2">
+                  <span className="text-[10px] font-medium uppercase tracking-[0.12em] text-blue-400">
                     {product.category}
                   </span>
                 </div>
 
-                <h3 className="text-lg font-bold text-white mb-3 line-clamp-2">
+                <h3 className="mb-2 line-clamp-2 min-h-[2.2rem] text-[11px] font-bold text-white sm:text-sm">
                   {product.name}
                 </h3>
 
-                <div className="flex items-center space-x-1 mb-4">
+                <div className="mb-2 flex items-center space-x-1">
                   <div className="flex items-center space-x-0.5">
                     {[...Array(5)].map((_, i) => (
                       <Star
                         key={i}
-                        className={`h-4 w-4 ${
+                        className={`h-3 w-3 ${
                           i < Math.floor(product.rating)
                             ? 'fill-yellow-400 text-yellow-400'
                             : 'text-slate-600'
@@ -134,19 +156,12 @@ export default function BestSellingProducts() {
                       />
                     ))}
                   </div>
-                  <span className="text-xs text-slate-400 ml-2">({product.rating})</span>
+                  <span className="ml-2 text-[10px] text-slate-400">({product.rating})</span>
                 </div>
 
-                <div className="flex items-center justify-between gap-3">
-                  <div className="flex flex-col">
-                    <span className="text-2xl font-bold text-white">
-                      ${product.price.toFixed(2)}
-                    </span>
-                    {product.originalPrice > product.price && (
-                      <span className="text-xs text-slate-500 line-through">
-                        ${product.originalPrice.toFixed(2)}
-                      </span>
-                    )}
+                <div className="flex items-center justify-between gap-2">
+                  <div className="rounded-full border border-blue-400/25 bg-blue-500/10 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-blue-100">
+                    View details
                   </div>
                 </div>
               </div>

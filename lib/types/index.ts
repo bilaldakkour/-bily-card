@@ -10,6 +10,8 @@ export interface IUser {
   phoneNumber?: string;
   country?: string;
   isVerified: boolean;
+  lastEmailVerificationAt?: Date;
+  forceEmailReauth?: boolean;
   isBlocked: boolean;
   pricingPercent?: number;
   createdAt: Date;
@@ -41,6 +43,7 @@ export interface IWalletTransaction {
 // Product Types
 export interface IProduct {
   _id: string;
+  slug?: string;
   providerProductId: string;
   productName: string;
   gameName: string;
@@ -56,6 +59,20 @@ export interface IProduct {
   activeStatus: boolean;
   isFeatured: boolean;
   stock?: number;
+  routingMode?: 'cheapest' | 'priority';
+  providerLinks?: Array<{
+    providerCode: string;
+    providerProductId: string;
+    providerProductName?: string;
+    enabled?: boolean;
+    priority?: number;
+    priceSource?: 'provider' | 'manual';
+    manualCost?: number;
+    lastKnownCost?: number;
+    providerAvailability?: 'unknown' | 'available' | 'unavailable';
+    fallbackEnabled?: boolean;
+    lastSyncAt?: Date;
+  }>;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -77,7 +94,21 @@ export interface IOrder {
   currency: 'USD' | 'LBP';
   status: 'pending' | 'processing' | 'completed' | 'failed' | 'refunded' | 'rejected';
   providerOrderId?: string;
+  routingRequestUuid?: string;
   providerSlot?: 'primary' | 'secondary' | 'manual';
+  selectedProviderId?: string;
+  selectedProviderCode?: string;
+  providerEffectiveCost?: number;
+  providerAttempts?: Array<{
+    providerId?: string;
+    providerCode?: string;
+    providerProductId?: string;
+    status: 'success' | 'failed' | 'skipped';
+    message?: string;
+    attemptedAt?: Date;
+    rawCost?: number;
+    effectiveCost?: number;
+  }>;
   providerResponse?: any;
   notes?: string;
   failureReason?: string;
@@ -151,6 +182,8 @@ export interface ISystemSettings {
   whatsappAccessToken?: string;
   whatsappPhoneNumberId?: string;
   whatsappAdminNumber?: string;
+  homePromoSlides?: string[];
+  homePromoUseDefaultFallback?: boolean;
   updatedAt: Date;
 }
 

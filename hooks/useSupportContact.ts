@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { DEFAULT_SUPPORT_CONTACT } from '@/lib/supportContactConfig'
+import { fetchSupportContactClient } from '@/lib/utils/clientDataCache'
 
 export type SupportContactState = typeof DEFAULT_SUPPORT_CONTACT & {
   whatsappUrl: string
@@ -22,22 +23,19 @@ export function useSupportContact() {
 
     const loadSupportContact = async () => {
       try {
-        const res = await fetch('/api/support-contact', { cache: 'no-store' })
-        const data = await res.json()
-
-        if (!res.ok || !data?.success || cancelled) return
-
+        const data = await fetchSupportContactClient()
+        if (cancelled) return
         setSupportContact({
-          email: String(data.data?.email || DEFAULT_SUPPORT_CONTACT.email),
+          email: String(data?.email || DEFAULT_SUPPORT_CONTACT.email),
           phoneDisplay: String(
-            data.data?.phoneDisplay || DEFAULT_SUPPORT_CONTACT.phoneDisplay
+            data?.phoneDisplay || DEFAULT_SUPPORT_CONTACT.phoneDisplay
           ),
-          phoneTel: String(data.data?.phoneTel || DEFAULT_SUPPORT_CONTACT.phoneTel),
+          phoneTel: String(data?.phoneTel || DEFAULT_SUPPORT_CONTACT.phoneTel),
           whatsappNumber: String(
-            data.data?.whatsappNumber || DEFAULT_SUPPORT_CONTACT.whatsappNumber
+            data?.whatsappNumber || DEFAULT_SUPPORT_CONTACT.whatsappNumber
           ),
           whatsappUrl: String(
-            data.data?.whatsappUrl || DEFAULT_SUPPORT_CONTACT_STATE.whatsappUrl
+            data?.whatsappUrl || DEFAULT_SUPPORT_CONTACT_STATE.whatsappUrl
           ),
         })
       } catch {

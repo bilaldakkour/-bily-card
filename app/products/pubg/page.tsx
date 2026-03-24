@@ -17,7 +17,7 @@ export const dynamic = 'force-dynamic'
 export default async function PubgPage() {
   const product = await getCatalogDisplayProductBySlug('pubg')
 
-  if (!product || product.stockStatus === 'out_of_stock') {
+  if (!product) {
     notFound()
   }
 
@@ -32,7 +32,7 @@ export default async function PubgPage() {
       </div>
 
       <div className="md:hidden">
-        <div className="mx-auto max-w-[1480px] px-4 pb-0 pt-3 sm:px-5">
+        <div className="mx-auto max-w-[1480px] px-4 pb-0 pt-2 sm:px-5">
           <MobileUserShell title={product.name} />
         </div>
       </div>
@@ -57,11 +57,11 @@ export default async function PubgPage() {
         />
       </div>
 
-      <div className="relative mx-auto max-w-[1480px] px-3 pb-12 pt-3 sm:px-5 lg:px-6">
-        <div className="absolute inset-x-4 top-0 -z-10 h-40 rounded-[32px] bg-[radial-gradient(circle_at_top,rgba(56,189,248,0.14),transparent_70%)] blur-3xl sm:inset-x-5 lg:inset-x-6" />
+      <div className="relative mx-auto max-w-[1480px] px-3 pb-9 pt-2 sm:px-5 lg:px-6">
+        <div className="absolute inset-x-4 top-0 -z-10 h-36 rounded-[28px] bg-[radial-gradient(circle_at_top,rgba(46,91,255,0.18),transparent_70%)] blur-3xl sm:inset-x-5 lg:inset-x-6" />
 
-        <MobilePanel className="p-3 sm:p-6">
-          <div className="mb-5 md:hidden">
+        <MobilePanel className="p-2.5 sm:p-4">
+          <div className="mb-3 md:hidden">
             <MobileSectionHeading
               eyebrow={product.platform || 'Digital Product'}
               title={product.name}
@@ -72,14 +72,14 @@ export default async function PubgPage() {
           <ProductDetails product={product} />
 
           {relatedProducts.length > 0 && (
-            <MobilePanel className="mt-8 p-4 sm:p-5" tone="soft">
+            <MobilePanel className="mt-4 p-3 sm:p-3.5" tone="soft">
               <MobileSectionHeading
                 eyebrow="More"
                 title="Related Products"
                 description="Products from the same category, shown in the same mobile-friendly layout."
               />
 
-              <div className="mt-5">
+              <div className="mt-3">
                 <ProductGrid products={relatedProducts} />
               </div>
             </MobilePanel>

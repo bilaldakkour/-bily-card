@@ -5,6 +5,12 @@ interface IProductDocument extends Omit<IProduct, '_id'>, Document {}
 
 const ProductSchema = new Schema(
   {
+    slug: {
+      type: String,
+      trim: true,
+      lowercase: true,
+      index: true,
+    },
     providerProductId: {
       type: String,
       required: true,
@@ -63,6 +69,37 @@ const ProductSchema = new Schema(
     providerRawPrice: {
       type: Number,
       default: 0,
+    },
+    routingMode: {
+      type: String,
+      enum: ['cheapest', 'priority'],
+      default: 'cheapest',
+      index: true,
+    },
+    providerLinks: {
+      type: [
+        new Schema(
+          {
+            providerCode: { type: String, required: true, trim: true, lowercase: true },
+            providerProductId: { type: String, required: true, trim: true },
+            providerProductName: { type: String, trim: true },
+            enabled: { type: Boolean, default: true },
+            priority: { type: Number, default: 100 },
+            priceSource: { type: String, enum: ['provider', 'manual'], default: 'provider' },
+            manualCost: { type: Number, min: 0 },
+            lastKnownCost: { type: Number, min: 0 },
+            providerAvailability: {
+              type: String,
+              enum: ['unknown', 'available', 'unavailable'],
+              default: 'unknown',
+            },
+            fallbackEnabled: { type: Boolean, default: true },
+            lastSyncAt: { type: Date },
+          },
+          { _id: false }
+        ),
+      ],
+      default: [],
     },
   },
   { timestamps: true }

@@ -9,21 +9,19 @@ class TelegramService {
   }
 
   async sendAdminNotification(
-    title: string,
-    data: Record<string, any>
+    _title: string,
+    _data: Record<string, any>
   ): Promise<boolean> {
     // Mock notification
-    console.log(`Mock Telegram admin notification: ${title}`, data);
     return true;
   }
 
   async sendCustomerNotification(
     _chatId: string,
-    title: string,
-    data: Record<string, any>
+    _title: string,
+    _data: Record<string, any>
   ): Promise<boolean> {
     // Mock notification
-    console.log(`Mock Telegram customer notification: ${title}`, data);
     return true;
   }
 
