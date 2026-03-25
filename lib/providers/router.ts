@@ -49,18 +49,36 @@ export function getEffectiveProviderCost(input: {
 export function getEligibleProvidersForProduct(input: {
   providerLinks?: ProductProviderLink[] | null
   providerProfiles?: Record<string, ProviderFinancialProfile>
+  requireExecutionEnabled?: boolean
+  requireFreshCost?: boolean
 }) {
   const links = Array.isArray(input.providerLinks) ? input.providerLinks : []
   const profiles = input.providerProfiles || {}
+  const requireExecutionEnabled = input.requireExecutionEnabled !== false
+  const requireFreshCost = input.requireFreshCost !== false
+  const maxAgeMinutesRaw = Number(process.env.PROVIDER_LAST_COST_MAX_AGE_MINUTES || '1440')
+  const maxAgeMinutes = Number.isFinite(maxAgeMinutesRaw) && maxAgeMinutesRaw > 0 ? maxAgeMinutesRaw : 1440
   return links.filter((row) => {
     const providerCode = String(row?.providerCode || '').trim().toLowerCase()
     const providerProductId = String(row?.providerProductId || '').trim()
     if (!providerCode || !providerProductId) return false
     if (row?.enabled === false) return false
+    if (requireExecutionEnabled && row?.executionEnabled === false) return false
     if (String(row?.providerAvailability || 'unknown').toLowerCase() === 'unavailable') return false
+    if (String(row?.healthStatus || 'unknown').toLowerCase() === 'unhealthy') return false
     const profile = profiles[providerCode]
     if (profile?.isActive === false) return false
     if (profile?.allowOrderCreation === false) return false
+    if (requireFreshCost) {
+      const source = String(row?.priceSource || 'provider').toLowerCase()
+      if (source !== 'manual') {
+        const cost = Number((row as any)?.lastCost ?? row?.lastKnownCost)
+        if (!Number.isFinite(cost) || cost <= 0) return false
+        const syncAt = row?.lastSyncAt ? new Date(String(row.lastSyncAt)).getTime() : NaN
+        if (!Number.isFinite(syncAt)) return false
+        if (Date.now() - syncAt > maxAgeMinutes * 60 * 1000) return false
+      }
+    }
     return true
   })
 }

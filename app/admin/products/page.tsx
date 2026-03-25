@@ -9,11 +9,17 @@ import type { ProductProviderLink, ProductRoutingMode } from '@/lib/data/product
 import { buildAdminAuthHeaders, getAdminTokenOptional, isUnauthorizedStatus } from '@/lib/utils/adminAuth';
 
 type ProductMode = 'single' | 'package' | 'count';
+type ProviderLinkFormRow = ProductProviderLink & { _uiKey: string };
 
 interface PackageOption {
+  key?: string;
   label: string;
   price: number;
   inStock: boolean;
+  profitMarginPercent?: number;
+  manualBaseCost?: number;
+  roundingRule?: string;
+  providerLinks?: ProductProviderLink[];
 }
 
 interface Product {
@@ -49,9 +55,11 @@ interface ManageProduct {
   featured: boolean;
   bestSeller: boolean;
   providerMode: ProductProviderMode;
+  profitMarginPercent?: number;
+  roundingRule?: string;
   routingMode?: ProductRoutingMode;
   providerLinks?: ProductProviderLink[];
-  source: 'custom' | 'provider';
+  source: 'custom';
   mode: ProductMode;
   packageOptions: PackageOption[];
   countMin?: number;
@@ -59,8 +67,9 @@ interface ManageProduct {
 }
 
 interface EditProductForm {
+  catalogProductId?: string;
   slug: string;
-  source: 'custom' | 'provider';
+  source: 'custom';
   name: string;
   category: string;
   image: string;
@@ -81,8 +90,10 @@ interface EditProductForm {
   featured: boolean;
   bestSeller: boolean;
   providerMode: ProductProviderMode;
+  profitMarginPercent: string;
+  roundingRule: string;
   routingMode: ProductRoutingMode;
-  providerLinks: ProductProviderLink[];
+  providerLinks: ProviderLinkFormRow[];
 }
 
 interface PricingUser {
@@ -112,8 +123,10 @@ interface CustomProductForm {
   saleEnabled: boolean;
   tags: string;
   providerMode: ProductProviderMode;
+  profitMarginPercent: string;
+  roundingRule: string;
   routingMode: ProductRoutingMode;
-  providerLinks: ProductProviderLink[];
+  providerLinks: ProviderLinkFormRow[];
 }
 
 const PROVIDER_MODE_OPTIONS: Array<{ value: ProductProviderMode; label: string; hint: string }> = [
@@ -185,11 +198,19 @@ const isManualCountPricingProduct = (product: Product) =>
   product.providerMode === 'manual' && product.isCountProduct === true;
 
 const shouldShowManualPurchaseCost = (input: {
-  source?: 'custom' | 'provider';
+  source?: 'custom';
   providerMode?: ProductProviderMode;
   mode?: ProductMode;
 }) =>
   input.source === 'custom' && input.providerMode === 'manual' && input.mode !== 'package';
+
+const normalizeVariantKey = (value: unknown) =>
+  String(value || '')
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, ' ')
+    .replace(/[^a-z0-9 ]+/g, '')
+    .trim();
 
 const normalizeStockQuantityInput = (value: string | number | null | undefined) => {
   const parsed = Number(value);
@@ -205,8 +226,10 @@ const parsePackageLines = (value: string) => {
     .map((line) => {
       const [labelRaw, priceRaw, stockRaw] = line.split('|').map((part) => part.trim());
       const price = Number(priceRaw || 0);
+      const label = String(labelRaw || '').trim();
       return {
-        label: labelRaw,
+        key: normalizeVariantKey(label),
+        label,
         price: Number.isFinite(price) && price >= 0 ? price : 0,
         inStock: String(stockRaw || 'in').toLowerCase() !== 'out',
       };
@@ -222,22 +245,37 @@ const formatPackageLines = (options: PackageOption[]) =>
     })
     .join('\n');
 
-const createEmptyProviderLink = (): ProductProviderLink => ({
+let providerLinkUiSeq = 0;
+const nextProviderLinkUiKey = () => {
+  providerLinkUiSeq += 1;
+  return `plink-${providerLinkUiSeq}`;
+};
+
+const createEmptyProviderLink = (): ProviderLinkFormRow => ({
+  _uiKey: nextProviderLinkUiKey(),
   providerCode: '',
   providerProductId: '',
   providerProductName: '',
   enabled: true,
+  executionEnabled: true,
+  priceSyncEnabled: true,
   priority: 100,
   priceSource: 'provider',
   manualCost: undefined,
   lastKnownCost: undefined,
+  lastCost: undefined,
   providerAvailability: 'unknown',
+  healthStatus: 'unknown',
+  lastError: '',
+  variantKey: '',
   fallbackEnabled: true,
 });
 
-const normalizeProviderLinks = (value: ProductProviderLink[] | undefined | null) => {
+const normalizeProviderLinks = (
+  value: Array<ProductProviderLink | ProviderLinkFormRow> | undefined | null
+) => {
   if (!Array.isArray(value)) return [];
-  const rows: ProductProviderLink[] = [];
+  const rows: ProviderLinkFormRow[] = [];
   const seen = new Set<string>();
   for (const raw of value) {
     const providerCode = String(raw?.providerCode || '').trim().toLowerCase();
@@ -247,25 +285,202 @@ const normalizeProviderLinks = (value: ProductProviderLink[] | undefined | null)
     if (seen.has(key)) continue;
     seen.add(key);
     rows.push({
+      _uiKey: String((raw as ProviderLinkFormRow)?._uiKey || '').trim() || nextProviderLinkUiKey(),
       providerCode,
       providerProductId,
       providerProductName: String(raw?.providerProductName || '').trim() || undefined,
       enabled: raw?.enabled !== false,
+      executionEnabled: raw?.executionEnabled !== false,
+      priceSyncEnabled: raw?.priceSyncEnabled !== false,
       priority: Number.isFinite(Number(raw?.priority)) ? Number(raw?.priority) : 100,
       priceSource: raw?.priceSource === 'manual' ? 'manual' : 'provider',
       manualCost: Number.isFinite(Number(raw?.manualCost)) ? Number(raw?.manualCost) : undefined,
       lastKnownCost: Number.isFinite(Number(raw?.lastKnownCost)) ? Number(raw?.lastKnownCost) : undefined,
+      lastCost: Number.isFinite(Number(raw?.lastCost)) ? Number(raw?.lastCost) : undefined,
       providerAvailability:
         raw?.providerAvailability === 'available'
           ? 'available'
           : raw?.providerAvailability === 'unavailable'
             ? 'unavailable'
             : 'unknown',
+      healthStatus:
+        raw?.healthStatus === 'healthy'
+          ? 'healthy'
+          : raw?.healthStatus === 'degraded'
+            ? 'degraded'
+            : raw?.healthStatus === 'unhealthy'
+              ? 'unhealthy'
+              : 'unknown',
       fallbackEnabled: raw?.fallbackEnabled !== false,
+      lastError: String(raw?.lastError || '').trim() || undefined,
+      variantKey: String(raw?.variantKey || '').trim().toLowerCase() || undefined,
       lastSyncAt: raw?.lastSyncAt,
     });
   }
   return rows;
+};
+
+const serializeProviderLinks = (value: ProviderLinkFormRow[] | undefined | null): ProductProviderLink[] =>
+  normalizeProviderLinks(value).map(({ _uiKey, ...row }) => row);
+
+const roundByRule = (value: number, rule?: string) => {
+  const v = Number(value || 0);
+  if (!Number.isFinite(v) || v <= 0) return 0;
+  const r = String(rule || 'none').toLowerCase();
+  if (r === 'ceil_0_01') return Number((Math.ceil(v * 100) / 100).toFixed(6));
+  if (r === 'round_0_01') return Number((Math.round(v * 100) / 100).toFixed(6));
+  if (r === 'ceil_0_1') return Number((Math.ceil(v * 10) / 10).toFixed(6));
+  if (r === 'round_0_1') return Number((Math.round(v * 10) / 10).toFixed(6));
+  if (r === 'ceil_1') return Number(Math.ceil(v).toFixed(6));
+  if (r === 'round_1') return Number(Math.round(v).toFixed(6));
+  return Number(v.toFixed(6));
+};
+
+const computeVariantPreview = (input: {
+  links: ProductProviderLink[];
+  routingMode: ProductRoutingMode;
+  profitMarginPercent: number;
+  customerDiscountPercent: number;
+  roundingRule?: string;
+  productCost?: number;
+  variantKey?: string;
+  providerQuote?: {
+    unitCost?: number;
+    cost?: number;
+    providerCode?: string;
+    providerProductId?: string;
+    raw?: unknown;
+  } | null;
+}) => {
+  const candidates = (Array.isArray(input.links) ? input.links : [])
+    .filter((link) => {
+      if (link.enabled === false) return false;
+      if (link.executionEnabled === false) return false;
+      if (String(link.providerAvailability || '').toLowerCase() === 'unavailable') return false;
+      if (String(link.healthStatus || '').toLowerCase() === 'unhealthy') return false;
+      const cost =
+        link.priceSource === 'manual' && Number(link.manualCost || 0) > 0
+          ? Number(link.manualCost || 0)
+          : Number(link.lastCost ?? link.lastKnownCost ?? 0);
+      return Number.isFinite(cost) && cost > 0;
+    })
+    .map((link) => ({
+      link,
+      cost:
+        link.priceSource === 'manual' && Number(link.manualCost || 0) > 0
+          ? Number(link.manualCost || 0)
+          : Number(link.lastCost ?? link.lastKnownCost ?? 0),
+      priority: Number.isFinite(Number(link.priority)) ? Number(link.priority) : 100,
+    }));
+
+  const providerQuoteUnitCost = Number(input.providerQuote?.unitCost ?? 0);
+  const providerQuoteCost = Number(input.providerQuote?.cost ?? 0);
+  const productCost = Number(input.productCost ?? 0);
+  const fallbackCost =
+    (Number.isFinite(providerQuoteUnitCost) && providerQuoteUnitCost > 0 ? providerQuoteUnitCost : 0) ||
+    (Number.isFinite(providerQuoteCost) && providerQuoteCost > 0 ? providerQuoteCost : 0) ||
+    (Number.isFinite(productCost) && productCost > 0 ? productCost : 0) ||
+    0;
+
+  if (!candidates.length && !(fallbackCost > 0)) {
+    return {
+      cheapestProvider: null as string | null,
+      cheapestCost: null as number | null,
+      sellBeforeDiscount: null as number | null,
+      finalPrice: null as number | null,
+      fallbackOrder: [] as string[],
+    };
+  }
+
+  candidates.sort((a, b) => {
+    if (input.routingMode === 'priority') {
+      if (a.priority !== b.priority) return a.priority - b.priority;
+      return a.cost - b.cost;
+    }
+    if (a.cost !== b.cost) return a.cost - b.cost;
+    return a.priority - b.priority;
+  });
+
+  const cheapest = candidates.length ? candidates[0] : null;
+  const cheapestCostValue = cheapest ? cheapest.cost : fallbackCost;
+  const margin = Number.isFinite(Number(input.profitMarginPercent))
+    ? Number(input.profitMarginPercent)
+    : 0;
+  const discount = Number.isFinite(Number(input.customerDiscountPercent))
+    ? Number(input.customerDiscountPercent)
+    : 0;
+  const sellBeforeDiscount = Number((cheapestCostValue * (1 + margin / 100)).toFixed(6));
+  const final = roundByRule(
+    sellBeforeDiscount * (1 - discount / 100),
+    input.roundingRule || 'none'
+  );
+
+  const providerCodeFromQuote = String(input.providerQuote?.providerCode || '').trim();
+  const providerIdFromQuote = String(input.providerQuote?.providerProductId || '').trim();
+  const cheapestProviderText =
+    cheapest
+      ? `${String(cheapest.link.providerCode || '')}:${String(cheapest.link.providerProductId || '')}`
+      : providerCodeFromQuote || providerIdFromQuote
+        ? `${providerCodeFromQuote}:${providerIdFromQuote}`
+        : null;
+
+  console.log('PRICE DEBUG:', {
+    providerProductId:
+      providerIdFromQuote ||
+      (cheapest ? String(cheapest.link.providerProductId || '') : ''),
+    variantKey: String(input.variantKey || '').trim() || '__default__',
+    cost: cheapestCostValue,
+    providerQuote: input.providerQuote || null,
+  });
+
+  return {
+    cheapestProvider: cheapestProviderText,
+    cheapestCost: Number(cheapestCostValue.toFixed(6)),
+    sellBeforeDiscount,
+    finalPrice: final,
+    fallbackOrder: candidates.map(
+      (row) => `${String(row.link.providerCode || '')}:${String(row.link.providerProductId || '')}`
+    ),
+  };
+};
+
+const buildUcPubgDailyCardLinks = (input: {
+  slug: string;
+  name: string;
+  catalogProductId?: string;
+  packageLines: string;
+  existingLinks: ProviderLinkFormRow[];
+}) => {
+  if (String(input.slug || '').trim().toLowerCase() !== 'uc-pubg') {
+    return normalizeProviderLinks(input.existingLinks);
+  }
+
+  const existing = normalizeProviderLinks(input.existingLinks);
+  if (existing.length > 0) return existing;
+
+  const providerProductId = String(input.catalogProductId || '').trim();
+  if (!providerProductId) return existing;
+
+  const timestamp = new Date().toISOString();
+  return parsePackageLines(input.packageLines).map((pkg) => ({
+    _uiKey: nextProviderLinkUiKey(),
+    providerCode: 'dailycard',
+    providerProductId,
+    providerProductName: `${String(input.name || 'UC PUBG').trim()} - ${pkg.label}`,
+    enabled: true,
+    executionEnabled: true,
+    priceSyncEnabled: true,
+    priority: 100,
+    priceSource: 'provider' as const,
+    lastCost: Number(pkg.price || 0),
+    lastKnownCost: Number(pkg.price || 0),
+    providerAvailability: 'available' as const,
+    healthStatus: 'healthy' as const,
+    variantKey: String(pkg.key || '').trim() || undefined,
+    fallbackEnabled: true,
+    lastError: '',
+    lastSyncAt: timestamp,
+  }));
 };
 
 export default function AdminProducts() {
@@ -304,6 +519,8 @@ export default function AdminProducts() {
     saleEnabled: true,
     tags: '',
     providerMode: 'manual',
+    profitMarginPercent: '',
+    roundingRule: 'none',
     routingMode: 'cheapest',
     providerLinks: [],
   });
@@ -342,6 +559,262 @@ export default function AdminProducts() {
     if (safe >= 1) return `$${safe.toFixed(2)}`;
     if (safe >= 0.01) return `$${safe.toFixed(4)}`;
     return `$${safe.toFixed(6)}`;
+  };
+
+  const [editVariantProviderQuotes, setEditVariantProviderQuotes] = useState<
+    Record<
+      string,
+      {
+        unitCost?: number;
+        cost?: number;
+        providerCode?: string;
+        providerProductId?: string;
+        raw?: unknown;
+      }
+    >
+  >({});
+
+  const editPreviewFetchSignature = useMemo(() => {
+    if (!editForm) return '';
+    const links = normalizeProviderLinks(editForm.providerLinks).map((link) => ({
+      providerCode: String(link.providerCode || '').trim().toLowerCase(),
+      providerProductId: String(link.providerProductId || '').trim(),
+      variantKey: normalizeVariantKey(link.variantKey || ''),
+      enabled: link.enabled !== false,
+      executionEnabled: link.executionEnabled !== false,
+    }));
+    const packages =
+      editForm.mode === 'package'
+        ? parsePackageLines(editForm.packageLines).map((row) => ({
+            label: row.label,
+            key: row.key,
+          }))
+        : [{ label: 'default', key: '__default__' }];
+    return JSON.stringify({
+      slug: String(editForm.slug || '').trim().toLowerCase(),
+      providerMode: String(editForm.providerMode || 'primary').trim().toLowerCase(),
+      mode: editForm.mode,
+      routingMode: editForm.routingMode,
+      links,
+      packages,
+    });
+  }, [editForm]);
+
+  useEffect(() => {
+    if (!editForm) {
+      setEditVariantProviderQuotes({});
+      return;
+    }
+    if (String(editForm.providerMode || '').toLowerCase() === 'manual') {
+      setEditVariantProviderQuotes({});
+      return;
+    }
+
+    const slug = String(editForm.slug || '').trim().toLowerCase();
+    if (!slug) {
+      setEditVariantProviderQuotes({});
+      return;
+    }
+
+    const links = normalizeProviderLinks(editForm.providerLinks);
+    const variants =
+      editForm.mode === 'package'
+        ? parsePackageLines(editForm.packageLines).map((row) => ({
+            label: row.label,
+            key: normalizeVariantKey(row.label),
+          }))
+        : [{ label: 'default', key: '__default__' }];
+
+    let cancelled = false;
+    const timeout = setTimeout(async () => {
+      try {
+        const token = getAdminTokenOptional();
+        const headers = buildAdminAuthHeaders(token);
+        const entries = await Promise.all(
+          variants.map(async (variant) => {
+            const query =
+              variant.label === 'default'
+                ? `slug=${encodeURIComponent(slug)}`
+                : `slug=${encodeURIComponent(slug)}&packageOption=${encodeURIComponent(variant.label)}`;
+            const res = await fetch(`/api/pricing/effective?${query}`, {
+              headers,
+              cache: 'no-store',
+            });
+            if (!res.ok) return [variant.key, null] as const;
+            const json = await res.json();
+            const payload = json?.data || {};
+            const resolvedUnitCost = Number(payload?.cheapestCost ?? payload?.basePrice ?? 0);
+            const unitCost = Number.isFinite(resolvedUnitCost) && resolvedUnitCost > 0 ? resolvedUnitCost : 0;
+            const providerCode = String(payload?.cheapestProviderCode || '').trim().toLowerCase();
+            const scopedLinks = links.filter((link) => {
+              const lk = normalizeVariantKey(link.variantKey || '');
+              if (!lk) return variant.key === '__default__';
+              return lk === variant.key;
+            });
+            const activeLinks = scopedLinks.length ? scopedLinks : links;
+            const providerProductId =
+              (providerCode
+                ? String(
+                    activeLinks.find(
+                      (link) => String(link.providerCode || '').trim().toLowerCase() === providerCode
+                    )?.providerProductId || ''
+                  ).trim()
+                : '') ||
+              String(activeLinks[0]?.providerProductId || '').trim();
+            const providerQuote =
+              unitCost > 0
+                ? {
+                    unitCost,
+                    cost: unitCost,
+                    providerCode: providerCode || undefined,
+                    providerProductId: providerProductId || undefined,
+                    raw: payload,
+                  }
+                : null;
+
+            console.log('PRICE DEBUG:', {
+              providerProductId,
+              variantKey: variant.key || '__default__',
+              cost: unitCost,
+              providerQuote,
+            });
+
+            return [variant.key, providerQuote] as const;
+          })
+        );
+
+        if (cancelled) return;
+        const next: Record<string, { unitCost?: number; cost?: number; providerCode?: string; providerProductId?: string; raw?: unknown }> = {};
+        for (const [key, quote] of entries) {
+          if (!quote) continue;
+          next[key] = quote;
+        }
+        setEditVariantProviderQuotes(next);
+      } catch (error) {
+        if (!cancelled) {
+          console.error('Failed to load provider quotes for preview:', error);
+          setEditVariantProviderQuotes({});
+        }
+      }
+    }, 300);
+
+    return () => {
+      cancelled = true;
+      clearTimeout(timeout);
+    };
+  }, [editPreviewFetchSignature, editForm]);
+
+  const editVariantPreviews = useMemo(() => {
+    if (!editForm) return [];
+    const links = normalizeProviderLinks(editForm.providerLinks);
+    const margin = Number(editForm.profitMarginPercent || 0);
+    const variants =
+      editForm.mode === 'package'
+        ? parsePackageLines(editForm.packageLines).map((row) => ({
+            label: row.label,
+            price: Number(row.price || 0),
+          }))
+        : [{ label: 'default', price: Number(editForm.costPrice || editForm.price || 0) }];
+
+    return variants.map((variant) => {
+      const label = variant.label;
+      const key = label === 'default' ? '__default__' : normalizeVariantKey(label);
+      const scopedLinks = links.filter((link) => {
+        const lk = normalizeVariantKey(link.variantKey || '');
+        if (!lk) return key === '__default__';
+        return lk === key;
+      });
+      const resolvedLinks = scopedLinks.length ? scopedLinks : links;
+      return {
+        variantLabel: label,
+        ...computeVariantPreview({
+          links: resolvedLinks,
+          routingMode: editForm.routingMode,
+          profitMarginPercent: margin,
+          customerDiscountPercent: selectedUserPercent,
+          roundingRule: editForm.roundingRule,
+          productCost: Number.isFinite(Number(variant.price)) ? Number(variant.price) : 0,
+          variantKey: key,
+          providerQuote: editVariantProviderQuotes[key] || null,
+        }),
+      };
+    });
+  }, [editForm, selectedUserPercent, editVariantProviderQuotes]);
+
+  const customVariantPreviews = useMemo(() => {
+    const links = normalizeProviderLinks(customForm.providerLinks);
+    const margin = Number(customForm.profitMarginPercent || 0);
+    const variants =
+      customForm.mode === 'package'
+        ? parsePackageLines(customForm.packageLines).map((row) => row.label)
+        : ['default'];
+
+    return variants.map((label) => {
+      const key = label === 'default' ? '__default__' : normalizeVariantKey(label);
+      const scopedLinks = links.filter((link) => {
+        const lk = normalizeVariantKey(link.variantKey || '');
+        if (!lk) return key === '__default__';
+        return lk === key;
+      });
+      const resolvedLinks = scopedLinks.length ? scopedLinks : links;
+      return {
+        variantLabel: label,
+        ...computeVariantPreview({
+          links: resolvedLinks,
+          routingMode: customForm.routingMode,
+          profitMarginPercent: margin,
+          customerDiscountPercent: selectedUserPercent,
+          roundingRule: customForm.roundingRule,
+        }),
+      };
+    });
+  }, [customForm, selectedUserPercent]);
+
+  const editPackageRows = useMemo(() => {
+    if (!editForm || editForm.mode !== 'package') return [];
+    const links = normalizeProviderLinks(editForm.providerLinks);
+    return parsePackageLines(editForm.packageLines).map((pkg) => {
+      const key = String(pkg.key || '').trim();
+      const match =
+        links.find((link) => normalizeVariantKey(link.variantKey || '') === key) || null;
+      return {
+        ...pkg,
+        link: match,
+      };
+    });
+  }, [editForm]);
+
+  const updateEditPackageLink = (
+    packageKey: string,
+    updater: (current: ProviderLinkFormRow) => ProviderLinkFormRow
+  ) => {
+    setEditForm((prev) => {
+      if (!prev) return prev;
+      const targetKey = normalizeVariantKey(packageKey);
+      if (!targetKey) return prev;
+      const links = normalizeProviderLinks(prev.providerLinks);
+      const idx = links.findIndex((link) => normalizeVariantKey(link.variantKey || '') === targetKey);
+      const baseRow =
+        idx >= 0
+          ? links[idx]
+          : {
+              ...createEmptyProviderLink(),
+              providerCode: 'dailycard',
+              providerProductId: String(prev.catalogProductId || '').trim(),
+              variantKey: targetKey,
+              lastSyncAt: new Date().toISOString(),
+            };
+      const nextRow = updater(baseRow);
+      if (idx >= 0) {
+        links[idx] = nextRow;
+      } else {
+        links.push(nextRow);
+      }
+      return {
+        ...prev,
+        providerLinks: links,
+      };
+    });
   };
 
   const filteredManageProducts = useMemo(() => {
@@ -429,8 +902,18 @@ export default function AdminProducts() {
   };
 
   const openEditProduct = (product: ManageProduct) => {
+    const packageLines = formatPackageLines(product.packageOptions || []);
+    const initialLinks = buildUcPubgDailyCardLinks({
+      slug: product.slug,
+      name: product.name,
+      catalogProductId: product.id,
+      packageLines,
+      existingLinks: normalizeProviderLinks(product.providerLinks),
+    });
+
     setEditingProductSlug(product.slug);
     setEditForm({
+      catalogProductId: product.id,
       slug: product.slug,
       source: product.source,
       name: product.name,
@@ -444,7 +927,7 @@ export default function AdminProducts() {
           ? String(product.costPrice)
           : '',
       mode: product.mode || 'single',
-      packageLines: formatPackageLines(product.packageOptions || []),
+      packageLines,
       countMin: String(product.countMin ?? 1),
       countMax: typeof product.countMax === 'number' ? String(product.countMax) : '',
       platform: product.platform || 'BilyCard',
@@ -456,8 +939,13 @@ export default function AdminProducts() {
       featured: Boolean(product.featured),
       bestSeller: Boolean(product.bestSeller),
       providerMode: product.providerMode || 'primary',
+      profitMarginPercent:
+        Number.isFinite(Number((product as any).profitMarginPercent))
+          ? String(Number((product as any).profitMarginPercent))
+          : '',
+      roundingRule: String((product as any).roundingRule || 'none'),
       routingMode: product.routingMode === 'priority' ? 'priority' : 'cheapest',
-      providerLinks: normalizeProviderLinks(product.providerLinks),
+      providerLinks: initialLinks,
     });
   };
 
@@ -497,8 +985,10 @@ export default function AdminProducts() {
           featured: editForm.featured,
           bestSeller: editForm.bestSeller,
           providerMode: editForm.providerMode,
+          profitMarginPercent: Number(editForm.profitMarginPercent || 0),
+          roundingRule: editForm.roundingRule || 'none',
           routingMode: editForm.routingMode,
-          providerLinks: normalizeProviderLinks(editForm.providerLinks),
+          providerLinks: serializeProviderLinks(editForm.providerLinks),
         }),
       });
       if (isUnauthorizedStatus(res.status)) {
@@ -619,8 +1109,10 @@ export default function AdminProducts() {
         saleEnabled: customForm.saleEnabled,
         tags: customForm.tags,
         providerMode: customForm.providerMode,
+        profitMarginPercent: Number(customForm.profitMarginPercent || 0),
+        roundingRule: customForm.roundingRule || 'none',
         routingMode: customForm.routingMode,
-        providerLinks: normalizeProviderLinks(customForm.providerLinks),
+        providerLinks: serializeProviderLinks(customForm.providerLinks),
       };
 
       const res = await fetch('/api/admin/products/custom', {
@@ -656,6 +1148,8 @@ export default function AdminProducts() {
         stockStatus: 'out_of_stock',
         saleEnabled: true,
         providerMode: 'manual',
+        profitMarginPercent: '',
+        roundingRule: 'none',
         routingMode: 'cheapest',
         providerLinks: [],
       }));
@@ -692,11 +1186,11 @@ export default function AdminProducts() {
       {/* Content */}
       <div className="mx-auto max-w-7xl px-6 py-12">
         <div className="flex items-center justify-between mb-8">
-          <h1 className="text-4xl font-bold text-white">Products Pricing Dashboard</h1>
+          <h1 className="text-4xl font-bold text-white">Products Control Center</h1>
         </div>
 
         <div className="mb-6 rounded-lg border border-white/10 bg-slate-900/60 p-4">
-          <h2 className="mb-4 text-xl font-semibold text-white">Manage Products (Edit/Delete)</h2>
+          <h2 className="mb-4 text-xl font-semibold text-white">Manual Products (Edit/Delete)</h2>
 
           <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             <input
@@ -1034,6 +1528,32 @@ export default function AdminProducts() {
                   <ChevronDown className="pointer-events-none absolute right-2 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-300" />
                 </div>
                 <input
+                  value={editForm.profitMarginPercent}
+                  onChange={(e) =>
+                    setEditForm((prev) => (prev ? { ...prev, profitMarginPercent: e.target.value } : prev))
+                  }
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  placeholder="Profit margin %"
+                  className="rounded border border-white/10 bg-slate-800 px-3 py-2 text-white"
+                />
+                <select
+                  value={editForm.roundingRule}
+                  onChange={(e) =>
+                    setEditForm((prev) => (prev ? { ...prev, roundingRule: e.target.value } : prev))
+                  }
+                  className="rounded border border-white/10 bg-slate-800 px-3 py-2 text-white"
+                >
+                  <option value="none">No rounding</option>
+                  <option value="round_0_01">Round 0.01</option>
+                  <option value="ceil_0_01">Ceil 0.01</option>
+                  <option value="round_0_1">Round 0.1</option>
+                  <option value="ceil_0_1">Ceil 0.1</option>
+                  <option value="round_1">Round 1</option>
+                  <option value="ceil_1">Ceil 1</option>
+                </select>
+                <input
                   value={editForm.tags}
                   onChange={(e) => setEditForm((prev) => (prev ? { ...prev, tags: e.target.value } : prev))}
                   placeholder="Tags (comma separated)"
@@ -1044,19 +1564,172 @@ export default function AdminProducts() {
               <div className="mt-3 rounded border border-cyan-500/30 bg-cyan-950/20 p-3">
                 <div className="mb-3 flex flex-col gap-2 rounded border border-cyan-400/20 bg-slate-900/60 p-3 text-xs text-cyan-100 sm:flex-row sm:items-center sm:justify-between">
                   <div>
-                    Provider links are managed mainly from Provider Matrix.
+                    Manage provider links directly from this control center.
                     <div className="mt-1 text-cyan-100/80">Current links: {editForm.providerLinks.length}</div>
                   </div>
-                  <Link
-                    href={`/admin/provider-matrix?slug=${encodeURIComponent(editForm.slug || '')}`}
-                    className="rounded bg-cyan-600 px-3 py-2 text-xs font-semibold text-white hover:bg-cyan-700"
-                  >
-                    Manage in Provider Matrix
-                  </Link>
+                  {editForm.slug === 'uc-pubg' && editForm.mode === 'package' && (
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setEditForm((prev) => {
+                          if (!prev) return prev;
+                          return {
+                            ...prev,
+                            providerLinks: buildUcPubgDailyCardLinks({
+                              slug: prev.slug,
+                              name: prev.name,
+                              catalogProductId: prev.catalogProductId,
+                              packageLines: prev.packageLines,
+                              existingLinks: prev.providerLinks,
+                            }),
+                          };
+                        })
+                      }
+                      className="rounded bg-cyan-700 px-3 py-1.5 text-xs font-semibold text-white hover:bg-cyan-600"
+                    >
+                      Auto-map UC PUBG packages to DailyCard
+                    </button>
+                  )}
                 </div>
+                {editForm.mode === 'package' && Boolean(editPackageRows.length) && (
+                  <div className="mb-3 rounded border border-white/10 bg-slate-900/60 p-3">
+                    <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-200">
+                      Package Provider Mapping
+                    </p>
+                    <div className="space-y-2">
+                      {editPackageRows.map((pkg) => (
+                        <div
+                          key={pkg.key || pkg.label}
+                          className="rounded border border-white/10 bg-slate-950/60 p-2"
+                        >
+                          <div className="mb-2 flex flex-wrap items-center gap-2 text-xs">
+                            <span className="font-semibold text-white">{pkg.label}</span>
+                            <span className="rounded bg-slate-800 px-2 py-0.5 text-slate-300">
+                              {pkg.key || '-'}
+                            </span>
+                          </div>
+                          <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+                            <input
+                              value={pkg.link?.providerCode || 'dailycard'}
+                              onChange={(e) =>
+                                updateEditPackageLink(pkg.key, (current) => ({
+                                  ...current,
+                                  providerCode: e.target.value,
+                                  variantKey: pkg.key,
+                                }))
+                              }
+                              placeholder="provider code"
+                              className="rounded border border-white/10 bg-slate-800 px-3 py-2 text-white"
+                            />
+                            <input
+                              value={pkg.link?.providerProductId || editForm.catalogProductId || ''}
+                              onChange={(e) =>
+                                updateEditPackageLink(pkg.key, (current) => ({
+                                  ...current,
+                                  providerProductId: e.target.value,
+                                  variantKey: pkg.key,
+                                }))
+                              }
+                              placeholder="provider product id"
+                              className="rounded border border-white/10 bg-slate-800 px-3 py-2 text-white"
+                            />
+                            <input
+                              type="number"
+                              step="any"
+                              min="0"
+                              value={pkg.link?.lastCost ?? pkg.price}
+                              onChange={(e) =>
+                                updateEditPackageLink(pkg.key, (current) => ({
+                                  ...current,
+                                  lastCost: Number(e.target.value || 0),
+                                  lastKnownCost: Number(e.target.value || 0),
+                                  variantKey: pkg.key,
+                                }))
+                              }
+                              placeholder="last cost"
+                              className="rounded border border-white/10 bg-slate-800 px-3 py-2 text-white"
+                            />
+                            <select
+                              value={pkg.link?.priceSource === 'manual' ? 'manual' : 'provider'}
+                              onChange={(e) =>
+                                updateEditPackageLink(pkg.key, (current) => ({
+                                  ...current,
+                                  priceSource: e.target.value === 'manual' ? 'manual' : 'provider',
+                                  variantKey: pkg.key,
+                                }))
+                              }
+                              className="rounded border border-white/10 bg-slate-800 px-3 py-2 text-white"
+                            >
+                              <option value="provider">Provider Cost</option>
+                              <option value="manual">Manual Cost</option>
+                            </select>
+                          </div>
+                          <div className="mt-2 flex flex-wrap gap-4 text-xs text-slate-200">
+                            <label className="flex items-center gap-2">
+                              <input
+                                type="checkbox"
+                                checked={pkg.link?.enabled !== false}
+                                onChange={(e) =>
+                                  updateEditPackageLink(pkg.key, (current) => ({
+                                    ...current,
+                                    enabled: e.target.checked,
+                                    variantKey: pkg.key,
+                                  }))
+                                }
+                              />
+                              Enabled
+                            </label>
+                            <label className="flex items-center gap-2">
+                              <input
+                                type="checkbox"
+                                checked={pkg.link?.executionEnabled !== false}
+                                onChange={(e) =>
+                                  updateEditPackageLink(pkg.key, (current) => ({
+                                    ...current,
+                                    executionEnabled: e.target.checked,
+                                    variantKey: pkg.key,
+                                  }))
+                                }
+                              />
+                              Execution
+                            </label>
+                            <label className="flex items-center gap-2">
+                              <input
+                                type="checkbox"
+                                checked={pkg.link?.priceSyncEnabled !== false}
+                                onChange={(e) =>
+                                  updateEditPackageLink(pkg.key, (current) => ({
+                                    ...current,
+                                    priceSyncEnabled: e.target.checked,
+                                    variantKey: pkg.key,
+                                  }))
+                                }
+                              />
+                              Price Sync
+                            </label>
+                            <label className="flex items-center gap-2">
+                              <input
+                                type="checkbox"
+                                checked={pkg.link?.fallbackEnabled !== false}
+                                onChange={(e) =>
+                                  updateEditPackageLink(pkg.key, (current) => ({
+                                    ...current,
+                                    fallbackEnabled: e.target.checked,
+                                    variantKey: pkg.key,
+                                  }))
+                                }
+                              />
+                              Fallback
+                            </label>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
                 <details className="rounded border border-white/10 bg-slate-900/40 p-3">
                   <summary className="cursor-pointer text-xs font-semibold text-slate-200">
-                    Advanced manual edit (fallback only)
+                    Advanced provider links editor
                   </summary>
                   <div className="mt-3">
                 <div className="mb-3 grid gap-3 md:grid-cols-2">
@@ -1101,7 +1774,7 @@ export default function AdminProducts() {
 
                 <div className="space-y-2">
                   {editForm.providerLinks.map((row, idx) => (
-                    <div key={`${row.providerCode}-${row.providerProductId}-${idx}`} className="rounded border border-white/10 bg-slate-900/70 p-3">
+                    <div key={row._uiKey || `plink-edit-${idx}`} className="rounded border border-white/10 bg-slate-900/70 p-3">
                       <div className="grid gap-2 md:grid-cols-6">
                         <input
                           value={row.providerCode || ''}
@@ -1213,6 +1886,87 @@ export default function AdminProducts() {
                           placeholder="manual cost"
                           className="rounded border border-white/10 bg-slate-800 px-3 py-2 text-white"
                         />
+                        <input
+                          value={row.variantKey || ''}
+                          onChange={(e) =>
+                            setEditForm((prev) =>
+                              prev
+                                ? {
+                                    ...prev,
+                                    providerLinks: prev.providerLinks.map((item, i) =>
+                                      i === idx ? { ...item, variantKey: e.target.value } : item
+                                    ),
+                                  }
+                                : prev
+                            )
+                          }
+                          placeholder="variant key (optional)"
+                          className="rounded border border-white/10 bg-slate-800 px-3 py-2 text-white"
+                        />
+                        <input
+                          type="number"
+                          step="any"
+                          min="0"
+                          value={row.lastCost ?? row.lastKnownCost ?? ''}
+                          onChange={(e) =>
+                            setEditForm((prev) =>
+                              prev
+                                ? {
+                                    ...prev,
+                                    providerLinks: prev.providerLinks.map((item, i) =>
+                                      i === idx
+                                        ? {
+                                            ...item,
+                                            lastCost: Number(e.target.value || 0),
+                                            lastKnownCost: Number(e.target.value || 0),
+                                          }
+                                        : item
+                                    ),
+                                  }
+                                : prev
+                            )
+                          }
+                          placeholder="last cost"
+                          className="rounded border border-white/10 bg-slate-800 px-3 py-2 text-white"
+                        />
+                        <select
+                          value={row.healthStatus || 'unknown'}
+                          onChange={(e) =>
+                            setEditForm((prev) =>
+                              prev
+                                ? {
+                                    ...prev,
+                                    providerLinks: prev.providerLinks.map((item, i) =>
+                                      i === idx ? { ...item, healthStatus: e.target.value as any } : item
+                                    ),
+                                  }
+                                : prev
+                            )
+                          }
+                          className="rounded border border-white/10 bg-slate-800 px-3 py-2 text-white"
+                        >
+                          <option value="unknown">Health: Unknown</option>
+                          <option value="healthy">Health: Healthy</option>
+                          <option value="degraded">Health: Degraded</option>
+                          <option value="unhealthy">Health: Unhealthy</option>
+                        </select>
+                        <input
+                          value={row.lastError || ''}
+                          onChange={(e) =>
+                            setEditForm((prev) =>
+                              prev
+                                ? {
+                                    ...prev,
+                                    providerLinks: prev.providerLinks.map((item, i) =>
+                                      i === idx ? { ...item, lastError: e.target.value } : item
+                                    ),
+                                  }
+                                : prev
+                            )
+                          }
+                          placeholder="last error"
+                          className="rounded border border-white/10 bg-slate-800 px-3 py-2 text-white"
+                        />
                       </div>
                       <div className="mt-2 flex flex-wrap items-center gap-4">
                         <label className="flex items-center gap-2 text-xs text-slate-200">
@@ -1233,6 +1987,44 @@ export default function AdminProducts() {
                             }
                           />
                           Enabled
+                        </label>
+                        <label className="flex items-center gap-2 text-xs text-slate-200">
+                          <input
+                            type="checkbox"
+                            checked={row.executionEnabled !== false}
+                            onChange={(e) =>
+                              setEditForm((prev) =>
+                                prev
+                                  ? {
+                                      ...prev,
+                                      providerLinks: prev.providerLinks.map((item, i) =>
+                                        i === idx ? { ...item, executionEnabled: e.target.checked } : item
+                                      ),
+                                    }
+                                  : prev
+                              )
+                            }
+                          />
+                          Execution
+                        </label>
+                        <label className="flex items-center gap-2 text-xs text-slate-200">
+                          <input
+                            type="checkbox"
+                            checked={row.priceSyncEnabled !== false}
+                            onChange={(e) =>
+                              setEditForm((prev) =>
+                                prev
+                                  ? {
+                                      ...prev,
+                                      providerLinks: prev.providerLinks.map((item, i) =>
+                                        i === idx ? { ...item, priceSyncEnabled: e.target.checked } : item
+                                      ),
+                                    }
+                                  : prev
+                              )
+                            }
+                          />
+                          Price Sync
                         </label>
                         <label className="flex items-center gap-2 text-xs text-slate-200">
                           <input
@@ -1280,6 +2072,30 @@ export default function AdminProducts() {
                 </div>
                   </div>
                 </details>
+              </div>
+
+              <div className="mt-3 rounded border border-emerald-500/30 bg-emerald-950/20 p-3">
+                <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-emerald-200">
+                  Final Price Preview (per variant)
+                </p>
+                <div className="space-y-2 text-xs">
+                  {editVariantPreviews.map((row) => (
+                    <div key={row.variantLabel} className="rounded border border-white/10 bg-slate-900/60 p-2">
+                      <div className="mb-1 font-semibold text-white">{row.variantLabel}</div>
+                      <div className="grid gap-1 sm:grid-cols-2 lg:grid-cols-3 text-slate-200">
+                        <div>Cheapest: {row.cheapestProvider || '-'}</div>
+                        <div>Cost: {row.cheapestCost != null ? formatPrice(row.cheapestCost) : '-'}</div>
+                        <div>Margin: {Number(editForm.profitMarginPercent || 0).toFixed(2)}%</div>
+                        <div>Discount: {selectedUserPercent.toFixed(2)}%</div>
+                        <div>Before discount: {row.sellBeforeDiscount != null ? formatPrice(row.sellBeforeDiscount) : '-'}</div>
+                        <div>Final: {row.finalPrice != null ? formatPrice(row.finalPrice) : '-'}</div>
+                      </div>
+                      <div className="mt-1 text-slate-400">
+                        Fallback order: {row.fallbackOrder.length ? row.fallbackOrder.join(' -> ') : '-'}
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
 
               {editForm.source === 'custom' && (
@@ -1617,6 +2433,28 @@ export default function AdminProducts() {
               <option value="priority">Routing: Priority</option>
             </select>
             <input
+              value={customForm.profitMarginPercent}
+              onChange={(e) => setCustomForm((prev) => ({ ...prev, profitMarginPercent: e.target.value }))}
+              type="number"
+              min="0"
+              step="0.01"
+              placeholder="Profit margin %"
+              className="rounded border border-white/10 bg-slate-800 px-3 py-2 text-white"
+            />
+            <select
+              value={customForm.roundingRule}
+              onChange={(e) => setCustomForm((prev) => ({ ...prev, roundingRule: e.target.value }))}
+              className="rounded border border-white/10 bg-slate-800 px-3 py-2 text-white"
+            >
+              <option value="none">No rounding</option>
+              <option value="round_0_01">Round 0.01</option>
+              <option value="ceil_0_01">Ceil 0.01</option>
+              <option value="round_0_1">Round 0.1</option>
+              <option value="ceil_0_1">Ceil 0.1</option>
+              <option value="round_1">Round 1</option>
+              <option value="ceil_1">Ceil 1</option>
+            </select>
+            <input
               value={customForm.tags}
               onChange={(e) => setCustomForm((prev) => ({ ...prev, tags: e.target.value }))}
               placeholder="Tags (comma separated)"
@@ -1656,11 +2494,11 @@ export default function AdminProducts() {
 
           <div className="mt-3 rounded border border-cyan-500/30 bg-cyan-950/20 p-3">
             <div className="mb-3 rounded border border-cyan-400/20 bg-slate-900/60 p-3 text-xs text-cyan-100">
-              Provider links here are advanced fallback only. Save product first, then manage from Provider Matrix.
+              Provider links are managed directly here after you save the product.
             </div>
             <details className="rounded border border-white/10 bg-slate-900/40 p-3">
               <summary className="cursor-pointer text-xs font-semibold text-slate-200">
-                Advanced manual edit (fallback only)
+                Advanced provider links editor
               </summary>
               <div className="mt-3">
             <div className="mb-3 flex items-center justify-between">
@@ -1680,7 +2518,7 @@ export default function AdminProducts() {
             </div>
             <div className="space-y-2">
               {customForm.providerLinks.map((row, idx) => (
-                <div key={`${row.providerCode}-${row.providerProductId}-${idx}`} className="rounded border border-white/10 bg-slate-900/70 p-3">
+                <div key={row._uiKey || `plink-custom-${idx}`} className="rounded border border-white/10 bg-slate-900/70 p-3">
                   <div className="grid gap-2 md:grid-cols-6">
                     <input
                       value={row.providerCode || ''}
@@ -1768,6 +2606,71 @@ export default function AdminProducts() {
                       placeholder="manual cost"
                       className="rounded border border-white/10 bg-slate-800 px-3 py-2 text-white"
                     />
+                    <input
+                      value={row.variantKey || ''}
+                      onChange={(e) =>
+                        setCustomForm((prev) => ({
+                          ...prev,
+                          providerLinks: prev.providerLinks.map((item, i) =>
+                            i === idx ? { ...item, variantKey: e.target.value } : item
+                          ),
+                        }))
+                      }
+                      placeholder="variant key (optional)"
+                      className="rounded border border-white/10 bg-slate-800 px-3 py-2 text-white"
+                    />
+                    <input
+                      type="number"
+                      step="any"
+                      min="0"
+                      value={row.lastCost ?? row.lastKnownCost ?? ''}
+                      onChange={(e) =>
+                        setCustomForm((prev) => ({
+                          ...prev,
+                          providerLinks: prev.providerLinks.map((item, i) =>
+                            i === idx
+                              ? {
+                                  ...item,
+                                  lastCost: Number(e.target.value || 0),
+                                  lastKnownCost: Number(e.target.value || 0),
+                                }
+                              : item
+                          ),
+                        }))
+                      }
+                      placeholder="last cost"
+                      className="rounded border border-white/10 bg-slate-800 px-3 py-2 text-white"
+                    />
+                    <select
+                      value={row.healthStatus || 'unknown'}
+                      onChange={(e) =>
+                        setCustomForm((prev) => ({
+                          ...prev,
+                          providerLinks: prev.providerLinks.map((item, i) =>
+                            i === idx ? { ...item, healthStatus: e.target.value as any } : item
+                          ),
+                        }))
+                      }
+                      className="rounded border border-white/10 bg-slate-800 px-3 py-2 text-white"
+                    >
+                      <option value="unknown">Health: Unknown</option>
+                      <option value="healthy">Health: Healthy</option>
+                      <option value="degraded">Health: Degraded</option>
+                      <option value="unhealthy">Health: Unhealthy</option>
+                    </select>
+                    <input
+                      value={row.lastError || ''}
+                      onChange={(e) =>
+                        setCustomForm((prev) => ({
+                          ...prev,
+                          providerLinks: prev.providerLinks.map((item, i) =>
+                            i === idx ? { ...item, lastError: e.target.value } : item
+                          ),
+                        }))
+                      }
+                      placeholder="last error"
+                      className="rounded border border-white/10 bg-slate-800 px-3 py-2 text-white"
+                    />
                   </div>
                   <div className="mt-2 flex flex-wrap items-center gap-4">
                     <label className="flex items-center gap-2 text-xs text-slate-200">
@@ -1784,6 +2687,36 @@ export default function AdminProducts() {
                         }
                       />
                       Enabled
+                    </label>
+                    <label className="flex items-center gap-2 text-xs text-slate-200">
+                      <input
+                        type="checkbox"
+                        checked={row.executionEnabled !== false}
+                        onChange={(e) =>
+                          setCustomForm((prev) => ({
+                            ...prev,
+                            providerLinks: prev.providerLinks.map((item, i) =>
+                              i === idx ? { ...item, executionEnabled: e.target.checked } : item
+                            ),
+                          }))
+                        }
+                      />
+                      Execution
+                    </label>
+                    <label className="flex items-center gap-2 text-xs text-slate-200">
+                      <input
+                        type="checkbox"
+                        checked={row.priceSyncEnabled !== false}
+                        onChange={(e) =>
+                          setCustomForm((prev) => ({
+                            ...prev,
+                            providerLinks: prev.providerLinks.map((item, i) =>
+                              i === idx ? { ...item, priceSyncEnabled: e.target.checked } : item
+                            ),
+                          }))
+                        }
+                      />
+                      Price Sync
                     </label>
                     <label className="flex items-center gap-2 text-xs text-slate-200">
                       <input
@@ -1821,6 +2754,30 @@ export default function AdminProducts() {
             </div>
               </div>
             </details>
+          </div>
+
+          <div className="mt-3 rounded border border-emerald-500/30 bg-emerald-950/20 p-3">
+            <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-emerald-200">
+              Final Price Preview (per variant)
+            </p>
+            <div className="space-y-2 text-xs">
+              {customVariantPreviews.map((row) => (
+                <div key={row.variantLabel} className="rounded border border-white/10 bg-slate-900/60 p-2">
+                  <div className="mb-1 font-semibold text-white">{row.variantLabel}</div>
+                  <div className="grid gap-1 sm:grid-cols-2 lg:grid-cols-3 text-slate-200">
+                    <div>Cheapest: {row.cheapestProvider || '-'}</div>
+                    <div>Cost: {row.cheapestCost != null ? formatPrice(row.cheapestCost) : '-'}</div>
+                    <div>Margin: {Number(customForm.profitMarginPercent || 0).toFixed(2)}%</div>
+                    <div>Discount: {selectedUserPercent.toFixed(2)}%</div>
+                    <div>Before discount: {row.sellBeforeDiscount != null ? formatPrice(row.sellBeforeDiscount) : '-'}</div>
+                    <div>Final: {row.finalPrice != null ? formatPrice(row.finalPrice) : '-'}</div>
+                  </div>
+                  <div className="mt-1 text-slate-400">
+                    Fallback order: {row.fallbackOrder.length ? row.fallbackOrder.join(' -> ') : '-'}
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
 
           <textarea

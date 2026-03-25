@@ -238,6 +238,7 @@ export async function GET(request: NextRequest) {
       const userId = user?.userId || null
       const { searchParams } = new URL(request.url)
       const slug = searchParams.get('slug')
+      const packageOption = String(searchParams.get('packageOption') || '').trim()
 
       if (slug) {
         const catalogProduct = await getCatalogProductBySlug(slug)
@@ -253,6 +254,7 @@ export async function GET(request: NextRequest) {
           slug,
           userId,
           fallbackPrice,
+          packageOption: packageOption || undefined,
         })
 
         return NextResponse.json({
@@ -295,6 +297,7 @@ export async function GET(request: NextRequest) {
 
     const { searchParams } = new URL(request.url)
     const slug = searchParams.get('slug')
+    const packageOption = String(searchParams.get('packageOption') || '').trim()
 
     if (slug) {
       const catalogProduct = await getCatalogProductBySlug(slug)
@@ -338,6 +341,7 @@ export async function GET(request: NextRequest) {
         slug,
         userId,
         fallbackPrice,
+        packageOption: packageOption || undefined,
       })
 
       if (!Number.isFinite(data.basePrice) || data.basePrice <= 0) {

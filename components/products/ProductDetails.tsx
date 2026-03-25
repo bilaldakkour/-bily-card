@@ -1,6 +1,6 @@
 ﻿'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { CheckCircle2, Headset, Share, ShieldCheck, Truck } from 'lucide-react'
 import OrderDetailsModal, { type OrderDetailsItem } from '@/components/shared/OrderDetailsModal'
@@ -10,6 +10,13 @@ import type { Product } from '@/lib/data'
 interface ProductDetailsProps {
   product: Product
   compact?: boolean
+}
+
+type EffectivePricingSnapshot = {
+  effectivePrice: number
+  basePrice: number
+  productPercent: number
+  userPercent: number
 }
 
 const parsePriceFromPackageOption = (source: string, fallbackPrice: number): number => {
@@ -77,6 +84,10 @@ export default function ProductDetails({ product, compact = false }: ProductDeta
   const [shareNotice, setShareNotice] = useState('')
   const [productPercent, setProductPercent] = useState(0)
   const [userPercent, setUserPercent] = useState(0)
+  const [isPriceLoading, setIsPriceLoading] = useState(false)
+  const [isPricingReady, setIsPricingReady] = useState(false)
+  const [pricingCache, setPricingCache] = useState<Record<string, EffectivePricingSnapshot>>({})
+  const pricingFetchInFlightRef = useRef<Record<string, Promise<EffectivePricingSnapshot | null>>>({})
   const [createdOrderDetails, setCreatedOrderDetails] = useState<OrderDetailsItem | null>(null)
 
   useEffect(() => {
@@ -87,6 +98,13 @@ export default function ProductDetails({ product, compact = false }: ProductDeta
     () => safeProduct.inputFields?.find((field) => field.type === 'select' && field.name === 'package'),
     [safeProduct.inputFields]
   )
+
+  const isProviderBasedPricing = useMemo(() => {
+    const mode = String(safeProduct.providerMode || '').trim().toLowerCase()
+    if (mode === 'primary' || mode === 'secondary') return true
+    if (Array.isArray(packageField?.options) && packageField.options.length > 0) return true
+    return Array.isArray(safeProduct.providerLinks) && safeProduct.providerLinks.length > 0
+  }, [packageField?.options, safeProduct.providerLinks, safeProduct.providerMode])
 
   const countField = useMemo(
     () => safeProduct.inputFields?.find((field) => field.type === 'number' && field.name === 'count'),
@@ -99,7 +117,9 @@ export default function ProductDetails({ product, compact = false }: ProductDeta
     return packageField.options.map((raw) => {
       const source = String(raw)
       const [labelPart] = source.split(' - ')
-      const parsedPrice = parsePriceFromPackageOption(source, safeProduct.price)
+      const parsedPrice = isProviderBasedPricing
+        ? 0
+        : parsePriceFromPackageOption(source, safeProduct.price)
       const inStock = !isPackageOptionOutOfStock(source)
 
       return {
@@ -109,27 +129,54 @@ export default function ProductDetails({ product, compact = false }: ProductDeta
         inStock,
       }
     })
-  }, [packageField?.options, safeProduct.price])
+  }, [isProviderBasedPricing, packageField?.options, safeProduct.price])
 
-  const pricedPackageOptions = useMemo(
-    () =>
-      packageOptions.map((option) => ({
-        ...option,
-        effectivePrice: applyMarkup(option.price, productPercent, userPercent),
-      })),
-    [packageOptions, productPercent, userPercent]
-  )
+  const makePricingCacheKey = (slug: string, packageOption?: string) =>
+    `${String(slug || '').trim().toLowerCase()}|${String(packageOption || '__default__').trim()}`
 
   const [selectedPackage, setSelectedPackage] = useState<string>('')
 
   const firstAvailablePackage = useMemo(
-    () => pricedPackageOptions.find((option) => option.inStock) || null,
-    [pricedPackageOptions]
+    () => packageOptions.find((option) => option.inStock) || null,
+    [packageOptions]
   )
 
   const resolvedSelectedPackage =
-    pricedPackageOptions.find((option) => option.display === selectedPackage) || firstAvailablePackage || pricedPackageOptions[0]
-  const isPackageProduct = pricedPackageOptions.length > 0
+    packageOptions.find((option) => option.display === selectedPackage) || firstAvailablePackage || packageOptions[0]
+  const isPackageProduct = packageOptions.length > 0
+  const selectedPricingCacheKey = useMemo(
+    () =>
+      makePricingCacheKey(
+        safeProduct.slug,
+        isProviderBasedPricing && isPackageProduct && resolvedSelectedPackage?.display
+          ? resolvedSelectedPackage.display
+          : undefined
+      ),
+    [isPackageProduct, isProviderBasedPricing, resolvedSelectedPackage?.display, safeProduct.slug]
+  )
+  const selectedPricingSnapshot = pricingCache[selectedPricingCacheKey]
+
+  const pricedPackageOptions = useMemo(
+    () =>
+      packageOptions.map((option) => {
+        const cacheKey = makePricingCacheKey(
+          safeProduct.slug,
+          isPackageProduct ? option.display : undefined
+        )
+        const cached = pricingCache[cacheKey]
+        const cachedEffective = Number(cached?.effectivePrice || 0)
+        return {
+          ...option,
+          hasResolvedPrice:
+            !isProviderBasedPricing ||
+            (Number.isFinite(cachedEffective) && cachedEffective > 0),
+          effectivePrice: isProviderBasedPricing
+            ? (Number.isFinite(cachedEffective) && cachedEffective > 0 ? cachedEffective : 0)
+            : applyMarkup(option.price, productPercent, userPercent),
+        }
+      }),
+    [isPackageProduct, isProviderBasedPricing, packageOptions, pricingCache, productPercent, safeProduct.slug, userPercent]
+  )
   const isCountProduct = !isPackageProduct && Boolean(countField)
   const hasAvailablePackageOptions = !isPackageProduct || pricedPackageOptions.some((option) => option.inStock)
   const selectedPackageInStock = !isPackageProduct || Boolean(resolvedSelectedPackage?.inStock)
@@ -156,6 +203,11 @@ export default function ProductDetails({ product, compact = false }: ProductDeta
     setSuccess(false)
     setSuccessMessage('')
     setCreatedOrderDetails(null)
+  }, [safeProduct.slug])
+
+  useEffect(() => {
+    setPricingCache({})
+    pricingFetchInFlightRef.current = {}
   }, [safeProduct.slug])
 
   useEffect(() => {
@@ -191,36 +243,110 @@ export default function ProductDetails({ product, compact = false }: ProductDeta
       : 0
   const parsedBudgetValue = Number(budgetInput)
 
-  const unitPrice = isPackageProduct
+  const fallbackLocalUnitPrice = isPackageProduct
     ? (resolvedSelectedPackage?.price ?? safeProduct.price)
     : safeProduct.price
 
   useEffect(() => {
+    let cancelled = false
     const token = localStorage.getItem('bilycard_token')
 
+    const cacheKey = selectedPricingCacheKey
+    const cached = selectedPricingSnapshot
+
+    if (cached) {
+      setProductPercent(Number(cached.productPercent || 0))
+      setUserPercent(Number(cached.userPercent || 0))
+      setIsPricingReady(true)
+      setIsPriceLoading(false)
+      return () => {
+        cancelled = true
+      }
+    }
+
     const loadPricing = async () => {
+      setIsPriceLoading(true)
+      setIsPricingReady(false)
+
       try {
-        const slug = encodeURIComponent(String(safeProduct.slug || ''))
-        const res = await fetch(`/api/pricing/effective?slug=${slug}`, {
-          headers: token ? { Authorization: `Bearer ${token}` } : undefined,
-          cache: 'no-store',
-        })
+        const fetcher = async () => {
+          const slug = encodeURIComponent(String(safeProduct.slug || ''))
+          const packageParam =
+            isProviderBasedPricing && isPackageProduct && resolvedSelectedPackage?.display
+              ? `&packageOption=${encodeURIComponent(String(resolvedSelectedPackage.display))}`
+              : ''
+          const res = await fetch(`/api/pricing/effective?slug=${slug}${packageParam}`, {
+            headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+            cache: 'no-store',
+          })
 
-        const data = await res.json()
-        if (!res.ok || !data?.success) return
+          const data = await res.json()
+          if (!res.ok || !data?.success) {
+            return null
+          }
 
-        setProductPercent(Number(data.data?.productPercent || 0))
-        setUserPercent(Number(data.data?.userPercent || 0))
+          const snapshot: EffectivePricingSnapshot = {
+            effectivePrice: Number(data.data?.effectivePrice || 0),
+            basePrice: Number(data.data?.basePrice || 0),
+            productPercent: Number(data.data?.productPercent || 0),
+            userPercent: Number(data.data?.userPercent || 0),
+          }
+
+          return snapshot
+        }
+
+        const pending = pricingFetchInFlightRef.current[cacheKey]
+        const snapshot = pending
+          ? await pending
+          : await (pricingFetchInFlightRef.current[cacheKey] = fetcher())
+        delete pricingFetchInFlightRef.current[cacheKey]
+
+        if (!snapshot) {
+          if (!cancelled) {
+            setProductPercent(0)
+            setUserPercent(0)
+            setIsPricingReady(!isProviderBasedPricing)
+            setIsPriceLoading(false)
+          }
+          return
+        }
+
+        if (!cancelled && snapshot) {
+          setPricingCache((prev) => ({ ...prev, [cacheKey]: snapshot }))
+          setProductPercent(Number(snapshot.productPercent || 0))
+          setUserPercent(Number(snapshot.userPercent || 0))
+          setIsPricingReady(true)
+          setIsPriceLoading(false)
+        }
       } catch {
-        setProductPercent(0)
-        setUserPercent(0)
+        if (!cancelled) {
+          setProductPercent(0)
+          setUserPercent(0)
+          setIsPricingReady(!isProviderBasedPricing)
+          setIsPriceLoading(false)
+        }
       }
     }
 
     void loadPricing()
-  }, [safeProduct.slug])
+    return () => {
+      cancelled = true
+    }
+  }, [
+    isPackageProduct,
+    isProviderBasedPricing,
+    resolvedSelectedPackage?.display,
+    safeProduct.slug,
+    selectedPricingCacheKey,
+    selectedPricingSnapshot,
+  ])
 
-  const effectiveUnitPrice = applyMarkup(unitPrice, productPercent, userPercent)
+  const effectiveUnitPrice = isProviderBasedPricing
+    ? Number(selectedPricingSnapshot?.effectivePrice || 0)
+    : applyMarkup(fallbackLocalUnitPrice, productPercent, userPercent)
+  const showResolvedPrice = !isProviderBasedPricing || (isPricingReady && effectiveUnitPrice > 0)
+  const pricePlaceholderClass =
+    'inline-block h-6 min-w-[4.75rem] animate-pulse rounded-md bg-white/12 align-middle'
   const isInstantDelivery =
     String(safeProduct.deliveryTime || '').toLowerCase().includes('instant') ||
     String(safeProduct.deliveryTime || '').toLowerCase().includes('auto')
@@ -236,6 +362,7 @@ export default function ProductDetails({ product, compact = false }: ProductDeta
   const resolvedCountQuantity =
     isCountProduct && countMode === 'budget' ? budgetBasedQuantity : effectiveDisplayQuantity
   const totalPrice = effectiveUnitPrice * (isCountProduct ? resolvedCountQuantity : 1)
+  const totalPriceValue = showResolvedPrice ? totalPrice : null
   const descriptionText =
     safeProduct.shortDescription ||
     safeProduct.fullDescription ||
@@ -247,6 +374,11 @@ export default function ProductDetails({ product, compact = false }: ProductDeta
     const token = localStorage.getItem('bilycard_token')
     if (!token) {
       router.push('/login')
+      return
+    }
+
+    if (isProviderBasedPricing && (isPriceLoading || !isPricingReady)) {
+      setError('جاري تجهيز السعر النهائي، يرجى الانتظار لحظة.')
       return
     }
 
@@ -337,7 +469,7 @@ export default function ProductDetails({ product, compact = false }: ProductDeta
           productId: safeProduct._id || safeProduct.id,
           slug: safeProduct.slug,
           name: safeProduct.name,
-          price: unitPrice,
+          price: effectiveUnitPrice,
           playerId: playerId.trim(),
           packageOption: isPackageProduct ? resolvedSelectedPackage?.display : undefined,
           quantity: isCountProduct ? resolvedCountQuantity : 1,
@@ -518,7 +650,9 @@ export default function ProductDetails({ product, compact = false }: ProductDeta
                               )}
                             </div>
                             <div className={`mt-1 text-[11px] ${active ? 'text-amber-50/85' : option.inStock ? 'text-slate-400' : 'text-red-200/70'}`}>
-                              ${option.effectivePrice.toFixed(2)}
+                              {!isProviderBasedPricing || option.hasResolvedPrice
+                                ? `$${option.effectivePrice.toFixed(2)}`
+                                : <span className={pricePlaceholderClass} />}
                             </div>
                           </button>
                         )
@@ -635,7 +769,9 @@ export default function ProductDetails({ product, compact = false }: ProductDeta
                       <p className="mt-1 text-xs text-slate-400">كل تفاصيل المنتج واضحة داخل النافذة.</p>
                     </div>
                     <div className="text-right">
-                      <p className="text-xl font-black text-white">${totalPrice.toFixed(2)}</p>
+                      <p className="text-xl font-black text-white">
+                        {totalPriceValue != null ? `$${totalPriceValue.toFixed(2)}` : <span className={pricePlaceholderClass} />}
+                      </p>
                       <p className="text-xs text-slate-400">{safeProduct.deliveryTime || 'تسليم فوري'}</p>
                     </div>
                   </div>
@@ -671,7 +807,7 @@ export default function ProductDetails({ product, compact = false }: ProductDeta
 
                 <button
                   onClick={handleBuyNow}
-                  disabled={loading || !hasAvailablePackageOptions}
+                  disabled={loading || !hasAvailablePackageOptions || (isProviderBasedPricing && (isPriceLoading || !isPricingReady))}
                   className="flex-1 rounded-xl px-4 py-2.5 text-sm font-semibold text-white shadow-[0_14px_28px_rgba(37,99,235,0.22)] transition-all hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
                   style={{ background: 'linear-gradient(135deg, rgba(14,165,233,0.98), rgba(37,99,235,0.98))' }}
                 >
@@ -734,7 +870,9 @@ export default function ProductDetails({ product, compact = false }: ProductDeta
                   </div>
                   <div className="mt-2 flex justify-between border-t border-white/10 pt-2">
                     <span className="font-semibold text-slate-300">الإجمالي</span>
-                    <span className="text-lg font-bold text-cyan-400">${totalPrice.toFixed(2)}</span>
+                    <span className="text-lg font-bold text-cyan-400">
+                      {totalPriceValue != null ? `$${totalPriceValue.toFixed(2)}` : <span className={pricePlaceholderClass} />}
+                    </span>
                   </div>
                 </div>
               </div>
@@ -748,7 +886,7 @@ export default function ProductDetails({ product, compact = false }: ProductDeta
                 </button>
                 <button
                   onClick={handleConfirm}
-                  disabled={loading || !hasAvailablePackageOptions || !selectedPackageInStock}
+                  disabled={loading || !hasAvailablePackageOptions || !selectedPackageInStock || (isProviderBasedPricing && (isPriceLoading || !isPricingReady))}
                   className="flex-1 rounded-lg bg-cyan-500 px-4 py-2 font-semibold text-black transition-colors hover:bg-cyan-400 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   {loading ? 'جاري المعالجة...' : (
@@ -807,8 +945,10 @@ export default function ProductDetails({ product, compact = false }: ProductDeta
           <div className="mb-4 rounded-[18px] border border-cyan-400/15 bg-[linear-gradient(135deg,rgba(34,211,238,0.12),rgba(15,23,42,0.24))] p-3.5 sm:p-4">
             <p className="mb-2 text-xs font-medium uppercase tracking-[0.26em] text-slate-400">يبدأ من</p>
             <div className="flex items-baseline gap-3">
-              <div className="text-2xl font-bold sm:text-3xl">${effectiveUnitPrice.toFixed(2)}</div>
-              {safeProduct.startingPrice && safeProduct.startingPrice > safeProduct.price && (
+              <div className="text-2xl font-bold sm:text-3xl">
+                {showResolvedPrice ? `$${effectiveUnitPrice.toFixed(2)}` : <span className={pricePlaceholderClass} />}
+              </div>
+              {showResolvedPrice && safeProduct.startingPrice && safeProduct.startingPrice > safeProduct.price && (
                 <div className="text-lg text-slate-500 line-through">
                   ${safeProduct.startingPrice.toFixed(2)}
                 </div>
@@ -852,7 +992,7 @@ export default function ProductDetails({ product, compact = false }: ProductDeta
                             </div>
                           </div>
                           <div className="text-sm font-semibold text-cyan-300">
-                            ${Number(child.startingPrice ?? child.price).toFixed(2)}
+                            {showResolvedPrice ? `$${Number(child.startingPrice ?? child.price).toFixed(2)}` : <span className={pricePlaceholderClass} />}
                           </div>
                         </div>
                       </button>
@@ -898,7 +1038,9 @@ export default function ProductDetails({ product, compact = false }: ProductDeta
                         <div className={`text-xs ${option.inStock ? 'text-slate-400' : 'text-red-200/70'}`}>الباقة</div>
                         <div className="truncate text-sm font-semibold">{option.label}</div>
                         <div className={`mt-1 text-sm ${option.inStock ? 'text-cyan-300' : 'text-red-200/80'}`}>
-                          ${option.effectivePrice.toFixed(2)}
+                          {!isProviderBasedPricing || option.hasResolvedPrice
+                            ? `$${option.effectivePrice.toFixed(2)}`
+                            : <span className={pricePlaceholderClass} />}
                         </div>
                         {!option.inStock && (
                           <div className="mt-1 text-[11px] font-medium uppercase tracking-[0.16em] text-red-200">
@@ -1014,7 +1156,9 @@ export default function ProductDetails({ product, compact = false }: ProductDeta
             <div className="rounded-[18px] border border-white/10 bg-white/[0.03] px-3.5 py-3.5">
               <div className="flex items-center justify-between">
                 <span className="text-slate-400">السعر الإجمالي:</span>
-                <span className="text-xl font-bold text-cyan-400">${totalPrice.toFixed(2)}</span>
+                <span className="text-xl font-bold text-cyan-400">
+                  {totalPriceValue != null ? `$${totalPriceValue.toFixed(2)}` : <span className={pricePlaceholderClass} />}
+                </span>
               </div>
             </div>
           </div>
@@ -1040,7 +1184,7 @@ export default function ProductDetails({ product, compact = false }: ProductDeta
           <div className="mt-4 flex gap-2">
             <button
               onClick={handleBuyNow}
-              disabled={loading || !hasAvailablePackageOptions}
+              disabled={loading || !hasAvailablePackageOptions || (isProviderBasedPricing && (isPriceLoading || !isPricingReady))}
               className="flex-1 rounded-xl bg-cyan-500 px-4 py-2.5 text-sm font-semibold text-black transition-colors hover:bg-cyan-400 disabled:cursor-not-allowed disabled:opacity-50"
             >
               {loading ? 'جاري المعالجة...' : hasAvailablePackageOptions ? 'اشترِ الآن' : 'غير متوفر حالياً'}
@@ -1108,7 +1252,9 @@ export default function ProductDetails({ product, compact = false }: ProductDeta
                 </div>
                 <div className="mt-2 flex justify-between border-t border-white/10 pt-2">
                   <span className="font-semibold text-slate-300">الإجمالي</span>
-                  <span className="text-lg font-bold text-cyan-400">${totalPrice.toFixed(2)}</span>
+                  <span className="text-lg font-bold text-cyan-400">
+                    {totalPriceValue != null ? `$${totalPriceValue.toFixed(2)}` : <span className={pricePlaceholderClass} />}
+                  </span>
                 </div>
               </div>
             </div>
@@ -1122,7 +1268,7 @@ export default function ProductDetails({ product, compact = false }: ProductDeta
               </button>
               <button
                 onClick={handleConfirm}
-                disabled={loading || !hasAvailablePackageOptions || !selectedPackageInStock}
+                disabled={loading || !hasAvailablePackageOptions || !selectedPackageInStock || (isProviderBasedPricing && (isPriceLoading || !isPricingReady))}
                 className="flex-1 rounded-lg bg-cyan-500 px-4 py-2 font-semibold text-black transition-colors hover:bg-cyan-400 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {loading ? 'جاري المعالجة...' : (
@@ -1145,4 +1291,3 @@ export default function ProductDetails({ product, compact = false }: ProductDeta
     </main>
   )
 }
-

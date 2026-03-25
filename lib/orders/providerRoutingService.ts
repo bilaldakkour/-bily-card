@@ -433,6 +433,8 @@ async function selectBestProviderFromProductLinks(input: {
         },
       ])
     ),
+    requireExecutionEnabled: true,
+    requireFreshCost: true,
   })
 
   if (!eligibleLinks.length) {
@@ -512,10 +514,16 @@ async function selectBestProviderFromProductLinks(input: {
       }
 
       const profile = profileByKey.get(providerKey) || null
-      const rawUnitCost =
-        String(link.priceSource || 'provider') === 'manual' && Number(link.manualCost || 0) > 0
-          ? Number(link.manualCost || 0)
-          : quote.unitCost
+      const providerLastCost = Number((link as any).lastCost)
+      const providerLastKnownCost = Number((link as any).lastKnownCost)
+      const rawUnitCost = (() => {
+        if (String(link.priceSource || 'provider') === 'manual' && Number(link.manualCost || 0) > 0) {
+          return Number(link.manualCost || 0)
+        }
+        if (Number.isFinite(providerLastCost) && providerLastCost > 0) return providerLastCost
+        if (Number.isFinite(providerLastKnownCost) && providerLastKnownCost > 0) return providerLastKnownCost
+        return quote.unitCost
+      })()
       const effectiveUnitCost = getEffectiveProviderCost({
         rawProviderCost: rawUnitCost,
         settlementRate: Number(profile?.financial?.landingRate || 1),
@@ -617,10 +625,11 @@ export async function selectBestProviderForProduct(input: {
   routingMode?: ProductRoutingMode
 }) {
   const mode = normalizeProductProviderMode(input.providerMode)
+  const baseAttempts: RoutingAttempt[] = []
   if (mode === 'manual') {
     return {
       candidates: [] as RoutingCandidate[],
-      attempts: [] as RoutingAttempt[],
+      attempts: baseAttempts,
       reason: 'manual_mode',
     }
   }
@@ -633,10 +642,11 @@ export async function selectBestProviderForProduct(input: {
     providerLinks: input.providerLinks,
     routingMode: input.routingMode,
   })
-  if (linksSelection.hasConfig) {
+  baseAttempts.push(...linksSelection.attempts)
+  if (linksSelection.hasConfig && linksSelection.candidates.length > 0) {
     return {
       candidates: linksSelection.candidates,
-      attempts: linksSelection.attempts,
+      attempts: baseAttempts,
       reason: linksSelection.reason,
       selectionMode: linksSelection.routingMode === 'priority' ? 'product_links_priority' : 'product_links_cheapest',
     }
@@ -649,9 +659,10 @@ export async function selectBestProviderForProduct(input: {
       packageOption: input.packageOption,
     })
     if (advanced.hasConfig) {
+      baseAttempts.push(...advanced.attempts)
       return {
         candidates: advanced.candidates,
-        attempts: advanced.attempts,
+        attempts: baseAttempts,
         reason: advanced.reason,
         selectionMode: advanced.routingMode,
       }
@@ -671,7 +682,7 @@ export async function selectBestProviderForProduct(input: {
   if (!allowedSlots.length) {
     return {
       candidates: [] as RoutingCandidate[],
-      attempts: [] as RoutingAttempt[],
+      attempts: baseAttempts,
       reason: 'no_enabled_provider',
     }
   }
@@ -723,13 +734,13 @@ export async function selectBestProviderForProduct(input: {
   if (!rawCandidates.length) {
     return {
       candidates: [] as RoutingCandidate[],
-      attempts: [] as RoutingAttempt[],
+      attempts: baseAttempts,
       reason: 'no_mapping',
     }
   }
 
   const quotedCandidates: RoutingCandidate[] = []
-  const attempts: RoutingAttempt[] = []
+  const attempts: RoutingAttempt[] = [...baseAttempts]
   const seenCandidates = new Set<string>()
 
   const quoteWorkLegacy: Array<{ candidate: typeof rawCandidates[number]; adapter: ProviderAdapter }> = []

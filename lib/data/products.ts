@@ -7,13 +7,19 @@ export interface ProductProviderLink {
   providerCode: string;
   providerProductId: string;
   enabled?: boolean;
+  executionEnabled?: boolean;
+  priceSyncEnabled?: boolean;
   priority?: number;
   priceSource?: 'provider' | 'manual';
   manualCost?: number;
   lastKnownCost?: number;
+  lastCost?: number;
   providerAvailability?: 'unknown' | 'available' | 'unavailable';
+  healthStatus?: 'unknown' | 'healthy' | 'degraded' | 'unhealthy';
+  lastError?: string;
   fallbackEnabled?: boolean;
   providerProductName?: string;
+  variantKey?: string;
   lastSyncAt?: string;
 }
 

@@ -44,6 +44,7 @@ import {
   type ProductProviderMode,
 } from '@/lib/products/providerMode'
 import { isProductAvailable } from '@/lib/products/stock'
+import type { ProductProviderLink } from '@/lib/data/products'
 import { sendAdminNotification } from '@/lib/services/adminNotificationService'
 import { enforceRateLimit } from '@/lib/utils/rateLimit'
 import { isTestModeEnabled, logTestMode } from '@/lib/utils/testMode'
@@ -239,6 +240,107 @@ async function getExplicitManualCustomCostPrice(slug: string): Promise<number | 
   }
 
   return costPrice
+}
+
+function normalizeVariantKey(value: unknown) {
+  return String(value || '')
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, ' ')
+    .replace(/[^a-z0-9 ]+/g, '')
+    .trim()
+}
+
+function resolveVariantKeyFromPackageOption(option?: string) {
+  const raw = String(option || '').trim()
+  if (!raw) return '__default__'
+  const [pipeLeft] = raw.split('|')
+  const [dashLeft] = String(pipeLeft || raw).split(' - ')
+  return normalizeVariantKey(dashLeft || pipeLeft || raw) || '__default__'
+}
+
+function normalizeProviderLinks(value: unknown): ProductProviderLink[] {
+  if (!Array.isArray(value)) return []
+  const rows: ProductProviderLink[] = []
+  const seen = new Set<string>()
+  for (const raw of value as Array<Record<string, unknown>>) {
+    const providerCode = String(raw?.providerCode || '').trim().toLowerCase()
+    const providerProductId = String(raw?.providerProductId || '').trim()
+    if (!providerCode || !providerProductId) continue
+    const dedupe = `${providerCode}|${providerProductId.toLowerCase()}`
+    if (seen.has(dedupe)) continue
+    seen.add(dedupe)
+    rows.push({
+      providerCode,
+      providerProductId,
+      providerProductName: String(raw?.providerProductName || '').trim() || undefined,
+      enabled: raw?.enabled !== false,
+      executionEnabled: raw?.executionEnabled !== false,
+      priceSyncEnabled: raw?.priceSyncEnabled !== false,
+      priority: Number.isFinite(Number(raw?.priority)) ? Number(raw?.priority) : 100,
+      priceSource: String(raw?.priceSource || '').toLowerCase() === 'manual' ? 'manual' : 'provider',
+      manualCost: Number.isFinite(Number(raw?.manualCost)) ? Number(raw?.manualCost) : undefined,
+      lastKnownCost: Number.isFinite(Number(raw?.lastKnownCost)) ? Number(raw?.lastKnownCost) : undefined,
+      lastCost: Number.isFinite(Number(raw?.lastCost)) ? Number(raw?.lastCost) : undefined,
+      providerAvailability:
+        String(raw?.providerAvailability || '').toLowerCase() === 'available'
+          ? 'available'
+          : String(raw?.providerAvailability || '').toLowerCase() === 'unavailable'
+            ? 'unavailable'
+            : 'unknown',
+      healthStatus:
+        String(raw?.healthStatus || '').toLowerCase() === 'healthy'
+          ? 'healthy'
+          : String(raw?.healthStatus || '').toLowerCase() === 'degraded'
+            ? 'degraded'
+            : String(raw?.healthStatus || '').toLowerCase() === 'unhealthy'
+              ? 'unhealthy'
+              : 'unknown',
+      fallbackEnabled: raw?.fallbackEnabled !== false,
+      lastError: String(raw?.lastError || '').trim() || undefined,
+      variantKey: String(raw?.variantKey || '').trim().toLowerCase() || undefined,
+      lastSyncAt: raw?.lastSyncAt ? String(raw.lastSyncAt) : undefined,
+    })
+  }
+  return rows
+}
+
+async function getScopedProviderLinksForOrder(input: {
+  slug: string
+  packageOption?: string
+  fallbackLinks?: ProductProviderLink[]
+}) {
+  const normalizedSlug = String(input.slug || '').trim().toLowerCase()
+  if (!normalizedSlug) return Array.isArray(input.fallbackLinks) ? input.fallbackLinks : []
+
+  const custom = (await CustomProduct.findOne({ slug: normalizedSlug, active: true })
+    .select('providerLinks packageOptions.providerLinks packageOptions.key packageOptions.label')
+    .lean()) as
+    | {
+        providerLinks?: ProductProviderLink[]
+        packageOptions?: Array<{ key?: string; label?: string; providerLinks?: ProductProviderLink[] }>
+      }
+    | null
+
+  if (!custom) return Array.isArray(input.fallbackLinks) ? input.fallbackLinks : []
+
+  const variantKey = resolveVariantKeyFromPackageOption(input.packageOption)
+  const packageRows = Array.isArray(custom.packageOptions) ? custom.packageOptions : []
+  const matchedVariant = packageRows.find((pkg) => {
+    const key = normalizeVariantKey(pkg?.key || pkg?.label || '')
+    return key && key === variantKey
+  })
+  const variantLinks = normalizeProviderLinks(matchedVariant?.providerLinks)
+  if (variantLinks.length > 0) return variantLinks
+
+  const productLinks = normalizeProviderLinks(custom.providerLinks)
+  if (variantKey === '__default__') {
+    return productLinks
+  }
+
+  const scoped = productLinks.filter((link) => normalizeVariantKey(link.variantKey || '') === variantKey)
+  if (scoped.length > 0) return scoped
+  return productLinks
 }
 
 function normalizeText(value: string) {
@@ -1253,6 +1355,7 @@ export async function POST(request: NextRequest) {
     const pricing = await getEffectivePriceForProduct({
       slug,
       fallbackPrice: price,
+      packageOption: packageOption || undefined,
       userId: user.userId,
     })
 
@@ -1479,7 +1582,11 @@ export async function POST(request: NextRequest) {
         productName: name,
         packageOption: packageOption || undefined,
         providerMode: productProviderMode,
-        providerLinks: Array.isArray(catalogProduct?.providerLinks) ? catalogProduct?.providerLinks : [],
+        providerLinks: await getScopedProviderLinksForOrder({
+          slug,
+          packageOption: packageOption || undefined,
+          fallbackLinks: Array.isArray(catalogProduct?.providerLinks) ? catalogProduct?.providerLinks : [],
+        }),
         routingMode: catalogProduct?.routingMode === 'priority' ? 'priority' : 'cheapest',
         orderId,
         playerId: cleanPlayerId,

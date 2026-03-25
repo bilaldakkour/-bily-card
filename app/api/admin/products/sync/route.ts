@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withAdminAuth } from '@/lib/auth/middleware';
 import { connectDB } from '@/lib/db/mongodb';
-import Product from '@/lib/models/Product';
 import CustomProduct from '@/lib/models/CustomProduct';
 import ProductProviderMapping from '@/lib/models/ProductProviderMapping';
 import ProviderProductReview from '@/lib/models/ProviderProductReview';
+import ProviderRegistry from '@/lib/models/ProviderRegistry';
 import { getCatalogProducts } from '@/lib/data/catalogProducts';
 import { getEnabledProviderAdapters } from '@/lib/providers/registry';
 import { classifyProviderProduct, buildUniqueSlugBase } from '@/lib/providers/classification';
@@ -12,21 +12,12 @@ import { JWTPayload } from '@/lib/types';
 import { handleError } from '@/lib/utils/errors';
 
 let syncInFlightUntil = 0
+const ENABLE_PROVIDER_OWNED_PRODUCT_WRITES =
+  String(process.env.ENABLE_PROVIDER_OWNED_PRODUCT_WRITES || 'false').trim().toLowerCase() ===
+  'true';
 
 function normalizeText(value: unknown) {
   return String(value || '').toLowerCase().replace(/\s+/g, ' ').trim();
-}
-
-function buildProviderProductSlug(input: { slot: string; providerProductId: string; productName?: string }) {
-  const slot = String(input.slot || 'provider').toLowerCase()
-  const providerId = String(input.providerProductId || '').trim().toLowerCase()
-  const name = String(input.productName || '')
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '')
-    .slice(0, 48)
-  const idPart = providerId.replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'unknown'
-  return `${slot}-${name || 'product'}-${idPart}`.replace(/-+/g, '-').slice(0, 95)
 }
 
 function deriveStockNumber(status: string) {
@@ -66,9 +57,20 @@ async function handler(
     const byName = new Map(
       catalogProducts.map((product) => [normalizeText(product.name), product])
     );
-    const adapters = getEnabledProviderAdapters().filter((adapter) =>
-      providerSlot ? adapter.slot === providerSlot : true
+    const registryRows = await ProviderRegistry.find({
+      enabled: true,
+      'routing.allowSync': { $ne: false },
+    })
+      .select('providerKey')
+      .lean();
+    const enabledProviderKeys = new Set(
+      (registryRows as any[]).map((row) => String(row?.providerKey || '').trim().toLowerCase())
     );
+
+    const adapters = getEnabledProviderAdapters().filter((adapter) => {
+      if (providerSlot && adapter.slot !== providerSlot) return false;
+      return enabledProviderKeys.has(String(adapter.key || '').trim().toLowerCase());
+    });
 
     if (!adapters.length) {
       return NextResponse.json(
@@ -125,7 +127,6 @@ async function handler(
 
       for (const prod of providerProducts) {
         const providerProductId = String(prod.providerProductId || '').trim();
-        const providerScopedId = `${adapter.slot}:${providerProductId}`;
         if (!providerProductId) continue;
         if (seenProviderIds.has(providerProductId)) continue;
         seenProviderIds.add(providerProductId);
@@ -195,6 +196,7 @@ async function handler(
         }
 
         if (
+          ENABLE_PROVIDER_OWNED_PRODUCT_WRITES &&
           adapter.slot === 'secondary' &&
           classification.classification === 'new_unique_products'
         ) {
@@ -273,56 +275,9 @@ async function handler(
           }
         }
 
-        if (mode !== 'mappings_only') {
-          const existingProduct = await Product.findOne({
-            providerProductId: providerScopedId,
-          });
-
-          if (existingProduct) {
-            if (!String((existingProduct as any).slug || '').trim()) {
-              ;(existingProduct as any).slug = buildProviderProductSlug({
-                slot: adapter.slot,
-                providerProductId,
-                productName: prod.displayName || prod.providerProductName || providerScopedId,
-              })
-            }
-            existingProduct.productName = prod.displayName || prod.providerProductName || existingProduct.productName;
-            if (mode !== 'stock_only') {
-              existingProduct.costPrice = Number.isFinite(cost) && cost >= 0 ? cost : existingProduct.costPrice;
-              existingProduct.providerRawPrice = Number.isFinite(cost) && cost >= 0 ? cost : 0;
-            }
-            existingProduct.category = String(prod.category || existingProduct.category || 'general');
-            existingProduct.providerRawName = prod.providerProductName || prod.displayName || '';
-            if (mode !== 'costs_only') {
-              existingProduct.stock = deriveStockNumber(prod.stockStatus);
-            }
-            existingProduct.lastSyncedAt = new Date();
-            await existingProduct.save();
-            updatedCount++;
-          } else if (mode === 'all') {
-            const newProduct = new Product({
-              slug: buildProviderProductSlug({
-                slot: adapter.slot,
-                providerProductId,
-                productName: prod.displayName || prod.providerProductName || providerScopedId,
-              }),
-              providerProductId: providerScopedId,
-              productName: prod.displayName || prod.providerProductName || providerScopedId,
-              gameName: prod.category || 'General',
-              category: String(prod.category || 'general'),
-              costPrice: Number.isFinite(cost) && cost >= 0 ? cost : 0,
-              sellingPrice: Number.isFinite(cost) && cost >= 0 ? Number((cost * 1.2).toFixed(6)) : 0,
-              activeStatus: false,
-              isFeatured: false,
-              image: prod.image || '',
-              providerRawName: prod.providerProductName || prod.displayName || '',
-              providerRawPrice: Number.isFinite(cost) && cost >= 0 ? cost : 0,
-              stock: deriveStockNumber(prod.stockStatus),
-              lastSyncedAt: new Date(),
-            });
-            await newProduct.save();
-            syncedCount++;
-          }
+        if (mode !== 'mappings_only' && ENABLE_PROVIDER_OWNED_PRODUCT_WRITES) {
+          // Legacy provider-owned catalog writes are intentionally disabled by default.
+          // Keep this gate for emergency rollback only.
         }
 
         const canAutoMap =

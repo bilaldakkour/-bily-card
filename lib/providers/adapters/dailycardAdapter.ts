@@ -20,6 +20,15 @@ import type {
 type RawProviderProduct = {
   id?: number | string
   product_id?: number | string
+  productId?: number | string
+  provider_product_id?: number | string
+  providerProductId?: number | string
+  code?: string
+  product_code?: string
+  sku?: string
+  slug?: string
+  product_slug?: string
+  external_id?: string
   name?: string
   game?: string
   category?: string
@@ -33,6 +42,37 @@ type RawProviderProduct = {
   cost?: number | string
   unit_price?: number | string
   selling_price?: number | string
+  variants?: RawProviderVariant[]
+  packages?: RawProviderVariant[]
+  options?: RawProviderVariant[]
+  denominations?: RawProviderVariant[]
+  package_options?: RawProviderVariant[]
+}
+
+type RawProviderVariant = {
+  id?: number | string
+  product_id?: number | string
+  productId?: number | string
+  provider_product_id?: number | string
+  providerProductId?: number | string
+  code?: string
+  product_code?: string
+  sku?: string
+  slug?: string
+  product_slug?: string
+  external_id?: string
+  name?: string
+  title?: string
+  label?: string
+  option?: string
+  value?: string
+  price?: number | string
+  cost?: number | string
+  unit_price?: number | string
+  selling_price?: number | string
+  stock_status?: string
+  available?: boolean
+  active?: boolean
 }
 
 function normalizeText(value: unknown) {
@@ -140,8 +180,29 @@ function parseProductsPayload(payload: unknown): RawProviderProduct[] {
 }
 
 function extractProviderProductId(item: RawProviderProduct): string {
-  const candidates = [item?.id, item?.product_id]
-  for (const candidate of candidates) {
+  // Prefer real external/provider identifiers over numeric DB ids.
+  const preferredCandidates = [
+    item?.providerProductId,
+    item?.provider_product_id,
+    item?.productId,
+    item?.product_code,
+    item?.code,
+    item?.sku,
+    item?.product_slug,
+    item?.slug,
+    item?.external_id,
+  ]
+
+  for (const candidate of preferredCandidates) {
+    const normalized = String(candidate || '').trim()
+    if (!normalized) continue
+    // Most real provider IDs are not plain small integers.
+    if (!/^\d+$/.test(normalized)) return normalized
+  }
+
+  // Fallback to numeric identifiers only when nothing better exists.
+  const fallbackCandidates = [item?.id, item?.product_id]
+  for (const candidate of fallbackCandidates) {
     const normalized = String(candidate || '').trim()
     if (normalized) return normalized
   }
@@ -155,6 +216,63 @@ function extractUnitCost(item: RawProviderProduct): number {
     item?.price,
     item?.selling_price,
   ]
+  for (const value of candidates) {
+    const next = toPositiveNumber(value)
+    if (next > 0) return next
+  }
+  return 0
+}
+
+function extractVariantRows(item: RawProviderProduct): RawProviderVariant[] {
+  const candidates = [
+    item?.variants,
+    item?.packages,
+    item?.options,
+    item?.denominations,
+    item?.package_options,
+  ]
+  for (const entry of candidates) {
+    if (Array.isArray(entry) && entry.length > 0) return entry
+  }
+  return []
+}
+
+function extractVariantId(variant: RawProviderVariant): string {
+  const preferred = [
+    variant?.providerProductId,
+    variant?.provider_product_id,
+    variant?.productId,
+    variant?.product_code,
+    variant?.code,
+    variant?.sku,
+    variant?.product_slug,
+    variant?.slug,
+    variant?.external_id,
+  ]
+  for (const candidate of preferred) {
+    const normalized = String(candidate || '').trim()
+    if (!normalized) continue
+    if (!/^\d+$/.test(normalized)) return normalized
+  }
+  const fallback = [variant?.id, variant?.product_id]
+  for (const candidate of fallback) {
+    const normalized = String(candidate || '').trim()
+    if (normalized) return normalized
+  }
+  return ''
+}
+
+function extractVariantName(variant: RawProviderVariant): string {
+  const candidates = [variant?.name, variant?.title, variant?.label, variant?.option, variant?.value]
+  for (const candidate of candidates) {
+    const normalized = String(candidate || '').trim()
+    if (normalized) return normalized
+  }
+  return ''
+}
+
+function extractVariantUnitCost(variant: RawProviderVariant): number {
+  const candidates = [variant?.cost, variant?.unit_price, variant?.price, variant?.selling_price]
   for (const value of candidates) {
     const next = toPositiveNumber(value)
     if (next > 0) return next
@@ -212,7 +330,15 @@ export class DailyCardProviderAdapter implements ProviderAdapter {
   }
 
   async fetchProducts(search?: string): Promise<UnifiedInternalProduct[]> {
-    if (!this.isAvailable()) return []
+    console.log('Calling DailyCard fetchProducts...')
+    if (!this.isAvailable()) {
+      console.log('DailyCard fetchProducts blocked: adapter isAvailable=false')
+      console.log('DailyCard API URL:', this.config.base || '')
+      console.log('DailyCard API token configured:', Boolean(this.config.key && this.config.secret))
+      console.log('DailyCard timeout(ms):', 60000)
+      console.log('DailyCard response format keys:', [])
+      return []
+    }
 
     const debugSearch = Boolean(search) || process.env.PROVIDER_SEARCH_DEBUG === '1'
     const endpointCandidates = [`${this.config.base}/products/`, `${this.config.base}/products`]
@@ -315,28 +441,91 @@ export class DailyCardProviderAdapter implements ProviderAdapter {
       }
     }
 
-    return rows.map((item) => {
+    if (!rows.length) {
+      console.log('DailyCard fetchProducts returned 0 rows')
+      console.log('DailyCard API URL:', this.config.base || '')
+      console.log('DailyCard API token configured:', Boolean(this.config.key && this.config.secret))
+      console.log('DailyCard timeout(ms):', 60000)
+      const payloadKeys =
+        payload && typeof payload === 'object' ? Object.keys(payload as Record<string, unknown>) : []
+      console.log('DailyCard response format keys:', payloadKeys)
+    }
+
+    const mappedRows: UnifiedInternalProduct[] = []
+
+    for (const item of rows) {
+      const productName = String(item?.name || '').trim()
+      const baseCategory = String(item?.category || item?.game || '')
+      const baseImage = String(item?.image || '')
+      const baseDelivery = String(item?.delivery_type || 'instant')
+      const baseActive = item?.active !== false
+      const baseStockStatus =
+        item?.available === false ? 'out_of_stock' : normalizeStockStatus(item?.stock_status)
+      const variantRows = extractVariantRows(item)
+
+      let hasVariantOutput = false
+      if (variantRows.length > 0) {
+        for (const variant of variantRows) {
+          const variantId = extractVariantId(variant)
+          if (!variantId) continue
+          const variantLabel = extractVariantName(variant)
+          const variantCost = extractVariantUnitCost(variant) || extractUnitCost(item)
+          const variantStock =
+            variant?.available === false
+              ? 'out_of_stock'
+              : normalizeStockStatus(variant?.stock_status) || baseStockStatus
+          const normalizedVariantRow: UnifiedInternalProduct = {
+            internalSlug: '',
+            provider: this.slot,
+            providerProductId: variantId,
+            providerProductName: productName,
+            displayName: variantLabel ? `${productName} - ${variantLabel}` : productName,
+            category: baseCategory,
+            image: baseImage,
+            cost: variantCost,
+            currency: 'USD',
+            stockStatus: variantStock,
+            deliveryType: baseDelivery,
+            active: variant?.active !== false && baseActive,
+            metadata: {
+              rawId: item?.id,
+              rawProductId: item?.product_id,
+              variantLabel: variantLabel || undefined,
+              variantId,
+            },
+          }
+          console.log('DailyCard ID:', normalizedVariantRow.providerProductId, normalizedVariantRow.providerProductName)
+          mappedRows.push(normalizedVariantRow)
+          hasVariantOutput = true
+        }
+      }
+
+      if (hasVariantOutput) continue
+
       const providerProductId = extractProviderProductId(item)
-      const stockStatus = item?.available === false ? 'out_of_stock' : normalizeStockStatus(item?.stock_status)
-      return {
+      const normalizedRow: UnifiedInternalProduct = {
         internalSlug: '',
         provider: this.slot,
         providerProductId,
-        providerProductName: String(item?.name || ''),
-        displayName: String(item?.name || ''),
-        category: String(item?.category || item?.game || ''),
-        image: String(item?.image || ''),
+        providerProductName: productName,
+        displayName: productName,
+        category: baseCategory,
+        image: baseImage,
         cost: extractUnitCost(item),
         currency: 'USD',
-        stockStatus,
-        deliveryType: String(item?.delivery_type || 'instant'),
-        active: item?.active !== false,
+        stockStatus: baseStockStatus,
+        deliveryType: baseDelivery,
+        active: baseActive,
         metadata: {
           rawId: item?.id,
           rawProductId: item?.product_id,
         },
       }
-    })
+      console.log('DailyCard ID:', normalizedRow.providerProductId, normalizedRow.providerProductName)
+      mappedRows.push(normalizedRow)
+    }
+
+    return mappedRows
   }
 
   async resolveProductQuote(params: {

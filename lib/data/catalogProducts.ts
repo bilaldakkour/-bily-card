@@ -47,6 +47,8 @@ type LeanCustomProduct = {
   deliveryTime?: string;
   tags?: string[];
   providerMode?: ProductProviderMode;
+  profitMarginPercent?: number;
+  roundingRule?: string;
   routingMode?: ProductRoutingMode;
   providerLinks?: ProductProviderLink[];
 };
@@ -69,12 +71,24 @@ type LeanProductOverride = {
   featured?: boolean;
   bestSeller?: boolean;
   providerMode?: ProductProviderMode;
+  profitMarginPercent?: number;
+  roundingRule?: string;
   routingMode?: ProductRoutingMode;
   providerLinks?: ProductProviderLink[];
 };
 
 const DEFAULT_PRODUCT_IMAGE = '/favicon.png';
 const CATALOG_CACHE_TTL_MS = process.env.NODE_ENV === 'development' ? 0 : 15_000;
+
+type CatalogSourceMode = 'manual_only' | 'hybrid' | 'legacy_only';
+
+function getCatalogSourceMode(): CatalogSourceMode {
+  const value = String(process.env.CATALOG_SOURCE_MODE || 'hybrid')
+    .trim()
+    .toLowerCase();
+  if (value === 'hybrid' || value === 'legacy_only') return value;
+  return 'manual_only';
+}
 
 let cachedCatalogProducts: CatalogProduct[] | null = null;
 let cachedCatalogProductsExpiresAt = 0;
@@ -139,17 +153,30 @@ function normalizeProviderLinks(value: unknown): ProductProviderLink[] {
       providerProductId,
       providerProductName: String(raw?.providerProductName || '').trim() || undefined,
       enabled: raw?.enabled !== false,
+      executionEnabled: raw?.executionEnabled !== false,
+      priceSyncEnabled: raw?.priceSyncEnabled !== false,
       priority: Number.isFinite(Number(raw?.priority)) ? Number(raw?.priority) : 100,
       priceSource: String(raw?.priceSource || '').toLowerCase() === 'manual' ? 'manual' : 'provider',
       manualCost: Number.isFinite(Number(raw?.manualCost)) ? Number(raw?.manualCost) : undefined,
       lastKnownCost: Number.isFinite(Number(raw?.lastKnownCost)) ? Number(raw?.lastKnownCost) : undefined,
+      lastCost: Number.isFinite(Number(raw?.lastCost)) ? Number(raw?.lastCost) : undefined,
       providerAvailability:
         String(raw?.providerAvailability || '').toLowerCase() === 'available'
           ? 'available'
           : String(raw?.providerAvailability || '').toLowerCase() === 'unavailable'
             ? 'unavailable'
             : 'unknown',
+      healthStatus:
+        String(raw?.healthStatus || '').toLowerCase() === 'healthy'
+          ? 'healthy'
+          : String(raw?.healthStatus || '').toLowerCase() === 'degraded'
+            ? 'degraded'
+            : String(raw?.healthStatus || '').toLowerCase() === 'unhealthy'
+              ? 'unhealthy'
+              : 'unknown',
       fallbackEnabled: raw?.fallbackEnabled !== false,
+      lastError: String(raw?.lastError || '').trim() || undefined,
+      variantKey: String(raw?.variantKey || '').trim().toLowerCase() || undefined,
       lastSyncAt: raw?.lastSyncAt ? String(raw.lastSyncAt) : undefined,
     });
   }
@@ -349,10 +376,15 @@ export async function getCatalogProducts(): Promise<CatalogProduct[]> {
     }
 
     await connectDB();
+    const sourceMode = getCatalogSourceMode();
+    const includeLegacyCatalog = sourceMode !== 'manual_only';
+    const includeCustomCatalog = sourceMode !== 'legacy_only';
 
-    const customProducts = (await CustomProduct.find({ active: true })
-      .sort({ createdAt: -1 })
-      .lean()) as LeanCustomProduct[];
+    const customProducts = includeCustomCatalog
+      ? ((await CustomProduct.find({ active: true })
+          .sort({ createdAt: -1 })
+          .lean()) as LeanCustomProduct[])
+      : [];
     const customSlugSet = new Set(
       customProducts.map((product) => String(product.slug || '').trim().toLowerCase()).filter(Boolean)
     );
@@ -376,35 +408,39 @@ export async function getCatalogProducts(): Promise<CatalogProduct[]> {
 
     const map = new Map<string, CatalogProduct>();
 
-    for (const product of bilycardProducts) {
-      const slug = String(product.slug).toLowerCase();
-      if (hiddenSlugs.has(slug)) continue;
-      map.set(
-        slug,
-        enrichProductDescriptions(
-          applyOverride(
-            {
-              ...product,
-              ...resolveProductAvailability({
-                stockQuantityValue: (product as CatalogProduct).stockQuantity,
-                legacyStatusValue: product.stockStatus,
-                saleEnabledValue: (product as CatalogProduct).saleEnabled,
-              }),
-              providerMode: normalizeProductProviderMode(product.providerMode, 'primary'),
-            },
-            overrideMap.get(slug)
+    if (includeLegacyCatalog) {
+      for (const product of bilycardProducts) {
+        const slug = String(product.slug).toLowerCase();
+        if (hiddenSlugs.has(slug)) continue;
+        map.set(
+          slug,
+          enrichProductDescriptions(
+            applyOverride(
+              {
+                ...product,
+                ...resolveProductAvailability({
+                  stockQuantityValue: (product as CatalogProduct).stockQuantity,
+                  legacyStatusValue: product.stockStatus,
+                  saleEnabledValue: (product as CatalogProduct).saleEnabled,
+                }),
+                providerMode: normalizeProductProviderMode(product.providerMode, 'primary'),
+              },
+              overrideMap.get(slug)
+            )
           )
-        )
-      );
+        );
+      }
     }
 
-    for (const product of customProducts) {
-      const slug = String(product.slug).toLowerCase();
-      if (hiddenSlugs.has(slug)) continue;
-      map.set(
-        slug,
-        enrichProductDescriptions(toCatalogProduct(product))
-      );
+    if (includeCustomCatalog) {
+      for (const product of customProducts) {
+        const slug = String(product.slug).toLowerCase();
+        if (hiddenSlugs.has(slug)) continue;
+        map.set(
+          slug,
+          enrichProductDescriptions(toCatalogProduct(product))
+        );
+      }
     }
 
     return rememberCatalogProducts(Array.from(map.values()));

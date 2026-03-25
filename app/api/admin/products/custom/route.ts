@@ -66,17 +66,30 @@ function normalizeProviderLinksInput(value: unknown): ProductProviderLink[] {
       providerProductId,
       providerProductName: String(raw?.providerProductName || '').trim() || undefined,
       enabled: raw?.enabled !== false,
+      executionEnabled: raw?.executionEnabled !== false,
+      priceSyncEnabled: raw?.priceSyncEnabled !== false,
       priority: Number.isFinite(Number(raw?.priority)) ? Number(raw?.priority) : 100,
       priceSource: String(raw?.priceSource || '').toLowerCase() === 'manual' ? 'manual' : 'provider',
       manualCost: Number.isFinite(Number(raw?.manualCost)) ? Number(raw?.manualCost) : undefined,
       lastKnownCost: Number.isFinite(Number(raw?.lastKnownCost)) ? Number(raw?.lastKnownCost) : undefined,
+      lastCost: Number.isFinite(Number(raw?.lastCost)) ? Number(raw?.lastCost) : undefined,
       providerAvailability:
         String(raw?.providerAvailability || '').toLowerCase() === 'available'
           ? 'available'
           : String(raw?.providerAvailability || '').toLowerCase() === 'unavailable'
             ? 'unavailable'
             : 'unknown',
+      healthStatus:
+        String(raw?.healthStatus || '').toLowerCase() === 'healthy'
+          ? 'healthy'
+          : String(raw?.healthStatus || '').toLowerCase() === 'degraded'
+            ? 'degraded'
+            : String(raw?.healthStatus || '').toLowerCase() === 'unhealthy'
+              ? 'unhealthy'
+              : 'unknown',
       fallbackEnabled: raw?.fallbackEnabled !== false,
+      lastError: String(raw?.lastError || '').trim() || undefined,
+      variantKey: String(raw?.variantKey || '').trim().toLowerCase() || undefined,
       lastSyncAt: raw?.lastSyncAt ? String(raw.lastSyncAt) : undefined,
     });
   }
@@ -166,6 +179,23 @@ async function postHandler(req: NextRequest, _user: JWTPayload): Promise<NextRes
 
     const countMin = Number(body.countMin || 1);
     const countMax = Number(body.countMax || 0);
+    const rawProfitMarginPercent = Number(body?.profitMarginPercent);
+    const profitMarginPercent =
+      Number.isFinite(rawProfitMarginPercent) && rawProfitMarginPercent >= 0
+        ? rawProfitMarginPercent
+        : undefined;
+    const roundingRuleRaw = String(body?.roundingRule || '').trim().toLowerCase();
+    const roundingRule = [
+      'none',
+      'ceil_0_01',
+      'round_0_01',
+      'ceil_0_1',
+      'round_0_1',
+      'ceil_1',
+      'round_1',
+    ].includes(roundingRuleRaw)
+      ? roundingRuleRaw
+      : 'none';
 
     if (mode === 'count' && (!Number.isFinite(countMin) || countMin < 1)) {
       return NextResponse.json(
@@ -223,6 +253,8 @@ async function postHandler(req: NextRequest, _user: JWTPayload): Promise<NextRes
         deliveryTime: String(body.deliveryTime || 'Instant').trim() || 'Instant',
         tags,
         providerMode: normalizeProductProviderMode(body.providerMode, 'manual'),
+        profitMarginPercent,
+        roundingRule,
         routingMode,
         providerLinks,
       },

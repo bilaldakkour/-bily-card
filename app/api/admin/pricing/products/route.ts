@@ -2,9 +2,26 @@ import { NextRequest, NextResponse } from 'next/server';
 import { withAdminAuth } from '@/lib/auth/middleware';
 import { connectDB } from '@/lib/db/mongodb';
 import { JWTPayload } from '@/lib/types';
-import { getCatalogProducts } from '@/lib/data/catalogProducts';
 import ProductPricing from '@/lib/models/ProductPricing';
+import CustomProduct from '@/lib/models/CustomProduct';
+import { getCatalogProducts } from '@/lib/data/catalogProducts';
 import { clampPercent } from '@/lib/pricing/engine';
+import type { ProductProviderLink } from '@/lib/data/products';
+
+function isGo4CardImportedCustom(row: {
+  providerMode?: string;
+  tags?: string[];
+  providerLinks?: ProductProviderLink[];
+}) {
+  const tags = Array.isArray(row?.tags)
+    ? row.tags.map((tag) => String(tag || '').trim().toLowerCase())
+    : [];
+  if (tags.includes('secondary-provider') || tags.includes('go4card-imported')) return true;
+  if (String(row?.providerMode || '').trim().toLowerCase() === 'secondary') return true;
+  const links = Array.isArray(row?.providerLinks) ? row.providerLinks : [];
+  if (!links.length) return false;
+  return links.every((link) => String(link?.providerCode || '').trim().toLowerCase() === 'go4card');
+}
 
 async function getHandler(_req: NextRequest, _user: JWTPayload): Promise<NextResponse> {
   try {
@@ -18,21 +35,38 @@ async function getHandler(_req: NextRequest, _user: JWTPayload): Promise<NextRes
       ruleMap[String(row.productSlug).toLowerCase()] = Number(row.percentage || 0);
     }
 
-    const catalogProducts = await getCatalogProducts();
+    const [catalogProducts, customRows] = await Promise.all([
+      getCatalogProducts(),
+      CustomProduct.find({ active: true })
+        .select('slug providerMode tags providerLinks mode')
+        .lean(),
+    ]);
+    const customMap = new Map(
+      (customRows as any[]).map((row) => [String(row?.slug || '').trim().toLowerCase(), row])
+    );
 
-    const data = catalogProducts.map((product) => ({
-      id: product.id,
-      slug: product.slug,
-      name: product.name,
-      category: product.category,
-      basePrice: product.price,
-      productPercent: Number(ruleMap[product.slug.toLowerCase()] || 0),
+    const data = catalogProducts
+      .filter((product: any) => {
+        const slug = String(product?.slug || '').trim().toLowerCase();
+        const custom = customMap.get(slug) as any | undefined;
+        if (!custom) return true;
+        return !isGo4CardImportedCustom(custom);
+      })
+      .map((product: any) => ({
+      id: String(product.id || `manual-${String((product as any)._id || product.slug || '')}`),
+      slug: String(product.slug || '').toLowerCase(),
+      name: String(product.name || ''),
+      category: String(product.category || ''),
+      basePrice: Number(product.price || 0),
+      productPercent: Number(ruleMap[String(product.slug || '').toLowerCase()] || 0),
       stockQuantity: Number(product.stockQuantity || 0),
-      stockStatus: product.stockStatus,
-      saleEnabled: product.saleEnabled !== false,
-      providerMode: product.providerMode || 'primary',
+      stockStatus: (product as any).stockStatus,
+      saleEnabled: (product as any).saleEnabled !== false,
+      providerMode: (product as any).providerMode || 'manual',
       isCountProduct: Boolean(
-        product.inputFields?.some((field) => field.type === 'number' && field.name === 'count')
+        String((customMap.get(String(product.slug || '').toLowerCase()) as any)?.mode || '').toLowerCase() ===
+          'count' ||
+          product.inputFields?.some((field: any) => field.type === 'number' && field.name === 'count')
       ),
     }));
 
