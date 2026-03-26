@@ -122,6 +122,7 @@ function isLinkCostFresh(link: ProviderLinkLike) {
 async function resolveCheapestProviderCost(input: {
   productSlug: string;
   packageOption?: string;
+  preferCachedCost?: boolean;
 }) {
   const row = (await CustomProduct.findOne({ slug: input.productSlug, active: true })
     .select(
@@ -198,10 +199,20 @@ async function resolveCheapestProviderCost(input: {
       if (!provider || provider.enabled === false || provider?.routing?.allowOrderCreation === false) return null;
       const storedCost = normalizeLinkCost(link);
       const storedCostIsFresh = isLinkCostFresh(link);
+      const storedCostValue = Number(storedCost || 0);
+      const hasStoredCost = Number.isFinite(storedCostValue) && storedCostValue > 0;
+      const storedResolvedCost =
+        input.preferCachedCost
+          ? (hasStoredCost ? storedCostValue : 0)
+          : (storedCostIsFresh && hasStoredCost ? storedCostValue : 0);
 
       let providerQuote: Awaited<ReturnType<ProviderAdapter['resolveProductQuote']>> | null = null;
       const adapter = adapterByKey.get(providerCode);
-      if (adapter && String(link.priceSource || 'provider').toLowerCase() !== 'manual') {
+      if (
+        !input.preferCachedCost &&
+        adapter &&
+        String(link.priceSource || 'provider').toLowerCase() !== 'manual'
+      ) {
         try {
           providerQuote = await adapter.resolveProductQuote({
             providerProductId: String((link as any)?.providerProductId || '').trim() || undefined,
@@ -219,19 +230,11 @@ async function resolveCheapestProviderCost(input: {
       const quotedUnitCost = Number((providerQuote as any)?.unitCost || 0);
       const quotedCost = Number((providerQuote as any)?.cost || 0);
       const resolvedCost =
+        storedResolvedCost ||
         (Number.isFinite(quotedUnitCost) && quotedUnitCost > 0 ? quotedUnitCost : 0) ||
         (Number.isFinite(quotedCost) && quotedCost > 0 ? quotedCost : 0) ||
-        (storedCostIsFresh && Number.isFinite(Number(storedCost)) && Number(storedCost) > 0
-          ? Number(storedCost)
-          : 0);
+        0;
       if (!(resolvedCost > 0)) return null;
-
-      console.log('PRICE DEBUG:', {
-        providerProductId: String((link as any)?.providerProductId || '').trim(),
-        variantKey,
-        cost: resolvedCost,
-        providerQuote,
-      });
 
       return {
         providerCode,
@@ -339,6 +342,7 @@ export async function getEffectivePriceForProduct(input: {
   fallbackPrice?: number;
   packageOption?: string;
   userId?: string | null;
+  preferCachedCost?: boolean;
 }) {
   const slug = String(input.slug || '').trim().toLowerCase();
   const product = slug ? await getCatalogProductBySlug(slug) : undefined;
@@ -368,6 +372,7 @@ export async function getEffectivePriceForProduct(input: {
     ? await resolveCheapestProviderCost({
         productSlug: slug,
         packageOption: input.packageOption,
+        preferCachedCost: input.preferCachedCost === true,
       })
     : null;
   const productPercentFromRules = slug ? Number(productMap[slug] || 0) : 0;

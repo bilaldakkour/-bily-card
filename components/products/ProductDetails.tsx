@@ -1,6 +1,6 @@
 ﻿'use client'
 
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { CheckCircle2, Headset, Share, ShieldCheck, Truck } from 'lucide-react'
 import OrderDetailsModal, { type OrderDetailsItem } from '@/components/shared/OrderDetailsModal'
@@ -10,13 +10,6 @@ import type { Product } from '@/lib/data'
 interface ProductDetailsProps {
   product: Product
   compact?: boolean
-}
-
-type EffectivePricingSnapshot = {
-  effectivePrice: number
-  basePrice: number
-  productPercent: number
-  userPercent: number
 }
 
 const parsePriceFromPackageOption = (source: string, fallbackPrice: number): number => {
@@ -45,10 +38,28 @@ const cleanPackageOptionLabel = (source: string): string =>
     .replace(/\s*\(out of stock\)\s*/i, '')
     .trim()
 
+const resolveCountMinFromProduct = (input: Product): number | null => {
+  const children = Array.isArray(input.groupChildren) && input.groupChildren.length
+    ? input.groupChildren
+    : [input]
+  const initialProduct = children[0] || input
+  const countInput = initialProduct.inputFields?.find(
+    (field) => field.type === 'number' && field.name === 'count'
+  )
+  if (!countInput) return null
+  return Number(countInput.validation?.min ?? 1)
+}
+
 export default function ProductDetails({ product, compact = false }: ProductDetailsProps) {
   const router = useRouter()
+
   const applyMarkup = (basePrice: number, productPct: number, userPct: number) =>
-    Number(Math.max(0, Number(basePrice || 0) * (1 + (Number(productPct || 0) - Number(userPct || 0)) / 100)).toFixed(6))
+    Number(
+      Math.max(
+        0,
+        Number(basePrice || 0) * (1 + (Number(productPct || 0) - Number(userPct || 0)) / 100)
+      ).toFixed(6)
+    )
 
   const groupedChildren = useMemo(
     () => (Array.isArray(product.groupChildren) && product.groupChildren.length ? product.groupChildren : [product]),
@@ -71,9 +82,14 @@ export default function ProductDetails({ product, compact = false }: ProductDeta
     [groupedChildren, product, selectedChildSlug]
   )
 
+  const initialCountMin = resolveCountMinFromProduct(product)
   const [playerId, setPlayerId] = useState('')
-  const [quantity, setQuantity] = useState(1)
-  const [quantityInput, setQuantityInput] = useState('')
+  const [quantity, setQuantity] = useState(initialCountMin ?? 1)
+  const [quantityInput, setQuantityInput] = useState(
+    typeof initialCountMin === 'number' && Number.isFinite(initialCountMin) && initialCountMin > 0
+      ? String(initialCountMin)
+      : ''
+  )
   const [countMode, setCountMode] = useState<'count' | 'budget'>('count')
   const [budgetInput, setBudgetInput] = useState('')
   const [loading, setLoading] = useState(false)
@@ -82,13 +98,12 @@ export default function ProductDetails({ product, compact = false }: ProductDeta
   const [error, setError] = useState('')
   const [successMessage, setSuccessMessage] = useState('')
   const [shareNotice, setShareNotice] = useState('')
-  const [productPercent, setProductPercent] = useState(0)
-  const [userPercent, setUserPercent] = useState(0)
+  const [createdOrderDetails, setCreatedOrderDetails] = useState<OrderDetailsItem | null>(null)
+
+  const [unitPrice, setUnitPrice] = useState<number>(0)
+  const [selectedPricingSnapshot, setSelectedPricingSnapshot] = useState<any>(null)
   const [isPriceLoading, setIsPriceLoading] = useState(false)
   const [isPricingReady, setIsPricingReady] = useState(false)
-  const [pricingCache, setPricingCache] = useState<Record<string, EffectivePricingSnapshot>>({})
-  const pricingFetchInFlightRef = useRef<Record<string, Promise<EffectivePricingSnapshot | null>>>({})
-  const [createdOrderDetails, setCreatedOrderDetails] = useState<OrderDetailsItem | null>(null)
 
   useEffect(() => {
     setSelectedChildSlug(groupedChildren[0]?.slug || product.slug)
@@ -117,9 +132,7 @@ export default function ProductDetails({ product, compact = false }: ProductDeta
     return packageField.options.map((raw) => {
       const source = String(raw)
       const [labelPart] = source.split(' - ')
-      const parsedPrice = isProviderBasedPricing
-        ? 0
-        : parsePriceFromPackageOption(source, safeProduct.price)
+      const parsedPrice = parsePriceFromPackageOption(source, safeProduct.price)
       const inStock = !isPackageOptionOutOfStock(source)
 
       return {
@@ -129,10 +142,7 @@ export default function ProductDetails({ product, compact = false }: ProductDeta
         inStock,
       }
     })
-  }, [isProviderBasedPricing, packageField?.options, safeProduct.price])
-
-  const makePricingCacheKey = (slug: string, packageOption?: string) =>
-    `${String(slug || '').trim().toLowerCase()}|${String(packageOption || '__default__').trim()}`
+  }, [packageField?.options, safeProduct.price])
 
   const [selectedPackage, setSelectedPackage] = useState<string>('')
 
@@ -144,50 +154,77 @@ export default function ProductDetails({ product, compact = false }: ProductDeta
   const resolvedSelectedPackage =
     packageOptions.find((option) => option.display === selectedPackage) || firstAvailablePackage || packageOptions[0]
   const isPackageProduct = packageOptions.length > 0
-  const selectedPricingCacheKey = useMemo(
-    () =>
-      makePricingCacheKey(
-        safeProduct.slug,
-        isProviderBasedPricing && isPackageProduct && resolvedSelectedPackage?.display
-          ? resolvedSelectedPackage.display
-          : undefined
-      ),
-    [isPackageProduct, isProviderBasedPricing, resolvedSelectedPackage?.display, safeProduct.slug]
-  )
-  const selectedPricingSnapshot = pricingCache[selectedPricingCacheKey]
+  const isCountProduct = !isPackageProduct && Boolean(countField)
+
+  const productPercent = Number(selectedPricingSnapshot?.productPercent || 0)
+  const userPercent = Number(selectedPricingSnapshot?.userPercent || 0)
 
   const pricedPackageOptions = useMemo(
     () =>
       packageOptions.map((option) => {
-        const cacheKey = makePricingCacheKey(
-          safeProduct.slug,
-          isPackageProduct ? option.display : undefined
-        )
-        const cached = pricingCache[cacheKey]
-        const cachedEffective = Number(cached?.effectivePrice || 0)
+        const localEffective = applyMarkup(option.price, productPercent, userPercent)
         return {
           ...option,
-          hasResolvedPrice:
-            !isProviderBasedPricing ||
-            (Number.isFinite(cachedEffective) && cachedEffective > 0),
-          effectivePrice: isProviderBasedPricing
-            ? (Number.isFinite(cachedEffective) && cachedEffective > 0 ? cachedEffective : 0)
-            : applyMarkup(option.price, productPercent, userPercent),
+          hasResolvedPrice: Number.isFinite(localEffective) && localEffective > 0,
+          effectivePrice: localEffective,
         }
       }),
-    [isPackageProduct, isProviderBasedPricing, packageOptions, pricingCache, productPercent, safeProduct.slug, userPercent]
+    [packageOptions, productPercent, userPercent]
   )
-  const isCountProduct = !isPackageProduct && Boolean(countField)
+
   const hasAvailablePackageOptions = !isPackageProduct || pricedPackageOptions.some((option) => option.inStock)
   const selectedPackageInStock = !isPackageProduct || Boolean(resolvedSelectedPackage?.inStock)
 
   const countMin = countField?.validation?.min ?? 1
   const countMax = countField?.validation?.max
 
+  const fetchEffectivePrice = async (opts?: { packageOption?: string }) => {
+    if (!safeProduct.slug) {
+      setUnitPrice(0)
+      setSelectedPricingSnapshot(null)
+      setIsPricingReady(true)
+      return
+    }
+
+    setIsPriceLoading(true)
+    setIsPricingReady(false)
+
+    try {
+      const params = new URLSearchParams()
+      params.set('slug', safeProduct.slug)
+
+      if (opts?.packageOption) {
+        params.set('packageOption', opts.packageOption)
+      }
+
+      const res = await fetch(`/api/pricing/effective?${params.toString()}`, {
+        cache: 'no-store',
+      })
+
+      const json = await res.json()
+
+      if (json?.success && json?.data) {
+        const nextEffectivePrice = Number(json.data.effectivePrice)
+        setSelectedPricingSnapshot(json.data)
+        setUnitPrice(Number.isFinite(nextEffectivePrice) && nextEffectivePrice > 0 ? nextEffectivePrice : 0)
+      } else {
+        setSelectedPricingSnapshot(null)
+        setUnitPrice(0)
+      }
+    } catch {
+      setSelectedPricingSnapshot(null)
+      setUnitPrice(0)
+    } finally {
+      setIsPriceLoading(false)
+      setIsPricingReady(true)
+    }
+  }
+
   useEffect(() => {
     if (isCountProduct) {
-      setQuantity(countMin)
-      setQuantityInput('')
+      const normalizedMin = Number.isFinite(Number(countMin)) && Number(countMin) > 0 ? Number(countMin) : 1
+      setQuantity(normalizedMin)
+      setQuantityInput(String(normalizedMin))
       setCountMode('count')
       setBudgetInput('')
     }
@@ -195,19 +232,24 @@ export default function ProductDetails({ product, compact = false }: ProductDeta
 
   useEffect(() => {
     setSelectedPackage('')
-    setQuantity(1)
-    setQuantityInput('')
+    const nextCountField = safeProduct.inputFields?.find(
+      (field) => field.type === 'number' && field.name === 'count'
+    )
+    const nextCountMin =
+      Number.isFinite(Number(nextCountField?.validation?.min)) && Number(nextCountField?.validation?.min) > 0
+        ? Number(nextCountField?.validation?.min)
+        : 1
+    setQuantity(nextCountMin)
+    setQuantityInput(nextCountField ? String(nextCountMin) : '')
     setCountMode('count')
     setBudgetInput('')
     setError('')
     setSuccess(false)
     setSuccessMessage('')
     setCreatedOrderDetails(null)
-  }, [safeProduct.slug])
-
-  useEffect(() => {
-    setPricingCache({})
-    pricingFetchInFlightRef.current = {}
+    setUnitPrice(0)
+    setSelectedPricingSnapshot(null)
+    setIsPricingReady(false)
   }, [safeProduct.slug])
 
   useEffect(() => {
@@ -236,115 +278,38 @@ export default function ProductDetails({ product, compact = false }: ProductDeta
     return () => window.clearTimeout(timeout)
   }, [shareNotice])
 
+  useEffect(() => {
+    if (isPackageProduct) {
+      void fetchEffectivePrice({
+        packageOption: resolvedSelectedPackage?.display,
+      })
+      return
+    }
+
+    if (isCountProduct) {
+      void fetchEffectivePrice()
+      return
+    }
+
+    setUnitPrice(0)
+    setSelectedPricingSnapshot(null)
+    setIsPricingReady(true)
+  }, [safeProduct.slug, isPackageProduct, isCountProduct, resolvedSelectedPackage?.display])
+
   const parsedInputQuantity = Number(quantityInput)
+  const fallbackCountQuantity =
+    isCountProduct && countMode === 'count'
+      ? (Number.isFinite(Number(countMin)) && Number(countMin) > 0 ? Number(countMin) : 1)
+      : 0
   const effectiveDisplayQuantity =
     Number.isFinite(parsedInputQuantity) && parsedInputQuantity > 0
       ? parsedInputQuantity
-      : 0
+      : fallbackCountQuantity
   const parsedBudgetValue = Number(budgetInput)
 
-  const fallbackLocalUnitPrice = isPackageProduct
-    ? (resolvedSelectedPackage?.price ?? safeProduct.price)
-    : safeProduct.price
-
-  useEffect(() => {
-    let cancelled = false
-    const token = localStorage.getItem('bilycard_token')
-
-    const cacheKey = selectedPricingCacheKey
-    const cached = selectedPricingSnapshot
-
-    if (cached) {
-      setProductPercent(Number(cached.productPercent || 0))
-      setUserPercent(Number(cached.userPercent || 0))
-      setIsPricingReady(true)
-      setIsPriceLoading(false)
-      return () => {
-        cancelled = true
-      }
-    }
-
-    const loadPricing = async () => {
-      setIsPriceLoading(true)
-      setIsPricingReady(false)
-
-      try {
-        const fetcher = async () => {
-          const slug = encodeURIComponent(String(safeProduct.slug || ''))
-          const packageParam =
-            isProviderBasedPricing && isPackageProduct && resolvedSelectedPackage?.display
-              ? `&packageOption=${encodeURIComponent(String(resolvedSelectedPackage.display))}`
-              : ''
-          const res = await fetch(`/api/pricing/effective?slug=${slug}${packageParam}`, {
-            headers: token ? { Authorization: `Bearer ${token}` } : undefined,
-            cache: 'no-store',
-          })
-
-          const data = await res.json()
-          if (!res.ok || !data?.success) {
-            return null
-          }
-
-          const snapshot: EffectivePricingSnapshot = {
-            effectivePrice: Number(data.data?.effectivePrice || 0),
-            basePrice: Number(data.data?.basePrice || 0),
-            productPercent: Number(data.data?.productPercent || 0),
-            userPercent: Number(data.data?.userPercent || 0),
-          }
-
-          return snapshot
-        }
-
-        const pending = pricingFetchInFlightRef.current[cacheKey]
-        const snapshot = pending
-          ? await pending
-          : await (pricingFetchInFlightRef.current[cacheKey] = fetcher())
-        delete pricingFetchInFlightRef.current[cacheKey]
-
-        if (!snapshot) {
-          if (!cancelled) {
-            setProductPercent(0)
-            setUserPercent(0)
-            setIsPricingReady(!isProviderBasedPricing)
-            setIsPriceLoading(false)
-          }
-          return
-        }
-
-        if (!cancelled && snapshot) {
-          setPricingCache((prev) => ({ ...prev, [cacheKey]: snapshot }))
-          setProductPercent(Number(snapshot.productPercent || 0))
-          setUserPercent(Number(snapshot.userPercent || 0))
-          setIsPricingReady(true)
-          setIsPriceLoading(false)
-        }
-      } catch {
-        if (!cancelled) {
-          setProductPercent(0)
-          setUserPercent(0)
-          setIsPricingReady(!isProviderBasedPricing)
-          setIsPriceLoading(false)
-        }
-      }
-    }
-
-    void loadPricing()
-    return () => {
-      cancelled = true
-    }
-  }, [
-    isPackageProduct,
-    isProviderBasedPricing,
-    resolvedSelectedPackage?.display,
-    safeProduct.slug,
-    selectedPricingCacheKey,
-    selectedPricingSnapshot,
-  ])
-
-  const effectiveUnitPrice = isProviderBasedPricing
-    ? Number(selectedPricingSnapshot?.effectivePrice || 0)
-    : applyMarkup(fallbackLocalUnitPrice, productPercent, userPercent)
-  const showResolvedPrice = !isProviderBasedPricing || (isPricingReady && effectiveUnitPrice > 0)
+  const fallbackLocalUnitPrice = unitPrice > 0 ? unitPrice : 0
+  const effectiveUnitPrice = fallbackLocalUnitPrice
+  const showResolvedPrice = effectiveUnitPrice > 0
   const pricePlaceholderClass =
     'inline-block h-6 min-w-[4.75rem] animate-pulse rounded-md bg-white/12 align-middle'
   const isInstantDelivery =
@@ -625,7 +590,7 @@ export default function ProductDetails({ product, compact = false }: ProductDeta
                       {pricedPackageOptions.map((option) => {
                         const active = option.display === (resolvedSelectedPackage?.display || '')
                         return (
-                      <button
+                          <button
                             key={option.display}
                             type="button"
                             onClick={() => {
